@@ -51,7 +51,20 @@ export function apiOk(result: ApiResult | null | undefined) {
   return Boolean(result.success);
 }
 
+function getWebProxyBaseUrl() {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') {
+    return '';
+  }
+
+  return `${window.location.origin}/__api_proxy`;
+}
+
 function getConfiguredBaseUrl() {
+  const webProxyBaseUrl = getWebProxyBaseUrl();
+  if (webProxyBaseUrl) {
+    return webProxyBaseUrl;
+  }
+
   if (BASE_URL) {
     return BASE_URL;
   }

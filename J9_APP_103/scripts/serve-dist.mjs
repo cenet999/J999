@@ -1,6 +1,7 @@
 import { createReadStream, existsSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { extname, join, normalize, resolve } from 'node:path';
+import { createApiProxyHandler } from './create-api-proxy-handler.mjs';
 
 const root = resolve(process.cwd(), 'dist');
 const port = Number(process.env.PORT || 4173);
@@ -52,7 +53,13 @@ function resolveFilePath(urlPath) {
   return existsSync(notFoundTarget) ? notFoundTarget : null;
 }
 
+const handleApiProxy = createApiProxyHandler();
+
 const server = createServer((request, response) => {
+  if (handleApiProxy(request, response, () => {})) {
+    return;
+  }
+
   const method = request.method || 'GET';
   if (method !== 'GET' && method !== 'HEAD') {
     response.statusCode = 405;

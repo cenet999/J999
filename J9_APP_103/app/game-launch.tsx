@@ -9,9 +9,10 @@ import {
   startXhGame,
 } from '@/lib/api/game';
 import { toAbsoluteUrl } from '@/lib/api/request';
+import { openGameUrl } from '@/lib/open-game-url';
 import { router, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Image, Linking, Platform, View } from 'react-native';
+import { ActivityIndicator, Image, Platform, View } from 'react-native';
 
 const START_LAUNCH_DELAY_MS = 120;
 const SLOW_HINT_MS = 4000;
@@ -24,20 +25,6 @@ function pickNumber(...values: Array<string | number | null | undefined>) {
     if (!Number.isNaN(num)) return num;
   }
   return 0;
-}
-
-async function openGameUrl(url: string) {
-  if (Platform.OS === 'web' && typeof window !== 'undefined') {
-    const targetWindow = window as Window & {
-      __J9_E2E_SKIP_EXTERNAL_GAME_NAV__?: boolean;
-    };
-
-    if (targetWindow.__J9_E2E_SKIP_EXTERNAL_GAME_NAV__) return;
-    window.location.href = url;
-    return;
-  }
-
-  await Linking.openURL(url);
 }
 
 function markAutoLaunchConsumed() {
@@ -103,11 +90,9 @@ export function GameLaunchContent({
       if (consumeAutoLaunchParam) {
         markAutoLaunchConsumed();
       }
-      await openGameUrl(url);
+      await openGameUrl(url, { title });
       if (Platform.OS !== 'web') {
-        setTimeout(() => {
-          onClose?.();
-        }, 150);
+        onClose?.();
       }
     } catch {
       setStatus('failed');
@@ -323,7 +308,7 @@ export function GameLaunchContent({
                   ? '正在从游戏平台回收余额'
                   : stage === 'requesting'
                     ? '正在获取游戏入口'
-                    : '正在打开外部游戏地址'}
+                    : '正在打开游戏页面'}
           </Text>
           <Text
             className="mt-2 text-center text-[13px] font-medium leading-[20px]"
@@ -335,14 +320,14 @@ export function GameLaunchContent({
                   ? '主账户余额为 0，正在尝试把各游戏平台余额收回。'
                   : stage === 'requesting'
                     ? '稍慢一点，请稍候。'
-                    : '外部页面打开较慢，请耐心等待。'
+                    : '游戏页面打开较慢，请耐心等待。'
                 : status === 'failed'
                   ? '请重试一次，或返回上一页继续操作。'
                   : stage === 'recycling'
                     ? '检测到可用余额为 0，先执行回收再进入游戏。'
                     : stage === 'requesting'
                       ? '请稍候。'
-                      : '游戏地址已获取，正在为您打开外部页面。'}
+                      : '游戏地址已获取，正在为您打开游戏页面。'}
           </Text>
         </View>
 

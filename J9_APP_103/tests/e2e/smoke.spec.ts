@@ -189,8 +189,8 @@ test('游戏启动成功时会进入打开外部地址阶段', async ({ page }) 
   );
 
   await expect(page.getByText('正在进入 麻将胡了')).toBeVisible();
-  await expect(page.getByText('正在打开外部游戏地址')).toBeVisible();
-  await expect(page.getByText('游戏地址已获取，正在为您打开外部页面。')).toBeVisible();
+  await expect(page.getByText('正在打开游戏页面')).toBeVisible();
+  await expect(page.getByText('游戏地址已获取，正在为您打开游戏页面。')).toBeVisible();
 });
 
 test('首页公告弹窗可以打开和关闭', async ({ page }) => {

@@ -173,6 +173,7 @@ export default function RootLayout() {
                 <Stack.Screen name="deposit" options={bottomTabScreenOptions} />
                 <Stack.Screen name="earn" options={bottomTabScreenOptions} />
                 <Stack.Screen name="mine" options={bottomTabScreenOptions} />
+                <Stack.Screen name="game-play" options={{ animation: 'fade' }} />
               </Stack>
               <PortalHost />
               <ToastProvider />
