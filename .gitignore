@@ -5,6 +5,7 @@
 # IDE / 本地工具缓存（勿提交）
 .vs/
 .cursor/debug-*.log
+.playwright-cli/
 
 # macOS 访达元数据（勿提交）
 .DS_Store
