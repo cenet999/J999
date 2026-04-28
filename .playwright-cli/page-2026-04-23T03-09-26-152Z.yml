@@ -1,0 +1,76 @@
+- generic [ref=e11]:
+  - generic [ref=e14]:
+    - generic [ref=e16]:
+      - generic [ref=e17]:
+        - generic [ref=e18]:
+          - generic [ref=e19]: 俱乐
+          - generic [ref=e20]: 部
+        - generic [ref=e21]:
+          - generic [ref=e23] [cursor=pointer]: 登录
+          - generic [ref=e25] [cursor=pointer]: 注册
+      - generic [ref=e27]:
+        - generic [ref=e28] [cursor=pointer]:
+          - img [ref=e30]
+          - generic [ref=e34]: 存款
+          - generic [ref=e36]: 送3%
+        - generic [ref=e37] [cursor=pointer]:
+          - img [ref=e39]
+          - generic [ref=e43]: 取款
+        - generic [ref=e44] [cursor=pointer]:
+          - img [ref=e46]
+          - generic [ref=e50]: 客服
+    - generic [ref=e51]:
+      - generic:
+        - generic [ref=e52]: 公告
+        - generic [ref=e54]: 公告加载中...
+    - generic [ref=e55]:
+      - generic [ref=e57]:
+        - generic [ref=e58] [cursor=pointer]:
+          - img [ref=e59]
+          - generic [ref=e62]: 热门
+        - generic [ref=e63] [cursor=pointer]:
+          - img [ref=e64]
+          - generic [ref=e67]: 棋牌
+        - generic [ref=e68] [cursor=pointer]:
+          - img [ref=e69]
+          - generic [ref=e72]: 电子
+        - generic [ref=e73] [cursor=pointer]:
+          - img [ref=e74]
+          - generic [ref=e77]: 视讯
+        - generic [ref=e78] [cursor=pointer]:
+          - img [ref=e79]
+          - generic [ref=e82]: 捕鱼
+        - generic [ref=e83] [cursor=pointer]:
+          - img [ref=e84]
+          - generic [ref=e87]: 彩票
+        - generic [ref=e88] [cursor=pointer]:
+          - img [ref=e89]
+          - generic [ref=e92]: 体育
+        - generic [ref=e93] [cursor=pointer]:
+          - img [ref=e94]
+          - generic [ref=e97]: 电竞
+      - generic [ref=e98]:
+        - generic [ref=e100]:
+          - progressbar [ref=e101]:
+            - img [ref=e103]
+          - generic [ref=e106]: 游戏列表加载中...
+        - generic [ref=e108]: 已展示全部内容
+        - generic [ref=e111] [cursor=pointer]: 开户注册
+  - generic [ref=e115]:
+    - generic [ref=e119] [cursor=pointer]:
+      - img [ref=e120]
+      - generic [ref=e124]: 首页
+    - generic [ref=e127] [cursor=pointer]:
+      - img [ref=e128]
+      - generic [ref=e131]: 活动
+    - generic [ref=e132] [cursor=pointer]:
+      - generic [ref=e135]: 送3%
+      - generic [ref=e136]:
+        - img [ref=e137]
+        - generic [ref=e140]: 存款
+    - generic [ref=e142] [cursor=pointer]:
+      - img [ref=e143]
+      - generic [ref=e146]: 福利
+    - generic [ref=e148] [cursor=pointer]:
+      - img [ref=e149]
+      - generic [ref=e152]: 我的

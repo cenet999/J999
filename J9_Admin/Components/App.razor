@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <link href="_content/AdminBlazor/adminblazor.css" rel="stylesheet" />
+    <!-- Font Awesome 图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="icon" href="@(admin.Tenant?.Logo ?? "logo.png")" type="image/gif" />
+    <HeadOutlet @rendermode="@InteractiveServer" />
+
+    <style type="text/css">
+        :root {
+            --bb-border-focus-color: #86b7fe;
+            --bb-border-hover-color: #86b7fe;
+            --bb-height: 35px;
+            --bb-dropdown-max-height: 274px;
+            --bb-shadow: 0 0 8px 0 rgba(232, 237, 250, .6), 0 2px 4px 0 rgba(232, 237, 250, .5019607843);
+            --bb-hover-shadow: 0 1px 7px 0 rgba(0, 0, 0, .0509803922), 0 2px 8px 0 rgba(0, 0, 0, .0705882353), 0 3px 9px 0 rgba(0, 0, 0, .0588235294), 0 5px 10px 0 rgba(0, 0, 0, .031372549);
+            --bb-font-size: 14px;
+            --bb-row-control-padding: 1px;
+            --bs-border-radius: 3px;
+            --lte-sidebar-width: 200px;
+            --main-color-primary: #205656;
+            --main-color-light: #ccdfdf;
+            --main-color-secondary: #1D3A3A;
+        }
+
+        /*
+        :root {
+            --main-color-primary: #28A6A6;
+            --main-color-light: #E0F2F2;
+            --main-color-secondary: #1A7878;
+            
+            --main-color-primary: #4E7D9B;
+            --main-color-light: #F0F4F8;
+            --main-color-secondary: #083653;
+        }
+        .sidebar-brand {
+            border-bottom: 1px solid #d4eded;
+        } */
+    </style>
+</head>
+
+<body>
+
+    <Routes @rendermode="new InteractiveServerRenderMode(prerender: false)" />
+
+    <script src="_content/AdminBlazor/adminblazor.js"></script>
+    <script>
+        window.j9CopyToClipboard = (text) => navigator.clipboard.writeText(text);
+    </script>
+    <script src="_framework/blazor.web.js"></script>
+
+</body>
+
+</html>
+@code {
+    [Inject] AdminContext admin { get; set; }
+}

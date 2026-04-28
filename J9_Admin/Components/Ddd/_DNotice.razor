@@ -1,0 +1,73 @@
+@page "/Ddd/DNotice"
+
+<PageTitle>平台公告</PageTitle>
+
+<AdminTable2 TItem="DNotice" Context="item" PageSize="50" Title="平台公告"
+    OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit">
+
+    <TableHeader>
+        <th>ID</th>
+        <th>标题</th>
+        <th>排序</th>
+        <th>状态</th>
+        <th>创建时间</th>
+        <th>最后修改时间</th>
+    </TableHeader>
+    <TableRow>
+        <td>@item.Id</td>
+        <td>@item.Title</td>
+        <td>@item.Sort</td>
+        <td>
+            <Badge Color="@(item.IsEnabled ? Color.Success : Color.Danger)">
+                @(item.IsEnabled ? "启用" : "禁用")
+            </Badge>
+        </td>
+        <td>@item.CreatedTime?.ToString("yyyy-MM-dd HH:mm:ss")</td>
+        <td>@item.ModifiedTime?.ToString("yyyy-MM-dd HH:mm:ss")</td>
+    </TableRow>
+    <EditTemplate>
+        <div class="row">
+            <div class="form-group col-12">
+                <label class="form-label">标题</label>
+                <input @bind="item.Title" type="text" class="form-control" placeholder="" maxlength="200">
+            </div>
+            <div class="form-group col-12">
+                <label class="form-label">排序</label>
+                <input @bind="item.Sort" type="number" class="form-control" placeholder="">
+            </div>
+            <div class="form-group col-12">
+                <label class="form-label">是否启用</label>
+                <Switch @bind-Value="item.IsEnabled" OnColor="Color.Success" />
+            </div>
+            <div class="form-group col-12">
+                <label class="form-label">内容</label>
+                <textarea @bind="item.Content" class="form-control" rows="10"></textarea>
+            </div>
+        </div>
+    </EditTemplate> 
+</AdminTable2>
+
+@code {
+    [Inject] IAggregateRootRepository<DNotice> repo { get; set; }
+
+    async Task InitQuery(AdminQueryInfo e)
+    {
+        e.Filters = new AdminFilterInfo[]
+        {
+        };
+        await Task.Yield();
+    }
+
+    void OnQuery(AdminQueryEventArgs<DNotice> e)
+    {
+        e.Select.WhereIf(!e.SearchText.IsNull(), a => a.Title.Contains(e.SearchText) || 
+                a.Content.Contains(e.SearchText));
+        
+        e.Select.OrderByDescending(a => a.Id);
+    }
+
+    async Task OnEdit(DNotice item)
+    {
+        await Task.Yield();
+    }
+}

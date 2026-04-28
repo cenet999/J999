@@ -1,0 +1,166 @@
+平台名称:锦鲤(KoiUid)
+您的商户登陆资料:
+商户中心: https://u.koipayment.cc:2096/login
+登录名:800800win
+默认登录密码:XG887mHK
+
+您的商户对接资料: 
+商户ID:80026748
+密钥:jZjxRTWjt43SyNKH8TBA2NEDHPSSmkfa
+支付网关:http://uapi.koipayment.net:2086/api/order/create
+查询网关: http://uapi.koipayment.net:2086/api/order/query
+对接文档: https://www.showdoc.cc/koipayment  密码:koipayment
+回调IP: 43.167.232.103
+
+
+支付网关
+简要描述：
+
+下单接口
+请求URL：
+
+http://*/api/order/create
+请求方式：
+
+Form POST(application/x-www-form-urlencoded),GET
+参数：
+
+参数名	必填	参与签名	说明
+merchantid	是	是	商户Id，由支付平台分配
+type	是	是	通道类型
+(以商户群通知为准 , 测试编码1007金额10)
+value	是	是	单位元（人民币），2位小数，最小支付金额为0.02
+orderid	是	是	商户订单号,30位以内
+callbackurl	是	是	异步通知地址，http:// 开头且不带问号参数
+hrefbackurl	否	否	下行同步通知过程的返回地址(在支付完成后锦鲤(KoiPayment)接口将会跳转到的商户系统连接地址)。注：若提交值无该参数，或者该参数值为空，则在支付完成后，锦鲤(KoiPayment)接口将不会跳转到商户系统，用户将停留在锦鲤(KoiPayment)系统提示支付成功的页面。
+attach	否	否	备注信息，下行中会原样返回。若该值包含中文，请注意编码
+respType	否	否	值为json时(或请求头Accept里包含application/json)接口将返回json数据，其他情况为网关直接跳转方式
+sign	是	否	32位小写MD5签名值，UTF8编码，请参考签名算法
+签名算法
+
+sign具体MD5签名源串及格式如下：
+merchantid={}&type={}&value={}&orderid={}&callbackurl={}key
+
+其中，key为商户密钥，{}为占位符，拼接中不含。
+
+下单请求示例
+
+    //商户id
+  $p['merchantid'] = $_POST['merchantid']; 
+    //通道ID
+  $p['type'] = $_POST['type'];    //微信扫码1004,微信wap1007,支付宝扫码992,支付宝wap1006,银联扫码1000,银联快捷1005
+    //交易金额，部分通道有最低金额限制
+  $p['value'] = $_POST['amount'];
+    //订单号不能重复出现
+  $p['orderid'] = uniqid(null, true);
+    //通知回调地址，在这里进行效验和入账操作，地址中不要包含"?"参数
+  $p['callbackurl'] = $callbackurl;     
+    //签名
+
+  $p['sign'] = md5(urldecode(http_build_query($p)) . $_POST['merchantkey']);   //拼接密钥
+    //用户自定义数据(如用户名/id)，回调时会原样传回，此参数可以省略
+  $p['attach'] = 'userid';     
+    //支付成功后跳转地址,请不要包含"?"参数
+  $p['hrefbackurl'] = $hrefbackurl;  
+
+
+  $p['respType']='json';
+  $curl = curl_init();
+  curl_setopt($curl, CURLOPT_URL, $gw);   //网关地址
+  curl_setopt($curl, CURLOPT_POST, 1);
+  curl_setopt($curl, CURLOPT_POSTFIELDS, $p);
+
+  curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+  curl_setopt($curl, CURLOPT_TIMEOUT, 10);
+
+  $data = curl_exec($curl);
+  if (curl_errno($curl)) {
+    //return curl_error($curl);
+  }
+  curl_close($curl);
+  echo $data;
+Json返回示例
+
+ {
+  "code": "0",
+  "payload": {
+    "userorder": "64d3d57077ba482aa",
+    "sysorderid": "2002151614113390831",
+    "amount": 100,
+    "merchantid": "80008020",
+    "data": "http://....../pay",
+    "datatype": 0
+  }
+}
+返回参数说明
+
+参数名	类型	说明
+code	string	0表示成功，其他为失败
+msg	string	失败时包含错误信息
+payload.userorder	string	商户订单号
+payload.sysorderid	string	平台系统订单号
+payload.amount	decimal	订单金额
+payload.merchantid	int	商户Id
+payload.data	string	表示支付相关数据,此数据类型取决于datatype的值
+payload.datatype	int	0:跳转url;
+1:扫码明文，应将payload.data内容生成二维码;
+2:二维码图片地址
+3:html方式，应将payload.data内容直接输出(raw)到网页
+
+
+
+
+
+
+
+
+
+
+异步通知
+简要描述：
+
+异步通知接口,下单接口中callbackurl对应地址接收的请求内容
+请求方式：
+
+GET QueryString
+参数：
+
+参数名	必选	类型	说明
+merchantid	是	string	商户ID
+orderid	是	string	商户订单号
+opstate	是	string	0：支付成功，其他值为失败
+value	是	string	订单金额
+realvalue	可选	string	此字段为可选。一旦字段存在且值大于0，表示实际付款金额(部分渠道支付过程中可以修改付款金额导致与订单金额不一致)。如果不存在此字段请按照value字段入账。存在时需要参与签名,不存在则不参与拼接。
+sysorderid	是	string	平台系统订单号
+completetime	是	string	此次订单过程中支付接口系统内的订单结束时间。格式为年/月/日时：分：秒，如2020/04/05 21:50:58
+attach	是	string	备注信息，上行中attach原样返回
+msg	是	string	订单结果说明
+sign	是	string	32位小写MD5签名值，UTF8编码
+加入签名列值为必选的参数以及商户密钥（表中sign以外的字段名按ASCII升序排序后拼接为Query字串，注意值不要Url编码，不要过滤空值：
+
+签名算法
+
+attach={}&completetime={}&merchantid={}&msg={}&opstate={}&orderid={}&sysorderid={}&value={}key
+其中，key为商户密钥，{}为占位符，拼接中不不含。
+
+以上顺序只是演示，为兼容以后业务扩展更多参数，验签请使用循环遍历参数(排除sign字段)方式进行拼接字串，一定避免使用硬编码。
+
+成功后返回内容
+
+业务处理成功后回写 success 以不再接受通知。
+
+PHP回调示例
+
+$item=$_GET;
+$mkey='';    //商户密钥
+unset($item['sign']);
+ksort($item);
+$arr=array();
+foreach($item as $key=>$value){
+    $arr[]=$key.'='.$value;
+}
+$sign=md5(implode('&',$arr).$mkey);
+if($sign==$_GET['sign']&&$_GET['opstate']=='0'){
+    //业务逻辑，注意去重
+    exit('success');
+}

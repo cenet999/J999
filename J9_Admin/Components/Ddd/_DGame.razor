@@ -1,0 +1,787 @@
+@page "/Ddd/DGame"
+@using System
+@using RestSharp
+@using System.Text.Json
+@using Microsoft.JSInterop
+@using Microsoft.Extensions.Options
+@using BootstrapBlazor.Components
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.AspNetCore.Hosting
+@using J9_Admin.Services.GameApi
+@using System.Linq
+
+<PageTitle>Game Management</PageTitle>
+
+<AdminTable2 @ref="adminTable" TItem="DGame" Context="item" PageSize="50" Title="Game Management"
+    DialogClassName="modal-lg" OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit" TableTd99Width="150"
+    OnSaving="OnSaving" IsMultiSelect="true" OnSelectChanged="OnSelectChanged">
+
+    <TableTd99>
+        <button @onclick="e => LanuchGame(item)" type="button" class="mr-2 btn btn-light btn-xs" title="测试启动"><i
+                class="fa-solid fa-flask"></i></button>
+    </TableTd99>
+
+
+    <CardHeader>
+        <span class="w-auto my-2">
+            <span class="d-inline-flex align-items-center flex-nowrap gap-2 mb-2">
+                <button @onclick="() => BatchSetEnabledAsync(true)" type="button" class="btn btn-success btn-sm"
+                    disabled="@(selectedItems.Count == 0)">
+                    <i class="fa-solid fa-circle-check me-1"></i>批量启用
+                </button>
+                <button @onclick="() => BatchSetEnabledAsync(false)" type="button" class="btn btn-secondary btn-sm"
+                    disabled="@(selectedItems.Count == 0)">
+                    <i class="fa-solid fa-circle-xmark me-1"></i>批量禁用
+                </button>
+            </span>
+            <span class="d-inline-flex align-items-center flex-nowrap gap-2" style="width: 500px">
+                <div class="input-group input-group-sm flex-shrink-0" style="width: 10rem;">
+                    <span class="input-group-text">同步平台</span>
+                    <select class="form-control h-8" style="height: 32px;" @bind="selectedSyncPlatform"
+                        disabled="@syncingGames">
+                        @foreach (var platform in syncPlatformOptions)
+                        {
+                            <option value="@platform.Code">@platform.DisplayName</option>
+                        }
+                    </select>
+                </div>
+                <div class="input-group input-group-sm flex-nowrap" style="flex: 1 1 auto; max-width: 18rem;">
+                    <span class="input-group-text flex-shrink-0">接口代码</span>
+                    <input type="text" class="form-control" @bind="syncApiCode" placeholder="如 PG、AG" maxlength="50" />
+                    @if (selectedSyncPlatform == "MS")
+                    {
+                        <button type="button" class="btn btn-sm btn-primary" disabled="@syncingGames"
+                            @onclick="SyncMsGamesAsync">
+                            @if (syncingGames)
+                            {
+                                <span class="spinner-border spinner-border-sm mr-1" role="status" aria-hidden="true"></span>
+                            }
+                            同步 MS 游戏
+                        </button>
+                    }
+                    else if (selectedSyncPlatform == "XH")
+                    {
+                        <button type="button" class="btn btn-sm btn-primary" disabled="@syncingGames"
+                            @onclick="SyncXhGamesAsync">
+                            @if (syncingGames)
+                            {
+                                <span class="spinner-border spinner-border-sm mr-1" role="status" aria-hidden="true"></span>
+                            }
+                            同步 XH 游戏
+                        </button>
+                    }
+                </div>
+
+            </span>
+            @if (lastSync != null)
+            {
+                @if (lastSync.Success)
+                {
+                    <div class="alert alert-success mb-0 mt-2 py-2 small">
+                        <div><strong>同步结果</strong>（平台：@lastSyncPlatform，接口代码：@lastSyncApiCode）</div>
+                        <div class="mt-1">
+                            远程共 <strong>@lastSync.RemoteTotal</strong> 条 ·
+                            新增 <strong class="text-success">@lastSync.Inserted</strong> 条 ·
+                            已存在跳过 <strong>@lastSync.SkippedExisting</strong> 条
+                        </div>
+                        @if (lastSync.NewByGameType.Count > 0)
+                        {
+                            <div class="mt-2 mb-0"><strong>新增 · 按游戏类型</strong></div>
+                            <ul class="mb-0 mt-1 pl-3">
+                                @foreach (var kv in lastSync.NewByGameType.OrderBy(x => (int)x.Key))
+                                {
+                                    <li>@EnumDescriptionHelper.GetDescription(kv.Key)：@kv.Value 条</li>
+                                }
+                            </ul>
+                        }
+                        @if (lastSync.NewByApiCode.Count > 0)
+                        {
+                            <div class="mt-2 mb-0"><strong>新增 · 按子游戏接口代码</strong></div>
+                            <ul class="mb-0 mt-1 pl-3">
+                                @foreach (var kv in lastSync.NewByApiCode.OrderBy(x => x.Key))
+                                {
+                                    <li>@kv.Key：@kv.Value 条</li>
+                                }
+                            </ul>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-danger mb-0 mt-2 py-2 small">
+                        <strong>同步失败</strong>（平台：@lastSyncPlatform，接口代码：@lastSyncApiCode）：@(lastSync.Message ?? "未知错误")
+                    </div>
+                }
+            }
+        </span>
+    </CardHeader>
+
+    <TableHeader>
+        <th>游戏ID</th>
+        <th>游戏中文名</th>
+        <th>游戏UID</th>
+        <th>游戏Code</th>
+        <th>游戏类型</th>
+        <th>是否启用</th>
+        <th>是否推荐</th>
+        <th>测试通过</th>
+        <th>测试时间</th>
+        <th>接口代码</th>
+        <th>平台</th>
+        <th>评分</th>
+        <th>在玩人数</th>
+        <th>点击次数</th>
+        <th>创建时间</th>
+    </TableHeader>
+    <TableRow>
+        <td>@item.Id</td>
+        <td>@item.GameCnName</td>
+        <td>@item.GameUID</td>
+        <td>@item.GameCode</td>
+        <td>@item.GameType</td>
+        <td>
+            <Badge Color="@(item.IsEnabled? Color.Success: Color.Secondary)">
+                <i class="fa-solid @(item.IsEnabled ? "fa-circle-check" : "fa-circle-xmark") me-1"></i>@(item.IsEnabled
+                                ? "启用" : "停用")
+            </Badge>
+        </td>
+        <td>
+            <Badge Color="@(item.IsRecommended? Color.Warning: Color.Secondary)">
+                <i class="fa-solid @(item.IsRecommended ? "fa-star" : "fa-minus") me-1"></i>@(item.IsRecommended ? "推荐"
+                                : "普通")
+            </Badge>
+        </td>
+        <td>
+            <Badge Color="@(item.IsTestPassed? Color.Success: Color.Secondary)">
+                <i class="fa-solid @(item.IsTestPassed ? "fa-circle-check" : "fa-flask") me-1"></i>@(item.IsTestPassed ?
+                                "已通过" : "待测试")
+            </Badge>
+        </td>
+        <td>
+            @if (item.TestTime.HasValue)
+            {
+                <span class="text-nowrap">@item.TestTime.Value.ToString("yyyy-MM-dd HH:mm")</span>
+            }
+            else
+            {
+                <span class="text-muted">—</span>
+            }
+        </td>
+        <td>@item.ApiCode</td>
+        <td>@item.DGamePlatform?.Name</td>
+        <td>@item.Rating</td>
+        <td>@item.PlayerCount</td>
+        <td>@item.ClickCount</td>
+        <td>@item.CreatedTime?.ToString("yyyy-MM-dd HH:mm:ss")</td>
+    </TableRow>
+    <EditTemplate>
+        <div class="row">
+            <div class="form-group col-5">
+                <label class="form-label">游戏UID</label>
+                <input @bind="item.GameUID" type="text" class="form-control" placeholder="" maxlength="255"
+                    @oninput="OnGameUIDChange">
+            </div>
+            <div class="form-group col-3">
+                <label class="form-label">游戏名称</label>
+                <input @bind="item.GameName" type="text" class="form-control" placeholder="" maxlength="255">
+            </div>
+            <div class="form-group col-2">
+                <label class="form-label">游戏中文名</label>
+                <input @bind="item.GameCnName" type="text" class="form-control" placeholder="" maxlength="255">
+            </div>
+
+            <div class="form-group col-2">
+                <label class="form-label">游戏类型</label>
+                <SelectEnum TEnum="GameType" @bind-Value="item.GameType" />
+            </div>
+            <div class="form-group col-2">
+                <label class="form-label">游戏Code</label>
+                <input @bind="item.GameCode" type="text" class="form-control" placeholder="子游戏代码" maxlength="255">
+            </div>
+            <div class="form-group col-2">
+                <label class="form-label">接口代码</label>
+                <input @bind="item.ApiCode" type="text" class="form-control" placeholder="如 AG, BBIN" maxlength="50">
+            </div>
+            <div class="form-group col-4">
+                <label class="form-label">游戏平台ID</label>
+                <SelectEntity TItem="DGamePlatform" TKey="long" @bind-Value="item.DGamePlatformId"
+                    DisplayText="e => e.Name" />
+            </div>
+            <div class="form-group col-2">
+                <label class="form-label">是否启用</label>
+                <Switch @bind-Value="item.IsEnabled" OnColor="Color.Success" />
+            </div>
+            <div class="form-group col-2">
+                <label class="form-label">是否推荐</label>
+                <Switch @bind-Value="item.IsRecommended" OnColor="Color.Success" />
+            </div>
+            <div class="form-group col-2">
+                <label class="form-label">在玩人数</label>
+                <input @bind="item.PlayerCount" type="number" class="form-control" placeholder="">
+            </div>
+            <div class="form-group col-2">
+                <label class="form-label">游戏评分</label>
+                <input @bind="item.Rating" type="number" step="0.1" class="form-control" placeholder="">
+            </div>
+            <div class="form-group col-2">
+                <label class="form-label">测试通过</label>
+                <Switch @bind-Value="item.IsTestPassed" OnColor="Color.Success" />
+            </div>
+            <div class="form-group col-4">
+                <label class="form-label">测试时间</label>
+                <input @bind="item.TestTime" type="datetime-local" class="form-control" />
+            </div>
+            <div class="form-group col-12">
+                <label class="form-label">游戏描述</label>
+                <textarea @bind="item.Description" class="form-control" rows="3"></textarea>
+            </div>
+            <div class="form-group col-12">
+                <label class="form-label">图标</label>
+                <input @bind="item.Icon" type="text" class="form-control mb-2" placeholder="" maxlength="255">
+                <CardUpload TValue="string" IsMultiple="false" IsDirectory="false" IsDisabled="false"
+                    IsUploadButtonAtFirst="false" ShowProgress="true" ShowDeleteButton="true" ShowDownloadButton="false"
+                    ShowZoomButton="true" OnChange="@OnCardUpload" DefaultFileList="@DefaultFormatFileList">
+                </CardUpload>
+            </div>
+
+        </div>
+    </EditTemplate>
+</AdminTable2>
+
+@code {
+    [Inject] NavigationManager Navigation { get; set; }
+    [Inject] IHttpContextAccessor HttpContextAccessor { get; set; }
+    [Inject] AdminContext AdminContext { get; set; }
+    [Inject] ILogger<DGame> _logger { get; set; }
+    [Inject] IJSRuntime JSRuntime { get; set; }
+    [Inject] IConfiguration Configuration { get; set; }
+    [Inject] IAggregateRootRepository<DGame> repo { get; set; }
+    [Inject] J9_Admin.Utils.SessionAgent sessionAgent { get; set; }
+    [Inject] J9_Admin.API.GameService GameService { get; set; }
+    [Inject] MSGameApi MsGameApi { get; set; }
+    [Inject] XHGameApi XhGameApi { get; set; }
+
+    AdminTable2<DGame> adminTable = new AdminTable2<DGame>();
+    List<AdminItem<DGame>> selectedItems = new();
+
+    private sealed class SyncPlatformOption
+    {
+        public string Code { get; init; } = "";
+        public string DisplayName { get; init; } = "";
+    }
+
+    private static readonly IReadOnlyList<SyncPlatformOption> DefaultSyncPlatformOptions =
+    [
+    new() { Code = "MS", DisplayName = "美盛游戏" },
+new() { Code = "XH", DisplayName = "星汇游戏" }
+    ];
+
+    private List<SyncPlatformOption> syncPlatformOptions = [];
+    private string syncApiCode = "PG";
+    private string selectedSyncPlatform = "MS";
+    private bool syncingGames;
+    private GameListSyncViewModel? lastSync;
+    private string lastSyncPlatform = "MS";
+    private string lastSyncApiCode = "";
+
+    private sealed class GameListSyncViewModel
+    {
+        public bool Success { get; set; }
+        public string? Message { get; set; }
+        public int RemoteTotal { get; set; }
+        public int Inserted { get; set; }
+        public int SkippedExisting { get; set; }
+        public Dictionary<GameType, int> NewByGameType { get; set; } = new();
+        public Dictionary<string, int> NewByApiCode { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    }
+
+    async Task OnSelectChanged(List<AdminItem<DGame>> items)
+    {
+        try
+        {
+            selectedItems = items?
+            .Where(a => a.Selected)
+            .ToList() ?? new List<AdminItem<DGame>>();
+        }
+        catch
+        {
+            selectedItems = new List<AdminItem<DGame>>();
+        }
+
+        await Task.Yield();
+    }
+
+    async Task BatchSetEnabledAsync(bool isEnabled)
+    {
+        var selectedIds = selectedItems
+        .Where(a => a.Selected && a.Value != null)
+        .Select(a => a.Value.Id)
+        .Distinct()
+        .ToList();
+
+        if (selectedIds.Count == 0)
+        {
+            await MessageService.Warning("请先选择要操作的游戏");
+            return;
+        }
+
+        var affectedRows = await repo.Orm.Update<DGame>()
+        .Set(a => a.IsEnabled, isEnabled)
+        .Where(a => selectedIds.Contains(a.Id))
+        .ExecuteAffrowsAsync();
+
+        selectedItems = new List<AdminItem<DGame>>();
+        await adminTable.Load();
+        await MessageService.Success($"已{(isEnabled ? "启用" : "禁用")} {affectedRows} 个游戏");
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSyncPlatformOptionsAsync();
+    }
+
+    private async Task LoadSyncPlatformOptionsAsync()
+    {
+        var dbPlatforms = await repo.Orm.Select<DGamePlatform>()
+        .Where(p => p.IsEnabled)
+        .OrderBy(p => p.Sort)
+        .OrderBy(p => p.Id)
+        .ToListAsync();
+
+        syncPlatformOptions = dbPlatforms
+        .Select(MapSyncPlatformOption)
+        .Where(p => p != null)
+        .Select(p => p!)
+        .GroupBy(p => p.Code, StringComparer.OrdinalIgnoreCase)
+        .Select(g => g.First())
+        .ToList();
+
+        if (syncPlatformOptions.Count == 0)
+        {
+            syncPlatformOptions = DefaultSyncPlatformOptions.ToList();
+        }
+
+        if (!syncPlatformOptions.Any(p => p.Code == selectedSyncPlatform))
+        {
+            selectedSyncPlatform = syncPlatformOptions[0].Code;
+        }
+    }
+
+    private static SyncPlatformOption? MapSyncPlatformOption(DGamePlatform platform)
+    {
+        var code = ResolveSyncPlatformCode(platform.Name);
+        if (string.IsNullOrWhiteSpace(code))
+        {
+            return null;
+        }
+
+        var name = platform.Name?.Trim();
+        return new SyncPlatformOption
+        {
+            Code = code,
+            DisplayName = string.IsNullOrWhiteSpace(name) ? code : name
+        };
+    }
+
+    private static string? ResolveSyncPlatformCode(string? platformName)
+    {
+        if (string.IsNullOrWhiteSpace(platformName))
+        {
+            return null;
+        }
+
+        var normalized = platformName.Trim();
+        if (normalized.Contains("MS", StringComparison.OrdinalIgnoreCase) || normalized.Contains("美盛",
+        StringComparison.OrdinalIgnoreCase))
+        {
+            return "MS";
+        }
+
+        if (normalized.Contains("XH", StringComparison.OrdinalIgnoreCase) || normalized.Contains("星汇",
+        StringComparison.OrdinalIgnoreCase))
+        {
+            return "XH";
+        }
+
+        return null;
+    }
+
+    private async Task SyncMsGamesAsync()
+    {
+        var code = syncApiCode?.Trim() ?? "";
+        if (string.IsNullOrEmpty(code))
+        {
+            await MessageService.Warning("请先填写接口代码");
+            return;
+        }
+
+        syncingGames = true;
+        lastSyncPlatform = "MS";
+        lastSyncApiCode = code;
+        try
+        {
+            lastSync = MapSyncResult(await MsGameApi.GetGameList(code));
+            if (lastSync.Success)
+            {
+                await MessageService.Success(
+                $"MS 同步完成：远程 {lastSync.RemoteTotal} 条，新增 {lastSync.Inserted} 条，跳过 {lastSync.SkippedExisting} 条");
+            }
+            else
+            {
+                await MessageService.Error(lastSync.Message ?? "同步失败");
+            }
+        }
+        finally
+        {
+            syncingGames = false;
+        }
+    }
+
+    private async Task SyncXhGamesAsync()
+    {
+
+        var code = syncApiCode?.Trim() ?? "";
+        if (string.IsNullOrEmpty(code))
+        {
+            await MessageService.Warning("请先填写接口代码");
+            return;
+        }
+
+        syncingGames = true;
+        lastSyncPlatform = "XH";
+        lastSyncApiCode = code;
+        try
+        {
+            lastSync = MapSyncResult(await XhGameApi.GetGameList(code));
+            if (lastSync.Success)
+            {
+                await MessageService.Success(
+                $"XH 同步完成：远程 {lastSync.RemoteTotal} 条，新增 {lastSync.Inserted} 条，跳过 {lastSync.SkippedExisting} 条");
+            }
+            else
+            {
+                await MessageService.Error(lastSync.Message ?? "同步失败");
+            }
+        }
+        finally
+        {
+            syncingGames = false;
+        }
+    }
+
+    private static GameListSyncViewModel MapSyncResult(MSGameListSyncResult syncResult) => new()
+    {
+        Success = syncResult.Success,
+        Message = syncResult.Message,
+        RemoteTotal = syncResult.RemoteTotal,
+        Inserted = syncResult.Inserted,
+        SkippedExisting = syncResult.SkippedExisting,
+        NewByGameType = new Dictionary<GameType, int>(syncResult.NewByGameType),
+        NewByApiCode = new Dictionary<string, int>(syncResult.NewByApiCode, StringComparer.OrdinalIgnoreCase)
+    };
+
+    private static GameListSyncViewModel MapSyncResult(XHGameListSyncResult syncResult) => new()
+    {
+        Success = syncResult.Success,
+        Message = syncResult.Message,
+        RemoteTotal = syncResult.RemoteTotal,
+        Inserted = syncResult.Inserted,
+        SkippedExisting = syncResult.SkippedExisting,
+        NewByGameType = new Dictionary<GameType, int>(syncResult.NewByGameType),
+        NewByApiCode = new Dictionary<string, int>(syncResult.NewByApiCode, StringComparer.OrdinalIgnoreCase)
+    };
+
+    // 定义API响应的数据结构
+    public class ApiResponse
+    {
+        public int code { get; set; }
+        public string message { get; set; }
+        public Data data { get; set; }
+    }
+
+    public class Data
+    {
+        public string game_launch_url { get; set; }
+    }
+
+    /// <summary>从启动游戏返回的 Data（匿名对象 { gameUrl, ApiCode }）取出可打开的链接。</summary>
+    private static string? TryGetMsLaunchGameUrl(object? data)
+    {
+        if (data is null) return null;
+        if (data is string s) return s;
+        try
+        {
+            var json = System.Text.Json.JsonSerializer.Serialize(data);
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+            var root = doc.RootElement;
+            if (root.TryGetProperty("gameUrl", out var el))
+                return el.GetString();
+            if (root.TryGetProperty("GameUrl", out el))
+                return el.GetString();
+        }
+        catch { }
+        return null;
+    }
+
+    private async Task LanuchGame(DGame item)
+    {
+        try
+        {
+            await MessageService.Success("接口调用中...");
+
+            var dmember = await repo.Orm.Select<DMember>().Where(a => a.Id == AdminContext.User.Id).FirstAsync();
+            var token = HttpContextAccessor.HttpContext.Request.Cookies["AdminBlazor_login_main"];
+
+            var platformCode = ResolveSyncPlatformCode(item.DGamePlatform?.Name);
+            if (string.IsNullOrEmpty(platformCode))
+            {
+                _logger.LogWarning("启动游戏失败：无法识别游戏平台 - 玩家ID: {PlayerId}, 游戏Code: {GameCode}, 平台名称: {PlatformName}",
+                dmember.Id, item.GameCode, item.DGamePlatform?.Name);
+                await MessageService.Error($"暂不支持该平台的游戏启动：{item.DGamePlatform?.Name}");
+                return;
+            }
+
+            _logger.LogInformation("开始启动{Platform}游戏，玩家ID: {PlayerId}, 游戏Code: {GameCode}",
+            platformCode, dmember.Id, item.GameCode);
+
+            ApiResult result = platformCode switch
+            {
+                "MS" => await GameService.StartMSGameAdminTestAsync(dmember.Id.ToString(), item.Id.ToString()),
+                "XH" => await GameService.StartXHGameAdminTestAsync(dmember.Id.ToString(), item.Id.ToString()),
+                _ => null
+            };
+
+            if (result == null)
+            {
+                _logger.LogInformation("GameService.Start{Platform}Game 返回 null，玩家ID: {PlayerId}, 游戏Code: {GameCode}",
+                platformCode, dmember.Id, item.GameCode);
+                await MessageService.Error("启动游戏失败：系统返回空结果");
+                return;
+            }
+
+            if (result.Code != 0)
+            {
+                _logger.LogWarning("启动{Platform}游戏失败，玩家ID: {PlayerId}, 游戏Code: {GameCode}, 错误: {Error}",
+                platformCode, dmember.Id, item.GameCode, result.Message);
+                await MessageService.Error(result.Message);
+                return;
+            }
+
+            // MS/XH 成功时 Data 均为 { gameUrl, ApiCode }，不能直接当字符串传给 window.open
+            var url = TryGetMsLaunchGameUrl(result.Data);
+            var testTime = DateTime.Now;
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                _logger.LogWarning("启动{Platform}游戏成功但 Data 中无有效 gameUrl，玩家ID: {PlayerId}, 游戏Code: {GameCode}",
+                platformCode, dmember.Id, item.GameCode);
+                await MessageService.Error("启动游戏失败：未解析到游戏链接");
+                item.IsTestPassed = false;
+                item.TestTime = testTime;
+                return;
+            }
+
+            item.IsTestPassed = true;
+            item.TestTime = testTime;
+
+            await repo.Orm.Update<DGame>()
+            .Set(a => a.IsTestPassed, item.IsTestPassed)
+            .Set(a => a.TestTime, item.TestTime)
+            .SetIf(!item.IsTestPassed, a => a.IsEnabled, false)
+            .Where(a => a.Id == item.Id)
+            .ExecuteAffrowsAsync();
+
+            await adminTable.Load();
+
+            _logger.LogInformation("{Platform}游戏启动成功，玩家ID: {PlayerId}, 游戏Code: {GameCode}, URL: {Url}",
+            platformCode, dmember.Id, item.GameCode, url);
+            await JSRuntime.InvokeVoidAsync("open", url, "_blank");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogInformation(ex, "启动游戏时发生异常，游戏Code: {GameCode}", item.GameCode);
+            await MessageService.Error("启动游戏时发生系统错误，请稍后重试");
+        }
+    }
+
+
+    async Task InitQuery(AdminQueryInfo e)
+    {
+        var allDGamePlatforms = await repo.Orm.Select<DGamePlatform>().ToListAsync();
+        var apiCodesRaw = await repo.Orm.Select<DGame>()
+        .Where(a => !string.IsNullOrEmpty(a.ApiCode))
+        .ToListAsync(a => a.ApiCode);
+        var distinctApiCodes = apiCodesRaw.Distinct().OrderBy(x => x).ToList();
+        var apiCodeLabels = string.Join(",", distinctApiCodes);
+        var apiCodeValues = string.Join(",", distinctApiCodes);
+
+        e.Filters = new AdminFilterInfo[]
+        {
+new AdminFilterInfo("游戏类型", "GameType", "真人,捕鱼,电子,彩票,体育,棋牌,电竞", "1,2,3,4,5,6,7"),
+new AdminFilterInfo("游戏平台", "DGamePlatformId", false, 12,
+string.Join(",", allDGamePlatforms.Select(a => a.Name)),
+string.Join(",", allDGamePlatforms.Select(a => a.Id))),
+new AdminFilterInfo("是否启用", "IsEnabled", "停用,启用", "0,1"),
+new AdminFilterInfo("测试通过", "IsTestPassed", "待测试,已通过", "0,1"),
+new AdminFilterInfo("接口代码", "ApiCode", false, 12, apiCodeLabels, apiCodeValues),
+        };
+        await Task.Yield();
+    }
+    void OnQuery(AdminQueryEventArgs<DGame> e)
+    {
+        e.Select
+        .Include(a => a.DGamePlatform)
+        .WhereIf(e.Filters[0].HasValue, a => a.GameType == e.Filters[0].Value<GameType>())
+        .WhereIf(e.Filters[1].HasValue, a => a.DGamePlatformId == e.Filters[1].Value<long>())
+        .WhereIf(e.Filters[2].HasValue, a => a.IsEnabled == e.Filters[2].Value<bool>())
+        .WhereIf(e.Filters[3].HasValue, a => a.IsTestPassed == e.Filters[3].Value<bool>())
+        .WhereIf(e.Filters[4].HasValue, a => a.ApiCode != null && a.ApiCode == e.Filters[4].Value<string>())
+        .WhereIf(!e.SearchText.IsNull(), a =>
+        a.GameName.Contains(e.SearchText) ||
+        a.GameCnName.Contains(e.SearchText) ||
+        a.GameUID.Contains(e.SearchText) ||
+        (a.GameCode != null && a.GameCode.Contains(e.SearchText)) ||
+        (a.ApiCode != null && a.ApiCode.Contains(e.SearchText)) ||
+        a.Icon.Contains(e.SearchText) ||
+        a.CreatedUserName.Contains(e.SearchText) ||
+        a.ModifiedUserName.Contains(e.SearchText))
+        .OrderByDescending(a => a.Id);
+    }
+
+    private DGame currentEditItem;
+    private List<UploadFile> DefaultFormatFileList = [];
+    async Task OnEdit(DGame item)
+    {
+        currentEditItem = item;
+
+        DefaultFormatFileList.Clear();
+        if (!string.IsNullOrEmpty(item.Icon))
+        {
+            DefaultFormatFileList.Add(new UploadFile { PrevUrl = item.Icon });
+        }
+
+        await Task.Yield();
+    }
+
+    async Task OnSaving(AdminConfirmEventArgs<DGame> e)
+    {
+        //检查必须录入
+        if (string.IsNullOrWhiteSpace(e.Argument.GameName))
+        {
+            await MessageService.Error("请录入游戏名称！");
+            e.Cancel = true;
+            return;
+        }
+        //检查必须录入
+        if (string.IsNullOrWhiteSpace(e.Argument.GameUID))
+        {
+            await MessageService.Error("请录入游戏UID！");
+            e.Cancel = true;
+            return;
+        }
+
+        //检查必须录入
+        if (e.Argument.DGamePlatformId == 0)
+        {
+            await MessageService.Error("请选择游戏平台！");
+            e.Cancel = true;
+            return;
+        }
+    }
+
+
+    private static long MaxFileLength => 1 * 1024 * 1024;
+
+    private async Task OnCardUpload(UploadFile file)
+    {
+        if (file is { File: not null })
+        {
+            // 服务器端验证当文件大于 5MB 时提示文件太大信息
+            if (file.Size > MaxFileLength)
+            {
+                await MessageService.Error("文件大于 1M 请重新选择文件上传");
+                file.Code = 1;
+                file.Error = "文件大于 1M 请重新选择文件上传";
+                return;
+            }
+            else
+            {
+                await SaveToFile(file);
+                // 保存失败时 PrevUrl 不会设置
+                if (string.IsNullOrEmpty(file.PrevUrl))
+                    return;
+
+                var iconUrl = $"{Configuration["APIDomain"]}/uploads/{file.FileName}";
+                if (currentEditItem != null)
+                {
+                    currentEditItem.Icon = iconUrl;
+                    // 编辑已有记录：上传成功即写入 Icon，无需再点保存
+                    if (currentEditItem.Id > 0)
+                    {
+                        await repo.Orm.Update<DGame>()
+                        .Set(a => a.Icon, iconUrl)
+                        .Where(a => a.Id == currentEditItem.Id)
+                        .ExecuteAffrowsAsync();
+                    }
+                }
+
+                await MessageService.Success($"文件上传 {file.FileName} 文件保存成功");
+                // StateHasChanged();
+            }
+        }
+    }
+
+    [Inject] IWebHostEnvironment Env { get; set; }
+    private CancellationTokenSource? _token;
+    private async Task SaveToFile(UploadFile file)
+    {
+
+        var uploaderFolder = Path.Combine(Env.WebRootPath, "uploads");
+        file.FileName = $"{DateTimeOffset.Now:yyyyMMddHHmmss}{Path.GetExtension(file.OriginFileName)}";
+        var fileName = Path.Combine(uploaderFolder, file.FileName);
+
+        _token ??= new CancellationTokenSource();
+        try
+        {
+            var ret = await file.SaveToFileAsync(fileName, MaxFileLength, token: _token.Token);
+
+            if (ret)
+            {
+                // 保存成功
+                file.PrevUrl = $"/uploads/{file.FileName}";
+            }
+            else
+            {
+                var errorMessage = "文件保存失败";
+                file.Code = 1;
+                file.Error = errorMessage;
+                await MessageService.Error(errorMessage);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+
+        }
+
+    }
+
+    async Task OnGameUIDChange(ChangeEventArgs e)
+    {
+        var gameUID = e.Value as string;
+        var game = await repo.Orm.Select<DGame>().Where(a => a.GameUID == gameUID).FirstAsync();
+        if (game != null)
+        {
+            currentEditItem.GameName = game.GameName;
+            currentEditItem.GameCnName = game.GameCnName;
+            currentEditItem.GameCode = game.GameCode;
+            currentEditItem.ApiCode = game.ApiCode;
+            currentEditItem.Icon = game.Icon;
+            currentEditItem.DGamePlatformId = game.DGamePlatformId;
+            currentEditItem.GameType = game.GameType;
+            currentEditItem.IsEnabled = true;
+            currentEditItem.IsRecommended = false;
+        }
+
+    }
+
+
+}

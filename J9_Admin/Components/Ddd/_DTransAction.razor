@@ -1,0 +1,684 @@
+@page "/Ddd/DTransAction"
+@using System
+@using J9_Admin.Services
+@using J9_Admin.Utils
+
+<PageTitle>交易流水</PageTitle>
+
+<AdminTable2 @ref="adminTable" TItem="DTransAction" Context="item" PageSize="50" Title="交易流水" DialogClassName="modal-lg" OnQuery="OnQuery"
+    InitQuery="InitQuery" OnEdit="OnEdit" TableTd99Width="150" IsRefersh="true">
+
+    <TableTd99>
+        @if (item.Status == TransactionStatus.Processing)
+        {
+            <button @onclick="e => MarkProcessingSuccess(item)" type="button" class="mr-2 btn btn-light btn-xs"
+                title="处理完成，标为成功"><i class="fa-solid fa-circle-check text-success"></i></button>
+            <button @onclick="e => RejectProcessing(item)" type="button" class="mr-2 btn btn-light btn-xs"
+                title="拒绝"><i class="fa-solid fa-circle-xmark text-danger"></i></button>
+        }
+        @if (item.TransactionType == TransactionType.Recharge && item.Status == TransactionStatus.Pending)
+        {
+            <button @onclick="e => ManualCallback(item)" type="button" class="mr-2 btn btn-light btn-xs"
+                title="手动入账"><i class="fa-solid fa-money-bill-transfer"></i></button>
+        }
+    </TableTd99>
+    <CardHeader>
+        <span class="w-auto my-2">
+            <div class="d-inline-flex align-items-center flex-nowrap gap-2" style="width: 500px;">
+                
+                <div class="input-group input-group-sm flex-nowrap" style="flex: 1 1 auto; max-width: 18rem;">
+                    <span class="input-group-text flex-shrink-0">会员登录名</span>
+                    <input type="text" class="form-control" @bind="syncBetUsername" placeholder="可选，空=全部" maxlength="64" />
+                </div>
+                <button type="button" class="btn btn-sm btn-primary flex-shrink-0" disabled="@syncingBetHistory" @onclick="SyncBetHistoryAsync">
+                    @if (syncingBetHistory)
+                    {
+                        <span class="spinner-border spinner-border-sm mr-1" role="status" aria-hidden="true"></span>
+                    }
+                    一键同步
+                </button>
+            </div>
+            @if (lastBetOutcome != null)
+            {
+                var ms = lastBetOutcome.Ms;
+                var xh = lastBetOutcome.Xh;
+                @if (lastBetOutcome.BothSuccess)
+                {
+                    <div class="alert alert-success mb-0 mt-2 py-2 small">
+                        <div><strong>MS</strong>：拉取 <strong>@ms.RemoteFetched</strong> · 新 <strong class="text-success">@ms.Inserted</strong> · 更 <strong>@ms.Updated</strong> · 无单号跳过 <strong>@ms.SkippedNoSerial</strong> · <strong>@ms.PagesDone</strong> 页</div>
+                        <div><strong>XH</strong>：拉取 <strong>@xh.RemoteFetched</strong> · 新 <strong class="text-success">@xh.Inserted</strong> · 更 <strong>@xh.Updated</strong> · 无单号跳过 <strong>@xh.SkippedNoSerial</strong> · <strong>@xh.PagesDone</strong> 页</div>
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-warning mb-0 mt-2 py-2 small">
+                        @lastBetOutcome.BuildSummaryLine()
+                    </div>
+                }
+            }
+        </span>
+    </CardHeader>
+    <TableHeader>
+        <th>ID</th>
+        <th>交易类型</th>
+        <th>交易前金额</th>
+        <th>交易后金额</th>
+        <th>投注金额</th>
+        <th>赢/输金额</th>
+        <th>交易时间</th>
+        <th>交易状态</th>
+        <th>已反水</th>
+        <th>会员名</th>
+        <th>当前代理</th>
+        <th>一级下级</th>
+        <th>二级下级</th>
+        <th>游戏信息ID</th>
+        <th>代理名</th>
+    </TableHeader>
+    <TableRow>
+        <td>@item.Id</td>
+        <td>@GetTransactionTypeText(item.TransactionType)</td>
+        <td>@item.BeforeAmount</td>
+        <td>@item.AfterAmount</td>
+        <td>@item.BetAmount</td>
+        <td>@item.ActualAmount</td>
+        <td>@TimeHelper.UnixToLocal(item.TransactionTime).ToString("yyyy-MM-dd HH:mm:ss")</td>
+        <td>@item.Status</td>
+        <td>@item.IsRebate</td>
+        <td>@item.DMember?.Username</td>
+        @{
+            var agentLabels = GetTransactionAgentLabels(item);
+        }
+        <td>@agentLabels.Current</td>
+        <td>@agentLabels.Child</td>
+        <td>@agentLabels.Grand</td>
+        <td>@item.DGameId</td>
+        <td>@GetRowAgentLabel(item)</td>
+    </TableRow>
+    <EditTemplate>
+        <div class="row">
+            <div class="form-group col-6">
+                <label class="form-label">交易类型</label>
+                <SelectEnum TEnum="TransactionType" @bind-Value="item.TransactionType" />
+            </div>
+            <div class="form-group col-6">
+                <label class="form-label">交易前金额</label>
+                <input @bind="item.BeforeAmount" type="number" class="form-control" placeholder="">
+            </div>
+            <div class="form-group col-6">
+                <label class="form-label">交易后金额</label>
+                <input @bind="item.AfterAmount" type="number" class="form-control" placeholder="">
+            </div>
+            <div class="form-group col-6">
+                <label class="form-label">投注金额</label>
+                <input @bind="item.BetAmount" type="number" class="form-control" placeholder="">
+            </div>
+            <div class="form-group col-6">
+                <label class="form-label">赢/输金额</label>
+                <input @bind="item.ActualAmount" type="number" class="form-control" placeholder="">
+            </div>
+            <div class="form-group col-6">
+                <label class="form-label">货币代码</label>
+                <input @bind="item.CurrencyCode" type="text" class="form-control" placeholder="" maxlength="255">
+            </div>
+            <div class="form-group col-6">
+                <label class="form-label">记录唯一编号</label>
+                <input @bind="item.SerialNumber" type="text" class="form-control" placeholder="" maxlength="255">
+            </div>
+            <div class="form-group col-6">
+                <label class="form-label">游戏局号</label>
+                <input @bind="item.GameRound" type="text" class="form-control" placeholder="" maxlength="255">
+            </div>
+            <div class="form-group col-6">
+                <label class="form-label">体育游戏详细数据</label>
+                <textarea @bind="item.Data" class="form-control" placeholder="" maxlength="65535"></textarea>
+            </div>
+
+            <div class="form-group col-6">
+                <label class="form-label">交易状态</label>
+                <SelectEnum TEnum="TransactionStatus" @bind-Value="item.Status" />
+            </div>
+            <div class="form-group col-6">
+                <label class="form-label">交易描述</label>
+                <textarea @bind="item.Description" class="form-control" placeholder="" maxlength="65535"></textarea>
+            </div>
+            <div class="form-group col-6">
+                <label class="form-label">是否已反水</label>
+                <Switch @bind-Value="item.IsRebate" OnColor="Color.Success" />
+            </div>
+            <div class="form-group col-6">
+                <label class="form-label">会员ID</label>
+                <SelectEntity TItem="DMember" TKey="long" @bind-Value="item.DMemberId" DisplayText="e => e.Username" />
+            </div>
+            <div class="form-group col-6">
+                <label class="form-label">游戏信息ID</label>
+                <SelectEntity TItem="DGame" TKey="long" @bind-Value="item.DGameId" DisplayText="e => e.GameName" />
+            </div>
+            <div class="form-group col-6">
+                <label class="form-label">代理ID</label>
+                <SelectEntity TItem="DAgent" TKey="long" @bind-Value="item.DAgentId" DisplayText="e => e.UsdtAddress" />
+            </div>
+            <div class="form-group col-6">
+                <label class="form-label">关联交易Id</label>
+                <SelectEntity TItem="DTransAction" TKey="long?" @bind-Value="item.RelatedTransActionId"
+                    DisplayText="e => e.Id.ToString()" />
+            </div>
+        </div>
+    </EditTemplate>
+</AdminTable2>
+
+
+@code {
+
+    [Inject] IAggregateRootRepository<DTransAction> repo { get; set; }
+    [Inject] AdminContext AdminContext { get; set; }
+    [Inject] ILogger<DTransAction> _logger { get; set; }
+    [Inject] GameBetHistorySyncService GameBetHistorySyncService { get; set; }
+    [Inject] J9_Admin.Utils.SessionAgent sessionAgent { get; set; }
+
+    AdminTable2<DTransAction> adminTable = new AdminTable2<DTransAction>();
+
+    private string? syncBetUsername;
+    private bool syncingBetHistory;
+    private GameBetHistorySyncOutcome? lastBetOutcome;
+    private HashSet<long> visibleAgentIds = [];
+    private bool showAllTransactions;
+    /// <summary>用于按「当前代理 / 一级下级 / 二级下级」解析展示名（与代理结算页一致）。</summary>
+    private Dictionary<long, DAgent> agentMapForDisplay = [];
+
+    async Task SyncBetHistoryAsync()
+    {
+        syncingBetHistory = true;
+        lastBetOutcome = null;
+        try
+        {
+            var name = string.IsNullOrWhiteSpace(syncBetUsername) ? null : syncBetUsername.Trim();
+            lastBetOutcome = await GameBetHistorySyncService.SyncMsAndXhForUsernameAsync(name ?? "");
+            if (lastBetOutcome.BothSuccess)
+            {
+                await MessageService.Success($"同步完成：{lastBetOutcome.BuildSummaryLine()}");
+                await adminTable.Load();
+            }
+            else if (lastBetOutcome.Ms.Success || lastBetOutcome.Xh.Success)
+            {
+                await MessageService.Warning(lastBetOutcome.BuildSummaryLine());
+                await adminTable.Load();
+            }
+            else
+            {
+                await MessageService.Error(lastBetOutcome.BuildSummaryLine());
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "一键同步注单失败");
+            await MessageService.Error($"同步失败：{ex.Message}");
+        }
+        finally
+        {
+            syncingBetHistory = false;
+        }
+    }
+
+    /// <summary>
+    /// 将「处理中」标为「成功」（仅改状态；提现类订单余额已在申请时扣减/划转，不再动金额）
+    /// </summary>
+    async Task MarkProcessingSuccess(DTransAction item)
+    {
+        var ok = await JS.Confirm("确认", $"确定将订单 {item.Id} 从「处理中」改为「成功」吗？");
+        if (!ok) return;
+
+        using var uow = repo.Orm.CreateUnitOfWork();
+        try
+        {
+            var rep = uow.GetRepository<DTransAction>();
+            var current = await rep.Select.Where(t => t.Id == item.Id && t.Status == TransactionStatus.Processing).ToOneAsync();
+            if (current == null)
+            {
+                await MessageService.Error("记录不存在或状态已变化，请刷新后重试");
+                return;
+            }
+
+            void MarkOne(DTransAction row)
+            {
+                row.Status = TransactionStatus.Success;
+                row.Description = string.IsNullOrWhiteSpace(row.Description)
+                    ? "后台标为成功"
+                    : $"{row.Description} - 后台标为成功";
+                row.ModifiedTime = DateTime.Now;
+                row.ModifiedUserName = AdminContext.User?.Username ?? "系统";
+            }
+
+            MarkOne(current);
+            await rep.UpdateAsync(current);
+
+            if (current.RelatedTransActionId is long rid && rid > 0)
+            {
+                var related = await rep.Select.Where(t => t.Id == rid && t.Status == TransactionStatus.Processing).ToOneAsync();
+                if (related != null)
+                {
+                    MarkOne(related);
+                    await rep.UpdateAsync(related);
+                }
+            }
+
+            var reverseList = await rep.Select.Where(t => t.RelatedTransActionId == current.Id && t.Status == TransactionStatus.Processing).ToListAsync();
+            foreach (var rev in reverseList)
+            {
+                MarkOne(rev);
+                await rep.UpdateAsync(rev);
+            }
+
+            uow.Commit();
+            await MessageService.Success($"订单 {item.Id} 已标为成功");
+            await adminTable.Load();
+        }
+        catch (Exception ex)
+        {
+            uow.Rollback();
+            _logger.LogError(ex, "标为成功失败，交易ID：{TransactionId}", item.Id);
+            await MessageService.Error($"操作失败：{ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// 拒绝「处理中」订单：标为已取消；若为提现/代理上分成对流水，则退回会员余额并扣回代理游戏分
+    /// </summary>
+    async Task RejectProcessing(DTransAction item)
+    {
+        var ok = await JS.Confirm("确认拒绝", $"确定拒绝订单 {item.Id} 吗？若为提现申请，将退回会员余额并扣回代理对应游戏分。");
+        if (!ok) return;
+
+        using var uow = repo.Orm.CreateUnitOfWork();
+        try
+        {
+            var rep = uow.GetRepository<DTransAction>();
+            var repMember = uow.GetRepository<DMember>();
+            var repAgent = uow.GetRepository<DAgent>();
+
+            var current = await rep.Select.Where(t => t.Id == item.Id && t.Status == TransactionStatus.Processing).ToOneAsync();
+            if (current == null)
+            {
+                await MessageService.Error("记录不存在或状态已变化，请刷新后重试");
+                return;
+            }
+
+            var rows = new List<DTransAction> { current };
+            if (current.RelatedTransActionId is long rid && rid > 0)
+            {
+                var related = await rep.Select.Where(t => t.Id == rid && t.Status == TransactionStatus.Processing).ToOneAsync();
+                if (related != null) rows.Add(related);
+            }
+            var reverseList = await rep.Select.Where(t => t.RelatedTransActionId == current.Id && t.Status == TransactionStatus.Processing).ToListAsync();
+            foreach (var rev in reverseList)
+                if (!rows.Any(x => x.Id == rev.Id)) rows.Add(rev);
+
+            var withdraw = rows.FirstOrDefault(t => t.TransactionType == TransactionType.Withdraw);
+            if (withdraw != null)
+            {
+                var amt = withdraw.ActualAmount;
+                var member = await repMember.Select.Where(m => m.Id == withdraw.DMemberId).ToOneAsync();
+                var agent = await repAgent.Select.Where(a => a.Id == withdraw.DAgentId).ToOneAsync();
+                if (member != null)
+                {
+                    member.CreditAmount += amt;
+                    await repMember.UpdateAsync(member);
+                }
+                if (agent != null)
+                {
+                    agent.GamePoints -= amt;
+                    await repAgent.UpdateAsync(agent);
+                }
+            }
+
+            void MarkRejected(DTransAction row)
+            {
+                row.Status = TransactionStatus.Cancelled;
+                row.Description = string.IsNullOrWhiteSpace(row.Description)
+                    ? "后台拒绝"
+                    : $"{row.Description} - 后台拒绝";
+                row.ModifiedTime = DateTime.Now;
+                row.ModifiedUserName = AdminContext.User?.Username ?? "系统";
+            }
+
+            foreach (var row in rows)
+            {
+                MarkRejected(row);
+                await rep.UpdateAsync(row);
+            }
+
+            uow.Commit();
+            await MessageService.Success($"订单 {item.Id} 已拒绝");
+            await adminTable.Load();
+        }
+        catch (Exception ex)
+        {
+            uow.Rollback();
+            _logger.LogError(ex, "拒绝订单失败，交易ID：{TransactionId}", item.Id);
+            await MessageService.Error($"操作失败：{ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// 手动回调处理方法 - 模拟支付回调成功处理流程
+    /// 主要用于处理状态为"待处理"的充值订单，手动将其标记为成功并更新用户余额
+    /// </summary>
+    /// <param name="item">要处理的交易记录</param>
+    async Task ManualCallback(DTransAction item)
+    {
+
+        var result = await JS.Confirm("确认", "确定要手动回调吗？");
+
+        if (!result)
+        {
+            _logger.LogInformation("用户取消了手动回调，交易ID：{TransactionId}", item.Id);
+            return;
+        }
+
+        try
+        {
+            _logger.LogInformation("开始手动回调处理，交易ID：{TransactionId}，交易类型：{TransactionType}，状态：{Status}",
+            item.Id, item.TransactionType, item.Status);
+
+            // 1. 验证交易记录是否适合手动回调
+            if (item.TransactionType != TransactionType.Recharge)
+            {
+                var errorMsg = "只能对充值订单进行手动回调操作";
+                _logger.LogWarning("{ErrorMsg}，交易ID：{TransactionId}，交易类型：{TransactionType}",
+                errorMsg, item.Id, item.TransactionType);
+                await MessageService.Error(errorMsg);
+                return;
+            }
+
+            if (item.Status != TransactionStatus.Pending)
+            {
+                var errorMsg = $"只能对待处理状态的订单进行手动回调，当前状态：{item.Status}";
+                _logger.LogWarning("{ErrorMsg}，交易ID：{TransactionId}", errorMsg, item.Id);
+                await MessageService.Error(errorMsg);
+                return;
+            }
+
+            // 2. 使用事务处理订单状态更新和用户余额更新
+            using var uow = repo.Orm.CreateUnitOfWork();
+            try
+            {
+                // 3. 重新查询最新的交易记录（避免并发问题）
+                var rep_dTransAction = uow.GetRepository<DTransAction>();
+                var currentTransAction = await rep_dTransAction.Select
+                .Where(t => t.Id == item.Id && t.Status == TransactionStatus.Pending)
+                .ToOneAsync();
+
+                if (currentTransAction == null)
+                {
+                    var errorMsg = "交易记录不存在或状态已发生变化，请刷新页面后重试";
+                    _logger.LogWarning("{ErrorMsg}，交易ID：{TransactionId}", errorMsg, item.Id);
+                    await MessageService.Error(errorMsg);
+                    return;
+                }
+
+                // 4. 更新订单状态为成功
+                currentTransAction.Status = TransactionStatus.Success;
+                currentTransAction.Description = $"{currentTransAction.Description} - 手动回调成功";
+                currentTransAction.ModifiedTime = DateTime.Now;
+                currentTransAction.ModifiedUserName = AdminContext.User?.Username ?? "系统";
+
+              
+
+                // 5. 查找并更新用户余额
+                var rep_dMember = uow.GetRepository<DMember>();
+                var member = await rep_dMember.Select
+                .Where(m => m.Id == currentTransAction.DMemberId)
+                .ToOneAsync();
+
+                if (member == null)
+                {
+                    var errorMsg = $"查询用户信息失败，用户ID：{currentTransAction.DMemberId}";
+                    _logger.LogError("{ErrorMsg}，交易ID：{TransactionId}", errorMsg, item.Id);
+                    await MessageService.Error(errorMsg);
+                    return;
+                }
+
+                // 6. 更新用户余额（增加充值金额）
+                var oldBalance = member.CreditAmount;
+                member.CreditAmount += currentTransAction.ActualAmount;
+
+                var updateMemberResult = await rep_dMember.UpdateAsync(member);
+                if (updateMemberResult == 0)
+                {
+                    var errorMsg = "更新用户余额失败";
+                    _logger.LogError("{ErrorMsg}，交易ID：{TransactionId}，用户ID：{UserId}",
+                    errorMsg, item.Id, member.Id);
+                    await MessageService.Error(errorMsg);
+                    return;
+                }
+                currentTransAction.AfterAmount = member.CreditAmount;
+                var updateResult = await rep_dTransAction.UpdateAsync(currentTransAction);
+                if (updateResult == 0)
+                {
+                    var errorMsg = "更新订单状态失败";
+                    _logger.LogError("{ErrorMsg}，交易ID：{TransactionId}", errorMsg, item.Id);
+                    await MessageService.Error(errorMsg);
+                    return;
+                }
+
+                // 7. 如果有关联的代理交易记录，也需要更新其状态
+                if (currentTransAction.RelatedTransActionId.HasValue && currentTransAction.RelatedTransActionId > 0)
+                {
+                    var relatedTransaction = await rep_dTransAction.Select
+                    .Where(t => t.Id == currentTransAction.RelatedTransActionId.Value)
+                    .ToOneAsync();
+
+                    if (relatedTransaction != null && relatedTransaction.Status == TransactionStatus.Pending)
+                    {
+                        // 更新代理交易记录状态为成功
+                        relatedTransaction.Status = TransactionStatus.Success;
+                        relatedTransaction.Description = $"{relatedTransaction.Description} - 关联充值订单手动回调成功";
+                        relatedTransaction.ModifiedTime = DateTime.Now;
+                        relatedTransaction.ModifiedUserName = AdminContext.User?.Username ?? "系统";
+
+                        await rep_dTransAction.UpdateAsync(relatedTransaction);
+
+                        // 更新代理余额（减少可出售金额）
+                        var rep_dAgent = uow.GetRepository<DAgent>();
+                        var agent = await rep_dAgent.Select
+                        .Where(a => a.Id == relatedTransaction.DAgentId)
+                        .ToOneAsync();
+
+                        if (agent != null)
+                        {
+                            agent.GamePoints -= currentTransAction.ActualAmount;
+                            await rep_dAgent.UpdateAsync(agent);
+                        }
+                    }
+                }
+
+                // 8. 提交事务
+                uow.Commit();
+
+                // 9. 记录成功日志并显示成功消息
+                var successMsg = $"手动回调处理成功！交易ID：{item.Id}，用户余额从 {oldBalance:F2} 更新为 {member.CreditAmount:F2}";
+                _logger.LogInformation("手动回调处理成功，交易ID：{TransactionId}，用户ID：{UserId}，充值金额：{Amount}，用户余额从 {OldBalance} 更新为 {NewBalance}",
+                item.Id, member.Id, currentTransAction.ActualAmount, oldBalance, member.CreditAmount);
+
+                await MessageService.Success(successMsg);
+
+                // 10. 刷新页面数据（触发重新查询）
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                // 回滚事务
+                uow.Rollback();
+                var errorMsg = "手动回调处理过程中发生异常，已回滚所有更改";
+                _logger.LogError(ex, "{ErrorMsg}，交易ID：{TransactionId}，异常信息：{ExceptionMessage}",
+                errorMsg, item.Id, ex.Message);
+                await MessageService.Error($"{errorMsg}：{ex.Message}");
+            }
+        }
+        catch (Exception ex)
+        {
+            var errorMsg = "手动回调处理时发生系统异常";
+            _logger.LogError(ex, "{ErrorMsg}，交易ID：{TransactionId}，异常信息：{ExceptionMessage}",
+            errorMsg, item.Id, ex.Message);
+            ToastService?.Error($"{errorMsg}：{ex.Message}");
+        }
+    }
+
+
+
+    async Task InitQuery(AdminQueryInfo e)
+    {
+        showAllTransactions = string.Equals(AdminContext.User?.Username, "admin", StringComparison.OrdinalIgnoreCase);
+        var allDAgents = await repo.Orm.Select<DAgent>().OrderByDescending(a => a.Id).ToListAsync();
+        visibleAgentIds = VisibleAgentIdsHelper.Build(allDAgents, showAllTransactions, sessionAgent.GetAgentId());
+        agentMapForDisplay = allDAgents.ToDictionary(a => a.Id);
+        var agents = showAllTransactions
+            ? allDAgents
+            : visibleAgentIds.Count > 0
+            ? allDAgents.Where(a => visibleAgentIds.Contains(a.Id)).ToList()
+            : [];
+        // AdminFilterInfo 用英文逗号拼接选项，展示文案里不能含 ','
+        static string NoComma(string? s) => (s ?? "").Replace(",", " ");
+        string AgentLabel(DAgent a)
+        {
+            if (!string.IsNullOrWhiteSpace(a.AgentName))
+                return $"{NoComma(a.AgentName.Trim())} ({a.Id})";
+            return $"(未填写代理名) ({a.Id})";
+        }
+
+        e.Filters = new AdminFilterInfo[]
+        {
+new AdminFilterInfo("交易类型", "TransactionType", "上分,下分,投注,提现,充值,退款,返佣,活动,其他,代理上分,代理下分,反水,代理充值,登录,签到,注册",
+"0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15"),
+new AdminFilterInfo("交易状态", "Status", "成功,失败,处理中,待处理,已取消,已退款", "0,1,2,3,4,5"),
+new AdminFilterInfo("代理名", "DAgentId", false, 12,
+string.Join(",", agents.Select(AgentLabel)),
+string.Join(",", agents.Select(a => a.Id))),
+        };
+        await Task.Yield();
+    }
+    void OnQuery(AdminQueryEventArgs<DTransAction> e)
+    {
+        var select = e.Select.Include(a => a.DMember).Include(a => a.DAgent);
+
+        if (!showAllTransactions)
+        {
+            select = visibleAgentIds.Count > 0
+                ? select.Where(a => visibleAgentIds.Contains(a.DAgentId))
+                : select.Where(a => a.Id == 0);
+        }
+
+        select.WhereIf(e.Filters[0].HasValue, a => a.TransactionType == e.Filters[0].Value<TransactionType>())
+            .WhereIf(e.Filters[1].HasValue, a => a.Status == e.Filters[1].Value<TransactionStatus>())
+            .WhereIf(e.Filters[2].HasValue, a => e.Filters[2].Values<long>().Contains(a.DAgentId))
+            .WhereIf(!e.SearchText.IsNull(), a => a.CurrencyCode.Contains(e.SearchText) ||
+            a.SerialNumber.Contains(e.SearchText) ||
+            a.GameRound.Contains(e.SearchText) ||
+            a.Data.Contains(e.SearchText) ||
+            a.Description.Contains(e.SearchText) ||
+            a.CreatedUserName.Contains(e.SearchText) ||
+            a.ModifiedUserName.Contains(e.SearchText))
+            .OrderByDescending(a => a.TransactionTime);
+    }
+
+    (string Current, string Child, string Grand) GetTransactionAgentLabels(DTransAction item)
+    {
+        if (item.DAgent != null && agentMapForDisplay.Count > 0)
+            return GetAgentDisplayNames(item.DAgent, agentMapForDisplay);
+        if (agentMapForDisplay.TryGetValue(item.DAgentId, out var agent))
+            return GetAgentDisplayNames(agent, agentMapForDisplay);
+        return ("-", "-", "-");
+    }
+
+    /// <summary>本条流水归属代理的展示名（无名称时退回 ID）。</summary>
+    string GetRowAgentLabel(DTransAction item)
+    {
+        if (item.DAgent != null)
+            return GetAgentName(item.DAgent);
+        if (agentMapForDisplay.TryGetValue(item.DAgentId, out var agent))
+            return GetAgentName(agent);
+        return item.DAgentId > 0 ? $"ID:{item.DAgentId}" : "-";
+    }
+
+    /// <summary>
+    /// 非 admin：以登录账号关联代理为锚点，在「根→本条归属代理」链上取从该锚点向下的最多三级（当前代理、一级下级、二级下级）。
+    /// admin：从组织根向下取三级。
+    /// </summary>
+    (string CurrentAgentName, string ChildAgentName, string GrandChildAgentName) GetAgentDisplayNames(DAgent agent, Dictionary<long, DAgent> agentMap)
+    {
+        var chain = BuildChainRootToAgent(agent, agentMap);
+        if (chain.Count == 0)
+            return ("-", "-", "-");
+
+        var isAdmin = string.Equals(AdminContext.User?.Username, "admin", StringComparison.OrdinalIgnoreCase);
+        var viewerId = sessionAgent.GetAgentId();
+
+        List<DAgent> slice;
+        if (isAdmin)
+            slice = chain.Take(3).ToList();
+        else if (viewerId <= 0)
+            slice = chain.Take(3).ToList();
+        else
+        {
+            var idx = chain.FindIndex(a => a.Id == viewerId);
+            slice = idx < 0 ? chain.Take(3).ToList() : chain.Skip(idx).Take(3).ToList();
+        }
+
+        static string Cell(List<DAgent> s, int i) =>
+            i < s.Count ? GetAgentName(s[i]) : "-";
+
+        var current = Cell(slice, 0);
+        var child = slice.Count > 1 ? Cell(slice, 1) : "-";
+        var grand = slice.Count > 2 ? Cell(slice, 2) : "-";
+
+        return (current, child, grand);
+    }
+
+    /// <summary>从组织根到指定代理的一条链（根在索引 0，本条在末尾）。</summary>
+    static List<DAgent> BuildChainRootToAgent(DAgent leaf, Dictionary<long, DAgent> agentMap)
+    {
+        var up = new List<DAgent>();
+        DAgent? cur = leaf;
+        var guard = 0;
+        while (cur != null && guard++ < 64)
+        {
+            up.Add(cur);
+            if (cur.ParentId <= 0) break;
+            if (!agentMap.TryGetValue(cur.ParentId, out cur)) break;
+        }
+
+        up.Reverse();
+        return up;
+    }
+
+    static string GetAgentName(DAgent agent)
+    {
+        return string.IsNullOrWhiteSpace(agent.AgentName) ? $"ID:{agent.Id}" : agent.AgentName;
+    }
+
+    static string GetTransactionTypeText(TransactionType type) => type switch
+    {
+        TransactionType.TransferIn => "上分",
+        TransactionType.TransferOut => "下分",
+        TransactionType.Bet => "投注",
+        TransactionType.Withdraw => "提现",
+        TransactionType.Recharge => "充值",
+        TransactionType.Refund => "退款",
+        TransactionType.Commission => "返佣",
+        TransactionType.Activity => "活动",
+        TransactionType.Other => "其他",
+        TransactionType.AgentTransferIn => "代理上分",
+        TransactionType.AgentTransferOut => "代理下分",
+        TransactionType.Rebate => "反水",
+        TransactionType.AgentRecharge => "代理充值",
+        TransactionType.Login => "登录",
+        TransactionType.CheckIn => "签到",
+        TransactionType.Register => "注册",
+        _ => type.ToString()
+    };
+
+    async Task OnEdit(DTransAction item)
+    {
+        await Task.Yield();
+    }
+}

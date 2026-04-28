@@ -1,0 +1,347 @@
+@page "/Ddd/DAgent"
+@using Microsoft.AspNetCore.Http.Extensions
+
+<PageTitle>代理管理</PageTitle>
+
+<AdminTable2 TItem="DAgent" Context="item" PageSize="50" Title="代理管理" DialogClassName="modal-lg"
+    OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit">
+
+    <TableHeader>
+        <th>ID</th>
+        <th>代理名</th>
+        <th>代理类型</th>
+        <th>代理状态</th>
+        <th>代理游戏分</th>
+        <th>TelegramID</th>
+        <th>分折扣</th>
+        <th>代理域名</th>
+        <th>服务器IP</th>
+        <th>登录IP</th>
+        <th>反水比例</th>
+        <th>代理备注</th>
+        <th>创建时间</th>
+    </TableHeader>
+    <TableRow>
+        <td>@item.Id</td>
+        <td>@item.AgentName</td>
+        <td>@item.AgentType</td>
+        <td>@item.IsEnabled</td>
+        <td>@item.GamePoints</td>
+        <td>@item.TelegramChatId</td>
+        <td>@item.CreditDiscount</td>
+        <td>@item.HomeUrl</td>
+        <td>@item.ServerIP</td>
+        <td>@item.IPWhiteList</td>
+        <td>@item.RebateRate</td>
+        <td>@item.Remark</td>
+        <td>@item.CreatedTime?.ToString("yyyy-MM-dd HH:mm:ss")</td>
+    </TableRow>
+    <EditTemplate>
+        <div class="row">
+            <div class="form-group col-6">
+                <label class="form-label">代理名</label>
+                <input @bind="item.AgentName" type="text" class="form-control" placeholder="推广/注册识别用，建议唯一" maxlength="100">
+            </div>
+            <div class="form-group col-6">
+                <label class="form-label">上级代理名</label>
+                <input type="text" class="form-control" readonly value="@GetParentAgentName(item.ParentId)" placeholder="根据上级代理关系自动带出，不可编辑">
+            </div>
+            <div class="form-group col-6">
+                <label class="form-label">代理类型</label>
+                <SelectEnum TEnum="AgentType" @bind-Value="item.AgentType" />
+            </div>
+            <div class="form-group col-6">
+                <label class="form-label">代理状态</label>
+                <Switch @bind-Value="item.IsEnabled" OnColor="Color.Success" />
+            </div>
+            <div class="form-group col-6">
+                <label class="form-label">代理游戏分</label>
+                <input @bind="item.GamePoints" type="number" class="form-control" placeholder="">
+            </div>
+            <div class="form-group col-6">
+                <label class="form-label">代理USDT地址</label>
+                <input type="text" class="form-control" readonly value="@item.UsdtAddress" placeholder="与当前登录代理一致，不可编辑" maxlength="100">
+            </div>
+            <div class="form-group col-6">
+                <label class="form-label">Telegram聊天ID</label>
+                <input @bind="item.TelegramChatId" type="number" class="form-control" placeholder="">
+            </div>
+            <div class="form-group col-6">
+                <label class="form-label">分折扣</label>
+                <input @bind="item.CreditDiscount" type="number" class="form-control" placeholder="">
+            </div>
+            <div class="form-group col-6">
+                <label class="form-label">代理域名</label>
+                <input @bind="item.HomeUrl" type="text" class="form-control" placeholder="" maxlength="200">
+            </div>
+            <div class="form-group col-6">
+                <label class="form-label">服务器IP</label>
+                <input @bind="item.ServerIP" type="text" class="form-control" placeholder="" maxlength="255">
+            </div>
+            <div class="form-group col-6">
+                <label class="form-label">代理Logo</label>
+                <input @bind="item.LogoUrl" type="text" class="form-control" placeholder="" maxlength="200">
+            </div>
+            <div class="form-group col-6">
+                <label class="form-label">登录IP</label>
+                <input @bind="item.IPWhiteList" type="text" class="form-control" placeholder="" maxlength="200">
+            </div>
+            <div class="form-group col-6">
+                <label class="form-label">反水比例</label>
+                <input @bind="item.RebateRate" type="number" class="form-control" placeholder="">
+            </div>
+            <div class="form-group col-6">
+                <label class="form-label">代理备注</label>
+                <textarea @bind="item.Remark" class="form-control" placeholder="" maxlength="65535"></textarea>
+            </div>
+            <div class="form-group col-12">
+                <label class="form-label">邀请注册链接</label>
+                @if (!string.IsNullOrEmpty(BuildRegisterPathAndQuery(item)))
+                {
+                    <p class="form-text text-muted mb-2">
+                        完整地址结构：<strong>【网站前端域名】</strong><code>@BuildRegisterPathAndQuery(item)</code>
+                        <span class="d-block mt-1">请将「网站前端域名」替换为实际 H5 / 落地页站点根（含协议，无末尾斜杠），再接上述路径与参数。</span>
+                    </p>
+                }
+                <div class="input-group">
+                    <input type="text" class="form-control" readonly value="@GetInviteRegisterLink(item)"
+                        placeholder="填写代理名并保存后生成；与 App 一致使用 agentId、agentName 参数">
+                    <button type="button" class="btn btn-outline-secondary" disabled="@string.IsNullOrEmpty(GetInviteRegisterLink(item))"
+                        @onclick="async () => await CopyInviteRegisterLinkAsync(item)">复制</button>
+                </div>
+                <small class="form-text text-muted">与 App 一致（后端以代理名为准）。下方输入框在已配置「代理域名」或 <code>AppRegisterBaseUrl</code> 时显示可复制的完整 URL，否则仅显示路径，请自行补前缀。</small>
+            </div>
+            <div class="form-group col-12">
+                <label class="form-label">邀请首页链接</label>
+                @if (!string.IsNullOrEmpty(BuildHomePathAndQuery(item)))
+                {
+                    <p class="form-text text-muted mb-2">
+                        完整地址结构：<strong>【网站前端域名】</strong><code>@BuildHomePathAndQuery(item)</code>
+                        <span class="d-block mt-1">请将「网站前端域名」替换为实际 H5 / 落地页站点根（含协议，无末尾斜杠），再接上述路径与参数。访客打开首页即可带上代理信息（与 App 任意路由捕获参数一致）。</span>
+                    </p>
+                }
+                <div class="input-group">
+                    <input type="text" class="form-control" readonly value="@GetInviteHomeLink(item)"
+                        placeholder="填写代理名并保存后生成；与 App 一致使用 agentId、agentName 参数">
+                    <button type="button" class="btn btn-outline-secondary" disabled="@string.IsNullOrEmpty(GetInviteHomeLink(item))"
+                        @onclick="async () => await CopyInviteHomeLinkAsync(item)">复制</button>
+                </div>
+                <small class="form-text text-muted">与注册链接使用同一套域名配置（「代理域名」或 <code>AppRegisterBaseUrl</code>）；仅路径为站点首页 <code>/?agentId=…&amp;agentName=…</code>。</small>
+            </div>
+        </div>
+    </EditTemplate> 
+</AdminTable2>
+
+
+@code {
+
+    [Inject] IAggregateRootRepository<DAgent> repo { get; set; }
+    [Inject] IConfiguration Configuration { get; set; }
+    [Inject] J9_Admin.Utils.SessionAgent sessionAgent { get; set; }
+    [Inject] AdminContext AdminContext { get; set; }
+    Dictionary<long, string> agentNameMap = new();
+    HashSet<long> visibleAgentIds = [];
+
+    /// <summary>
+    /// 与 App 端 register-link.ts 一致：/register?agentId=&amp;agentName=（可同时存在，后端以代理名为准）。
+    /// </summary>
+    static string BuildRegisterPathAndQuery(DAgent item)
+    {
+        var name = item.AgentName?.Trim();
+        if (item.Id <= 0 && string.IsNullOrEmpty(name))
+            return "";
+        var qb = new QueryBuilder();
+        if (item.Id > 0)
+            qb.Add("agentId", item.Id.ToString());
+        if (!string.IsNullOrEmpty(name))
+            qb.Add("agentName", name);
+        return "/register" + qb.ToString();
+    }
+
+    /// <summary>
+    /// 站点首页带代理参数：/?agentId=&amp;agentName=（与 App 端 invite-from-url-capture 等一致）。
+    /// </summary>
+    static string BuildHomePathAndQuery(DAgent item)
+    {
+        var name = item.AgentName?.Trim();
+        if (item.Id <= 0 && string.IsNullOrEmpty(name))
+            return "";
+        var qb = new QueryBuilder();
+        if (item.Id > 0)
+            qb.Add("agentId", item.Id.ToString());
+        if (!string.IsNullOrEmpty(name))
+            qb.Add("agentName", name);
+        var q = qb.ToString();
+        return string.IsNullOrEmpty(q) ? "/" : "/" + q;
+    }
+
+    static string ResolveRegisterOrigin(DAgent item, IConfiguration configuration)
+    {
+        var h = item.HomeUrl?.Trim();
+        if (!string.IsNullOrEmpty(h) && Uri.TryCreate(h, UriKind.Absolute, out var u) &&
+            (u.Scheme == Uri.UriSchemeHttp || u.Scheme == Uri.UriSchemeHttps))
+            return u.GetLeftPart(UriPartial.Authority).TrimEnd('/');
+        return configuration["AppRegisterBaseUrl"]?.Trim().TrimEnd('/') ?? "";
+    }
+
+    string GetInviteRegisterLink(DAgent item)
+    {
+        var path = BuildRegisterPathAndQuery(item);
+        if (path == "")
+            return "";
+        var origin = ResolveRegisterOrigin(item, Configuration);
+        return string.IsNullOrEmpty(origin) ? path : origin + path;
+    }
+
+    string GetInviteHomeLink(DAgent item)
+    {
+        var path = BuildHomePathAndQuery(item);
+        if (path == "")
+            return "";
+        var origin = ResolveRegisterOrigin(item, Configuration);
+        return string.IsNullOrEmpty(origin) ? path : origin + path;
+    }
+
+    async Task CopyInviteRegisterLinkAsync(DAgent item)
+    {
+        var link = GetInviteRegisterLink(item);
+        if (string.IsNullOrEmpty(link))
+        {
+            await MessageService.Error("请先填写代理名；新建代理保存后才会包含 agentId。");
+            return;
+        }
+        try
+        {
+            await JS.InvokeVoidAsync("j9CopyToClipboard", link);
+            await MessageService.Success("邀请链接已复制");
+        }
+        catch (Exception ex)
+        {
+            await MessageService.Error($"复制失败：{ex.Message}");
+        }
+    }
+
+    async Task CopyInviteHomeLinkAsync(DAgent item)
+    {
+        var link = GetInviteHomeLink(item);
+        if (string.IsNullOrEmpty(link))
+        {
+            await MessageService.Error("请先填写代理名；新建代理保存后才会包含 agentId。");
+            return;
+        }
+        try
+        {
+            await JS.InvokeVoidAsync("j9CopyToClipboard", link);
+            await MessageService.Success("邀请首页链接已复制");
+        }
+        catch (Exception ex)
+        {
+            await MessageService.Error($"复制失败：{ex.Message}");
+        }
+    }
+
+    async Task InitQuery(AdminQueryInfo e)
+    {
+        // 给列表页显示“上级代理名”用，避免每一行再单独查库。
+        agentNameMap = (await repo.Orm.Select<DAgent>()
+            .ToDictionaryAsync(a => a.Id, a => a.AgentName ?? ""))
+            ?? new Dictionary<long, string>();
+
+        visibleAgentIds.Clear();
+
+        // admin 账号看全部代理，不做层级限制；忽略大小写。
+        if (string.Equals(AdminContext.User?.Username, "admin", StringComparison.OrdinalIgnoreCase))
+        {
+            e.Filters = new AdminFilterInfo[]
+            {
+                new AdminFilterInfo("代理类型", "AgentType", "General,Direct,Distribution,Premium,VIP", "0,1,2,3,4"),
+            };
+            await Task.Yield();
+            return;
+        }
+
+        var currentAgentId = sessionAgent.GetAgentId();
+        if (currentAgentId > 0)
+        {
+            // 普通账号只看 3 层：自己、直属下级、下级的直属下级。
+            visibleAgentIds.Add(currentAgentId);
+
+            var childAgentIds = await repo.Orm.Select<DAgent>()
+                .Where(a => a.ParentId == currentAgentId)
+                .ToListAsync(a => a.Id);
+
+            foreach (var childAgentId in childAgentIds)
+                visibleAgentIds.Add(childAgentId);
+
+            if (childAgentIds.Count > 0)
+            {
+                var grandChildAgentIds = await repo.Orm.Select<DAgent>()
+                    .Where(a => childAgentIds.Contains(a.ParentId))
+                    .ToListAsync(a => a.Id);
+
+                foreach (var grandChildAgentId in grandChildAgentIds)
+                    visibleAgentIds.Add(grandChildAgentId);
+            }
+        }
+
+        e.Filters = new AdminFilterInfo[]
+        {
+            new AdminFilterInfo("代理类型", "AgentType", "General,Direct,Distribution,Premium,VIP", "0,1,2,3,4"),
+        };
+        await Task.Yield();
+    }
+
+    string GetParentAgentName(long parentId)
+    {
+        if (parentId <= 0)
+            return "顶级代理";
+
+        // 上级被删了或数据不完整时，回退显示 ID，方便排查。
+        if (agentNameMap.TryGetValue(parentId, out var parentName) && !string.IsNullOrWhiteSpace(parentName))
+            return parentName;
+
+        return $"ID: {parentId}";
+    }
+
+    void OnQuery(AdminQueryEventArgs<DAgent> e)
+    {
+        e.Select.WhereIf(e.Filters[0].HasValue, a => a.AgentType == e.Filters[0].Value<AgentType>())
+            .WhereIf(visibleAgentIds.Count > 0, a => visibleAgentIds.Contains(a.Id))
+            .WhereIf(!e.SearchText.IsNull(), a => (a.AgentName ?? "").Contains(e.SearchText) || a.UsdtAddress.Contains(e.SearchText) || 
+                a.HomeUrl.Contains(e.SearchText) || 
+                a.ServerIP.Contains(e.SearchText) || 
+                a.LogoUrl.Contains(e.SearchText) || 
+                a.IPWhiteList.Contains(e.SearchText) || 
+                a.Remark.Contains(e.SearchText) || 
+                a.CreatedUserName.Contains(e.SearchText) || 
+                a.ModifiedUserName.Contains(e.SearchText))
+            .OrderByDescending(a => a.Id);
+    }
+
+    async Task OnEdit(DAgent item)
+    {
+        // 新增代理时：上级默认为自己；USDT 地址默认与当前登录代理一致。
+        if (item.Id == 0)
+        {
+            var currentAgentId = sessionAgent.GetAgentId();
+            if (currentAgentId > 0)
+            {
+                if (item.ParentId == 0)
+                    item.ParentId = currentAgentId;
+
+                var current = await repo.Orm.Select<DAgent>()
+                    .Where(a => a.Id == currentAgentId)
+                    .ToOneAsync();
+                if (current != null)
+                    item.UsdtAddress = current.UsdtAddress ?? "";
+            }
+        }
+
+        if (!string.IsNullOrEmpty(item.AgentName))
+            item.AgentName = item.AgentName.Trim();
+        if (item.Id > 0 && item.ParentId == item.Id)
+            throw new Exception("上级代理不能填写自己");
+
+        await Task.Yield();
+    }
+}

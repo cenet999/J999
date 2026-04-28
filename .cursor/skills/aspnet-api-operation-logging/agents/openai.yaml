@@ -1,0 +1,4 @@
+interface:
+  display_name: "ASP.NET API 运维日志"
+  short_description: "ASP.NET API 入出站日志、敏感脱敏与 TraceId 耗时"
+  default_prompt: "使用 $aspnet-api-operation-logging 把 API 运维日志筛选器接到任意 ASP.NET Core 项目（DI、基类或全局 Filter、Order、脱敏）。"

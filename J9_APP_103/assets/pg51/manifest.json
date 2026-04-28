@@ -1,0 +1,216 @@
+{
+  "brand": [
+    {
+      "key": "brand-logo",
+      "file": "assets/pg51/brand/brand-logo.png",
+      "source": "https://pg51h5.ex1t.xyz/assets/pg51-Bczpsxey.png"
+    },
+    {
+      "key": "quick-daily-rebate",
+      "file": "assets/pg51/quick/quick-daily-rebate.png",
+      "source": "https://pg51h5.ex1t.xyz/assets/icon-days-rebate-CZVpmyFZ.png"
+    },
+    {
+      "key": "quick-lucky-box",
+      "file": "assets/pg51/quick/quick-lucky-box.png",
+      "source": "https://pg51h5.ex1t.xyz/assets/icon-lucky-box-BazWSlr4.png"
+    },
+    {
+      "key": "quick-cooperate-earn",
+      "file": "assets/pg51/quick/quick-cooperate-earn.png",
+      "source": "https://pg51h5.ex1t.xyz/assets/icon-cooperate-earn-0VVSGwT9.png"
+    },
+    {
+      "key": "quick-profit-rain",
+      "file": "assets/pg51/quick/quick-profit-rain.png",
+      "source": "https://pg51h5.ex1t.xyz/assets/icon-profit-rain-dq3TXISv.png"
+    }
+  ],
+  "games": [
+    {
+      "index": 1,
+      "file": "assets/pg51/games/game-01.png",
+      "source": "https://emage.hnylqx.xyz/0/h5/gamelogo/images/gobx3/6520251216190135725.png?x-oss-process=image/sharpen,100/format,webp&x-oss-process=image/error,1"
+    },
+    {
+      "index": 2,
+      "file": "assets/pg51/games/game-02.png",
+      "source": "https://emage.hnylqx.xyz/0/h5/gamelogo/images/gobx3/7420251216190202789.png?x-oss-process=image/sharpen,100/format,webp&x-oss-process=image/error,1"
+    },
+    {
+      "index": 3,
+      "file": "assets/pg51/games/game-03.png",
+      "source": "https://emage.hnylqx.xyz/0/10004/5698/h5/rmb/images/120260313150332792.png?x-oss-process=image/sharpen,100/format,webp&x-oss-process=image/error,1"
+    },
+    {
+      "index": 4,
+      "file": "assets/pg51/games/game-04.png",
+      "source": "https://emage.hnylqx.xyz/0/10004/12098/h5/rmb/images/120260309173300867.png?x-oss-process=image/sharpen,100/format,webp&x-oss-process=image/error,1"
+    },
+    {
+      "index": 5,
+      "file": "assets/pg51/games/game-05.png",
+      "source": "https://emage.hnylqx.xyz/0/10004/12099/h5/rmb/images/120260309173310838.png?x-oss-process=image/sharpen,100/format,webp&x-oss-process=image/error,1"
+    },
+    {
+      "index": 6,
+      "file": "assets/pg51/games/game-06.png",
+      "source": "https://emage.hnylqx.xyz/0/10004/3582/h5/rmb/images/120260313150821193.png?x-oss-process=image/sharpen,100/format,webp&x-oss-process=image/error,1"
+    },
+    {
+      "index": 7,
+      "file": "assets/pg51/games/game-07.png",
+      "source": "https://emage.hnylqx.xyz/0/h5/gamelogo/images/nxjdb/700320260303140657840.png?x-oss-process=image/sharpen,100/format,webp&x-oss-process=image/error,1"
+    },
+    {
+      "index": 8,
+      "file": "assets/pg51/games/game-08.png",
+      "source": "https://emage.hnylqx.xyz/0/h5/gamelogo/images/nxjdb/700420260405104341792.png?x-oss-process=image/sharpen,100/format,webp&x-oss-process=image/error,1"
+    },
+    {
+      "index": 9,
+      "file": "assets/pg51/games/game-09.png",
+      "source": "https://emage.hnylqx.xyz/0/10004/2477/h5/rmb/images/120260313150949642.png?x-oss-process=image/sharpen,100/format,webp&x-oss-process=image/error,1"
+    },
+    {
+      "index": 10,
+      "file": "assets/pg51/games/game-10.png",
+      "source": "https://emage.hnylqx.xyz/0/10004/11938/h5/rmb/images/120260309173320752.png?x-oss-process=image/sharpen,100/format,webp&x-oss-process=image/error,1"
+    },
+    {
+      "index": 11,
+      "file": "assets/pg51/games/game-11.png",
+      "source": "https://emage.hnylqx.xyz/0/h5/gamelogo/images/gogame/jissc20250815184103898.png?x-oss-process=image/sharpen,100/format,webp&x-oss-process=image/error,1"
+    },
+    {
+      "index": 12,
+      "file": "assets/pg51/games/game-12.png",
+      "source": "https://emage.hnylqx.xyz/0/10004/2275/h5/rmb/images/120260313150417679.png?x-oss-process=image/sharpen,100/format,webp&x-oss-process=image/error,1"
+    },
+    {
+      "index": 13,
+      "file": "assets/pg51/games/game-13.jpg",
+      "source": "https://emage.hnylqx.xyz/0/h5/gamelogo/images/gobx3/8420260213090902467.jpg?x-oss-process=image/sharpen,100/format,webp&x-oss-process=image/error,1"
+    },
+    {
+      "index": 14,
+      "file": "assets/pg51/games/game-14.png",
+      "source": "https://emage.hnylqx.xyz/0/h5/gamelogo/images/pg/13520250721140135962.png?x-oss-process=image/sharpen,100/format,webp&x-oss-process=image/error,1"
+    },
+    {
+      "index": 15,
+      "file": "assets/pg51/games/game-15.png",
+      "source": "https://emage.hnylqx.xyz/0/h5/gamelogo/images/gobx3/5420251216190147666.png?x-oss-process=image/sharpen,100/format,webp&x-oss-process=image/error,1"
+    },
+    {
+      "index": 16,
+      "file": "assets/pg51/games/game-16.png",
+      "source": "https://emage.hnylqx.xyz/0/h5/gamelogo/images/gobx3/8720251216190212673.png?x-oss-process=image/sharpen,100/format,webp&x-oss-process=image/error,1"
+    },
+    {
+      "index": 17,
+      "file": "assets/pg51/games/game-17.jpg",
+      "source": "https://emage.hnylqx.xyz/0/h5/gamelogo/images/gobx3/6720260213090845419.jpg?x-oss-process=image/sharpen,100/format,webp&x-oss-process=image/error,1"
+    },
+    {
+      "index": 18,
+      "file": "assets/pg51/games/game-18.png",
+      "source": "https://emage.hnylqx.xyz/0/h5/gamelogo/images/gobx3/10420251216190229948.png?x-oss-process=image/sharpen,100/format,webp&x-oss-process=image/error,1"
+    },
+    {
+      "index": 19,
+      "file": "assets/pg51/games/game-19.png",
+      "source": "https://emage.hnylqx.xyz/0/10004/14544/h5/rmb/images/120260309173246268.png?x-oss-process=image/sharpen,100/format,webp&x-oss-process=image/error,1"
+    },
+    {
+      "index": 20,
+      "file": "assets/pg51/games/game-20.png",
+      "source": "https://emage.hnylqx.xyz/0/10004/14543/h5/rmb/images/120260309173233704.png?x-oss-process=image/sharpen,100/format,webp&x-oss-process=image/error,1"
+    },
+    {
+      "index": 21,
+      "file": "assets/pg51/games/game-21.png",
+      "source": "https://emage.hnylqx.xyz/0/10004/14542/h5/rmb/images/120260309173213753.png?x-oss-process=image/sharpen,100/format,webp&x-oss-process=image/error,1"
+    },
+    {
+      "index": 22,
+      "file": "assets/pg51/games/game-22.png",
+      "source": "data-url"
+    },
+    {
+      "index": 23,
+      "file": "assets/pg51/games/game-23.png",
+      "source": "data-url"
+    },
+    {
+      "index": 24,
+      "file": "assets/pg51/games/game-24.png",
+      "source": "data-url"
+    },
+    {
+      "index": 25,
+      "file": "assets/pg51/games/game-25.png",
+      "source": "data-url"
+    },
+    {
+      "index": 26,
+      "file": "assets/pg51/games/game-26.png",
+      "source": "data-url"
+    },
+    {
+      "index": 27,
+      "file": "assets/pg51/games/game-27.png",
+      "source": "data-url"
+    },
+    {
+      "index": 28,
+      "file": "assets/pg51/games/game-28.png",
+      "source": "data-url"
+    },
+    {
+      "index": 29,
+      "file": "assets/pg51/games/game-29.png",
+      "source": "data-url"
+    },
+    {
+      "index": 30,
+      "file": "assets/pg51/games/game-30.png",
+      "source": "data-url"
+    },
+    {
+      "index": 31,
+      "file": "assets/pg51/games/game-31.png",
+      "source": "data-url"
+    },
+    {
+      "index": 32,
+      "file": "assets/pg51/games/game-32.png",
+      "source": "data-url"
+    },
+    {
+      "index": 33,
+      "file": "assets/pg51/games/game-33.png",
+      "source": "data-url"
+    },
+    {
+      "index": 34,
+      "file": "assets/pg51/games/game-34.png",
+      "source": "data-url"
+    },
+    {
+      "index": 35,
+      "file": "assets/pg51/games/game-35.png",
+      "source": "data-url"
+    },
+    {
+      "index": 36,
+      "file": "assets/pg51/games/game-36.png",
+      "source": "data-url"
+    },
+    {
+      "index": 37,
+      "file": "assets/pg51/games/game-37.png",
+      "source": "data-url"
+    }
+  ]
+}

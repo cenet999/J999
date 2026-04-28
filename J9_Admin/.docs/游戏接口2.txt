@@ -1,0 +1,17 @@
+商户资料：
+PG API：
+
+https://pgapi.fqwfq89qwvn.com/merchant-api
+
+PG 后台：https://api.pgf-ass7a.com/nova/
+账号  xinyi789-CNY@gmail.com
+密码  12345678
+ID  100255
+密钥  c7bb7c237a87a29e1536
+
+商户对接文档 https://doc.fbn8fwq9fqw.xyz/web/#/600451034/110450371 
+
+密码   123456
+
+
+左上角的返回主页，这个怎么设置呢？

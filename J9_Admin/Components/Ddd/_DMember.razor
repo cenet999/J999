@@ -1,0 +1,271 @@
+@page "/Ddd/DMember"
+@using AdminBlazor
+@using BootstrapBlazor.Components
+@using System
+
+<PageTitle>玩家管理</PageTitle>
+
+<AdminTable2 TItem="DMember" Context="item" PageSize="50" Title="玩家管理" DialogClassName="modal-xl" OnQuery="OnQuery"
+    InitQuery="InitQuery" OnEdit="OnEdit">
+
+    <TableHeader>
+        <th>ID</th>
+        <th>用户名</th>
+        <th>昵称</th>
+        <th>密码</th>
+        <th>是否启用</th>
+        <th>登录时间</th>
+        <th>组织ID</th>
+        <th>是否系统</th>
+        <th>父ID</th>
+        <th>邀请码</th>
+        <th>余额</th>
+        <th>反水开关</th>
+        <th>更新时间</th>
+        <th>注册IP</th>
+        <th>代理名</th>
+        <th>最后签到</th>
+        <th>连续签到</th>
+        <th>创建时间</th>
+    </TableHeader>
+    <TableRow>
+        <td>@item.Id</td>
+        <td>@item.Username</td>
+        <td>@item.Nickname</td>
+        <td>@item.Password</td>
+        <td>@item.IsEnabled</td>
+        <td>@item.LoginTime.ToString("yyyy-MM-dd HH:mm:ss")</td>
+        <td>@item.OrgId</td>
+        <td>@item.IsSystem</td>
+        <td>@item.ParentId</td>
+        <td>@item.InviteCode</td>
+        <td>@item.CreditAmount</td>
+        <td>@item.IsRebateSwitch</td>
+        <td>@item.UpdatedTime.ToString("yyyy-MM-dd HH:mm:ss")</td>
+        <td>@item.RegisterIp</td>
+        <td>@item.DAgent?.AgentName</td>
+        <td>@item.LastCheckInDate?.ToString("yyyy-MM-dd HH:mm:ss")</td>
+        <td>@item.ContinuousCheckInDays</td>
+        <td>@item.CreatedTime?.ToString("yyyy-MM-dd HH:mm:ss")</td>
+    </TableRow>
+    <EditTemplate>
+        <div class="row">
+            <div class="form-group col-4">
+                <label class="form-label">用户名</label>
+                <input @bind="item.Username" type="text" class="form-control" placeholder="" maxlength="50">
+            </div>
+            <div class="form-group col-4">
+                <label class="form-label">昵称</label>
+                <input @bind="item.Nickname" type="text" class="form-control" placeholder="" maxlength="50">
+            </div>
+            <div class="form-group col-4">
+                <label class="form-label">密码</label>
+                <input @bind="item.Password" type="text" class="form-control" placeholder="" maxlength="50">
+            </div>
+            <div class="form-group col-4">
+                <label class="form-label">是否启用</label>
+                <Switch @bind-Value="item.IsEnabled" OnColor="Color.Success" />
+            </div>
+            <div class="form-group col-4">
+                <label class="form-label">登录时间</label>
+                <input class="form-control" type="datetime-local" @bind="item.LoginTime"
+                    @bind:format="yyyy-MM-ddTHH:mm" />
+            </div>
+            <div class="form-group col-4">
+                <label class="form-label">组织ID</label>
+                <SelectEntity TItem="SysOrg" TKey="long" @bind-Value="item.OrgId" DisplayText="e => e.Label" />
+            </div>
+            <div class="form-group col-4">
+                <label class="form-label">描述</label>
+                <textarea @bind="item.Description" class="form-control" placeholder="" maxlength="500"></textarea>
+            </div>
+            <div class="form-group col-4">
+                <label class="form-label">是否系统</label>
+                <Switch @bind-Value="item.IsSystem" OnColor="Color.Success" />
+            </div>
+            <div class="form-group col-4">
+                <label class="form-label">父ID</label>
+                <input @bind="item.ParentId" type="number" class="form-control" placeholder="">
+            </div>
+            <div class="form-group col-4">
+                <label class="form-label">浏览器指纹</label>
+                <input @bind="item.BrowserFingerprint" type="text" class="form-control" placeholder="" maxlength="255">
+            </div>
+            <div class="form-group col-4">
+                <label class="form-label">邀请码</label>
+                <input @bind="item.InviteCode" type="text" class="form-control" placeholder="" maxlength="255">
+            </div>
+            <div class="form-group col-4">
+                <label class="form-label">余额</label>
+                <input @bind="item.CreditAmount" type="number" class="form-control" placeholder="">
+            </div>
+            <div class="form-group col-4">
+                <label class="form-label">反水开关</label>
+                <Switch @bind-Value="item.IsRebateSwitch" OnColor="Color.Success" />
+            </div>
+            <div class="form-group col-4">
+                <label class="form-label">更新时间</label>
+                <input class="form-control" type="datetime-local" @bind="item.UpdatedTime"
+                    @bind:format="yyyy-MM-ddTHH:mm" />
+            </div>
+            <div class="form-group col-4">
+                <label class="form-label">会员Telegram</label>
+                <input @bind="item.Telegram" type="text" class="form-control" placeholder="" maxlength="255">
+            </div>
+            <div class="form-group col-4">
+                <label class="form-label">联系电话</label>
+                <input @bind="item.PhoneNumber" type="text" class="form-control" placeholder="" maxlength="255">
+            </div>
+            <div class="form-group col-4">
+                <label class="form-label">取款密码</label>
+                <input @bind="item.WithdrawPassword" type="text" class="form-control" placeholder="" maxlength="255">
+            </div>
+            <div class="form-group col-4">
+                <label class="form-label">USDT地址</label>
+                <input @bind="item.USDTAddress" type="text" class="form-control" placeholder="" maxlength="255">
+            </div>
+            <div class="form-group col-4">
+                <label class="form-label">注册IP</label>
+                <input @bind="item.RegisterIp" type="text" class="form-control" placeholder="" maxlength="255">
+            </div>
+            <div class="form-group col-4">
+                <label class="form-label">头像</label>
+                <input @bind="item.Avatar" type="text" class="form-control" placeholder="" maxlength="255">
+            </div>
+            <div class="form-group col-4">
+                <label class="form-label">代理名</label>
+                <Select TValue="long" Items="@memberAgentSelectItems" @bind-Value="item.DAgentId" ShowSearch="true" />
+            </div>
+            <div class="form-group col-4">
+                <label class="form-label">最后签到时间</label>
+                <input class="form-control" type="datetime-local" @bind="item.LastCheckInDate"
+                    @bind:format="yyyy-MM-ddTHH:mm" />
+            </div>
+            <div class="form-group col-4">
+                <label class="form-label">连续签到天数</label>
+                <input @bind="item.ContinuousCheckInDays" type="number" class="form-control" placeholder="">
+            </div>
+        </div>
+    </EditTemplate>
+</AdminTable2>
+
+
+@code {
+
+    [Inject] IAggregateRootRepository<DMember> repo { get; set; }
+    [Inject] J9_Admin.Utils.SessionAgent sessionAgent { get; set; }
+    [Inject] AdminContext AdminContext { get; set; }
+
+    HashSet<long> visibleAgentIds = [];
+    bool showAllMembers;
+    List<SelectedItem> memberAgentSelectItems = [];
+
+    async Task InitQuery(AdminQueryInfo e)
+    {
+        showAllMembers = string.Equals(AdminContext.User?.Username, "admin", StringComparison.OrdinalIgnoreCase);
+        var allAgents = await repo.Orm.Select<DAgent>().OrderByDescending(a => a.Id).ToListAsync();
+        visibleAgentIds = VisibleAgentIdsHelper.Build(allAgents, showAllMembers, sessionAgent.GetAgentId());
+        var agents = showAllMembers
+            ? allAgents
+            : visibleAgentIds.Count > 0
+            ? allAgents.Where(a => visibleAgentIds.Contains(a.Id)).ToList()
+            : [];
+
+        // AdminFilterInfo 用英文逗号拼接选项，展示文案里不能含 ','，否则 texts/values 数量对不齐
+        static string NoComma(string? s) => (s ?? "").Replace(",", " ");
+        string AgentLabel(DAgent a)
+        {
+            if (!string.IsNullOrWhiteSpace(a.AgentName))
+                return $"{NoComma(a.AgentName.Trim())} ({a.Id})";
+            return $"(未填写代理名) ({a.Id})";
+        }
+
+        memberAgentSelectItems = new List<SelectedItem> { new SelectedItem("0", "（未指定代理）") };
+        memberAgentSelectItems.AddRange(agents.Select(a => new SelectedItem(a.Id.ToString(), AgentLabel(a))));
+
+        e.Filters = new AdminFilterInfo[]
+        {
+            new AdminFilterInfo("代理名", "DAgentId", false, 12,
+                string.Join(",", agents.Select(AgentLabel)),
+                string.Join(",", agents.Select(a => a.Id))),
+        };
+        await Task.Yield();
+    }
+    void OnQuery(AdminQueryEventArgs<DMember> e)
+    {
+        e.Select.Include(a => a.DAgent)
+        .WhereIf(!showAllMembers, a => visibleAgentIds.Contains(a.DAgentId))
+        .WhereIf(e.Filters[0].HasValue, a => e.Filters[0].Values<long>().Contains(a.DAgentId))
+        .WhereIf(!e.SearchText.IsNull(), a => a.Username.Contains(e.SearchText) ||
+        a.Nickname.Contains(e.SearchText) ||
+        a.Password.Contains(e.SearchText) ||
+        a.Description.Contains(e.SearchText) ||
+        a.Username.Contains(e.SearchText) ||
+        a.BrowserFingerprint.Contains(e.SearchText) ||
+        a.InviteCode.Contains(e.SearchText) ||
+        a.Telegram.Contains(e.SearchText) ||
+        a.PhoneNumber.Contains(e.SearchText) ||
+        a.WithdrawPassword.Contains(e.SearchText) ||
+        a.USDTAddress.Contains(e.SearchText) ||
+        a.RegisterIp.Contains(e.SearchText) ||
+        a.Avatar.Contains(e.SearchText) ||
+        a.CreatedUserName.Contains(e.SearchText))
+        .OrderByDescending(a => a.Id);
+    }
+
+
+    async Task OnEdit(DMember item)
+    {
+        if (item.DAgent == null)
+        {
+            if (item.Id == default)
+            {
+                // 如果是新创建的会员，创建一个新的代理对象
+                item.DAgent = new();
+            }
+            else
+            {
+                // 如果是编辑现有会员，查询数据库获取代理信息
+                // 使用 FreeSql 的查询构建器，而不是在 List 上调用 Include
+                var memberWithAgent = await repo.Orm.Select<DMember>()
+                .Include(a => a.DAgent)
+                .Where(a => a.Id == item.Id)
+                .ToOneAsync();
+
+                // 如果查询到结果，更新当前对象的代理信息
+                if (memberWithAgent != null)
+                {
+                    item.DAgent = memberWithAgent.DAgent;
+                }
+                else
+                {
+                    // 如果查询不到结果，创建一个新的代理对象
+                    item.DAgent = new();
+                }
+            }
+            repo.Attach(item);
+        }
+
+        EnsureMemberAgentSelectCoversCurrent(item);
+        await Task.Yield();
+    }
+
+    /// <summary>
+    /// 若当前会员归属代理不在「本级/下级/下下级」下拉数据中，补一条选项避免显示空白（例如历史数据或权限边界）。
+    /// </summary>
+    void EnsureMemberAgentSelectCoversCurrent(DMember item)
+    {
+        if (item.DAgentId <= 0)
+            return;
+        var idText = item.DAgentId.ToString();
+        if (memberAgentSelectItems.Any(i => i.Value == idText))
+            return;
+
+        static string NoComma(string? s) => (s ?? "").Replace(",", " ");
+        var name = item.DAgent?.AgentName;
+        var text = string.IsNullOrWhiteSpace(name)
+            ? $"(未填写代理名) ({item.DAgentId})"
+            : $"{NoComma(name.Trim())} ({item.DAgentId})";
+        memberAgentSelectItems.Add(new SelectedItem(idText, text));
+    }
+}

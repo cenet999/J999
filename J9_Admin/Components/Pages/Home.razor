@@ -1,0 +1,217 @@
+@page "/"
+@using Microsoft.AspNetCore.Components.Web
+
+<PageTitle>系统概览</PageTitle>
+
+<HeadContent>
+    <link href="css/home.css" rel="stylesheet" />
+</HeadContent>
+
+<div class="home-container">
+    <!-- 页面标题 -->
+    <div class="page-header">
+        <h1 class="page-title">系统概览</h1>
+        <p class="page-subtitle">实时监控系统运行状态和关键指标</p>
+    </div>
+
+    <!-- 统计卡片区域 -->
+    <div class="stats-grid">
+        <!-- 系统状态卡片 -->
+        <div class="stat-card status-card">
+            <div class="card-icon">
+                <i class="fas fa-server"></i>
+            </div>
+            <div class="card-content">
+                <h3 class="card-title">系统状态</h3>
+                <div class="card-value @(isSystemOnline ? "online" : "offline")">
+                    @(isSystemOnline ? "正常运行" : "维护中")
+                </div>
+                <div class="card-description">服务器运行状态</div>
+            </div>
+        </div>
+
+        <!-- 在线用户数卡片 -->
+        <div class="stat-card online-card">
+            <div class="card-icon">
+                <i class="fas fa-user-check"></i>
+            </div>
+            <div class="card-content">
+                <h3 class="card-title">在线用户</h3>
+                <div class="card-value">@onlineUserCount</div>
+                <div class="card-description">当前在线用户数</div>
+            </div>
+        </div>
+
+        <!-- 今日新增会员卡片 -->
+        <div class="stat-card new-user-card">
+            <div class="card-icon">
+                <i class="fas fa-user-plus"></i>
+            </div>
+            <div class="card-content">
+                <h3 class="card-title">新增会员</h3>
+                <div class="card-value">@todayNewUserCount</div>
+                <div class="card-description">今日注册用户数</div>
+            </div>
+        </div>
+
+        <!-- 今日登录会员数量卡片 -->
+        <div class="stat-card login-card">
+            <div class="card-icon">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="card-content">
+                <h3 class="card-title">今日登录会员</h3>
+                <div class="card-value">@todayLoginCount</div>
+                <div class="card-description">今日活跃用户数</div>
+            </div>
+        </div>
+
+        <!-- 公告数量卡片 -->
+        <div class="stat-card announcement-card">
+            <div class="card-icon">
+                <i class="fas fa-bullhorn"></i>
+            </div>
+            <div class="card-content">
+                <h3 class="card-title">公告数量</h3>
+                <div class="card-value">@announcementCount</div>
+                <div class="card-description">系统公告总数</div>
+            </div>
+        </div>
+
+        <!-- 今日流水卡片 -->
+        <div class="stat-card turnover-card">
+            <div class="card-icon">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="card-content">
+                <h3 class="card-title">今日流水</h3>
+                <div class="card-value">$@todayTurnover.ToString("N0")</div>
+                <div class="card-description">今日交易总额</div>
+            </div>
+        </div>
+
+        <!-- 今日上分卡片 -->
+        <div class="stat-card deposit-card">
+            <div class="card-icon">
+                <i class="fas fa-arrow-up"></i>
+            </div>
+            <div class="card-content">
+                <h3 class="card-title">今日上分</h3>
+                <div class="card-value">$@todayDeposit.ToString("N0")</div>
+                <div class="card-description">今日上分总额</div>
+            </div>
+        </div>
+
+        <!-- 今日下分卡片 -->
+        <div class="stat-card withdraw-card">
+            <div class="card-icon">
+                <i class="fas fa-arrow-down"></i>
+            </div>
+            <div class="card-content">
+                <h3 class="card-title">今日下分</h3>
+                <div class="card-value">$@todayWithdraw.ToString("N0")</div>
+                <div class="card-description">今日下分总额</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 快速操作区域 -->
+    <div class="quick-actions">
+        <h2 class="section-title">快速操作</h2>
+        <div class="action-buttons">
+            <button class="action-btn primary" @onclick="RefreshData">
+                <i class="fas fa-sync-alt"></i>
+                刷新数据
+            </button>
+            <a class="action-btn secondary" href="/Ddd/DEvent">
+                <i class="fas fa-list"></i>
+                查看公告
+            </a>
+            <a class="action-btn secondary" href="/Ddd/DMember">
+                <i class="fas fa-chart-bar"></i>
+                玩家管理
+            </a>
+            <a class="action-btn secondary" href="/Ddd/DTransAction">
+                <i class="fas fa-chart-bar"></i>
+                流水管理
+            </a>
+        </div>
+    </div>
+</div>
+
+@code {
+    // 统计数据
+    private int announcementCount = 0; // 公告数量
+    private int todayLoginCount = 0; // 今日登录会员数量
+    private decimal todayTurnover = 0; // 今日流水
+    private decimal todayDeposit = 0; // 今日上分
+    private decimal todayWithdraw = 0; // 今日下分
+    private bool isSystemOnline = true; // 系统是否在线
+    private int onlineUserCount = 0; // 在线用户数
+    private int todayNewUserCount = 0; // 今日新增会员数
+
+    protected override async Task OnInitializedAsync()
+    {
+        // 页面初始化时加载数据
+        await LoadStatisticsData();
+    }
+
+    /// <summary>
+    /// 加载统计数据
+    /// </summary>
+    private async Task LoadStatisticsData()
+    {
+        try
+        {
+            // 这里应该调用实际的API或服务来获取数据
+            // 目前使用模拟数据作为示例
+
+            // 模拟数据加载延迟
+            await Task.Delay(500);
+
+            // 设置模拟数据
+            announcementCount = 15;
+            todayLoginCount = 128;
+            todayTurnover = 125000.50m;
+            todayDeposit = 85000.00m;
+            todayWithdraw = 40000.50m;
+            isSystemOnline = true;
+            onlineUserCount = 89;
+            todayNewUserCount = 23;
+
+            // 触发UI更新
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            // 错误处理 - 在实际应用中应该记录日志
+            System.Diagnostics.Debug.WriteLine($"加载统计数据时发生错误: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// 刷新数据按钮点击事件
+    /// </summary>
+    private async Task RefreshData()
+    {
+        await LoadStatisticsData();
+    }
+
+    /// <summary>
+    /// 查看公告按钮点击事件
+    /// </summary>
+    private void ViewAnnouncements()
+    {
+        // 导航到公告页面
+        // NavigationManager.NavigateTo("/announcements");
+    }
+
+    /// <summary>
+    /// 查看用户统计按钮点击事件
+    /// </summary>
+    private void ViewUserStats()
+    {
+        // 导航到用户统计页面
+        // NavigationManager.NavigateTo("/user-stats");
+    }
+}

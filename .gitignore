@@ -1,0 +1,20 @@
+# .NET 构建输出（任意子目录下的 bin/obj）
+**/bin/
+**/obj/
+
+# IDE / 本地工具缓存（勿提交）
+.vs/
+.cursor/debug-*.log
+
+# macOS 访达元数据（勿提交）
+.DS_Store
+
+# autopull 脚本运行日志（勿提交）
+autopull.log
+
+# 后端配置（包含敏感信息，勿提交）
+J9_Admin/appsettings.json
+J9_Admin/appsettings.Production.json
+J9_Admin/wwwroot/uploads/20260423094830.jpg
+J9_Admin/keys/key-ca4dbc39-53bc-4722-b239-99a0662fa61c.xml
+J9_APP_103/.env

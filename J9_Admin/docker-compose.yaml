@@ -1,0 +1,25 @@
+services:
+  buyu-game-backend:
+    # 使用本地构建的镜像
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # 容器名称
+    container_name: j9-admin-backend
+    # 端口映射
+    ports:
+      - "8015:80"
+    # 环境变量 - 设置时区
+    environment:
+      - TZ=Asia/Shanghai
+    # 目录映射
+    volumes:
+      # 映射日志目录
+      - ./Logs:/app/Logs
+      - ./wwwroot/uploads:/app/wwwroot/uploads
+      - ./keys:/app/keys
+      # 同步宿主时钟；仅保留 localtime（不挂载 /etc/timezone，避免宿主为目录或缺失时容器启动失败）
+      # 业务时区以 environment 的 TZ 为准
+      - /etc/localtime:/etc/localtime:ro
+    # 容器重启策略
+    restart: unless-stopped

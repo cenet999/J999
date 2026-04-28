@@ -1,0 +1,109 @@
+@page "/Ddd/DEvent"
+@using System
+
+<PageTitle>公告管理</PageTitle>
+
+<AdminTable2 TItem="DEvent" Context="item" PageSize="50" Title="公告管理" DialogClassName="modal-lg"
+    OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit">
+
+    <TableHeader>
+        <th>公告名称</th>
+        <th>发放数量</th>
+        <th>公告时间</th>
+        <th>展示结束时间</th>
+        <th>公告类型</th>
+        <th>公告状态</th>
+        <th>排序</th>
+        <th>图片地址</th>
+        <th>代理ID</th>
+        <th>创建时间</th>
+    </TableHeader>
+    <TableRow>
+        <td>@item.Title</td>
+        <td>@item.Count</td>
+        <td>@item.StartTime.ToString("yyyy-MM-dd HH:mm:ss")</td>
+        <td>@item.EndTime.ToString("yyyy-MM-dd HH:mm:ss")</td>
+        <td>@item.Type</td>
+        <td>@item.IsEnabled</td>
+        <td>@item.Sort</td>
+        <td>@item.BannerUrl</td>
+        <td>@item.DAgentId</td>
+        <td>@item.CreatedTime?.ToString("yyyy-MM-dd HH:mm:ss")</td>
+    </TableRow>
+    <EditTemplate>
+        <div class="row">
+            <div class="form-group col-6">
+                <label class="form-label">公告名称</label>
+                <input @bind="item.Title" type="text" class="form-control" placeholder="" maxlength="255">
+            </div>
+            <div class="form-group col-12">
+                <label class="form-label">公告描述</label>
+                <textarea @bind="item.Summary" class="form-control" placeholder="" maxlength="65535"></textarea>
+            </div>
+            <div class="form-group col-6">
+                <label class="form-label">发放数量</label>
+                <input @bind="item.Count" type="number" class="form-control" placeholder="">
+            </div>
+            <div class="form-group col-6">
+                <label class="form-label">开始时间</label>
+                <input type="datetime-local" @bind="item.StartTime" class="form-control" />
+            </div>
+            <div class="form-group col-6">
+                <label class="form-label">结束时间</label>
+                <input type="datetime-local" @bind="item.EndTime" class="form-control" />
+            </div>
+            <div class="form-group col-6">
+                <label class="form-label">公告类型</label>
+                <input @bind="item.Type" type="text" class="form-control" placeholder="" maxlength="255">
+            </div>
+            <div class="form-group col-6">
+                <label class="form-label">公告状态</label>
+                <Switch @bind-Value="item.IsEnabled" OnColor="Color.Success" />
+            </div>
+            <div class="form-group col-6">
+                <label class="form-label">排序</label>
+                <input @bind="item.Sort" type="number" class="form-control" placeholder="">
+            </div>
+            <div class="form-group col-6">
+                <label class="form-label">图片地址</label>
+                <textarea @bind="item.BannerUrl" class="form-control" placeholder="" maxlength="65535"></textarea>
+            </div>
+            <div class="form-group col-6">
+                <label class="form-label">代理ID</label>
+                <SelectEntity TItem="DAgent" TKey="long" @bind-Value="item.DAgentId" DisplayText="e => e.UsdtAddress" />
+            </div>
+        </div>
+    </EditTemplate> 
+</AdminTable2>
+
+
+@code {
+
+    [Inject] IAggregateRootRepository<DEvent> repo { get; set; }
+
+    async Task InitQuery(AdminQueryInfo e)
+    {
+        var allDAgents = await repo.Orm.Select<DAgent>().ToListAsync();
+        e.Filters = new AdminFilterInfo[]
+        {
+            
+        };
+        await Task.Yield();
+    }
+    void OnQuery(AdminQueryEventArgs<DEvent> e)
+    {
+        e.Select
+            .WhereIf(!e.SearchText.IsNull(), a => a.Title.Contains(e.SearchText) || 
+                a.Summary.Contains(e.SearchText) || 
+                a.Type.Contains(e.SearchText) || 
+                a.BannerUrl.Contains(e.SearchText) || 
+                a.CreatedUserName.Contains(e.SearchText) || 
+                a.ModifiedUserName.Contains(e.SearchText))
+            .OrderByDescending(a => a.Id);
+    }
+
+    async Task OnEdit(DEvent item)
+    {
+        await Task.Yield();
+    }
+}

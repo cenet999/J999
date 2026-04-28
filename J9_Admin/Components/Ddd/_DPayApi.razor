@@ -1,0 +1,116 @@
+@page "/Ddd/DPayApi"
+
+<PageTitle>支付通道</PageTitle>
+
+<AdminTable2 TItem="DPayApi" Context="item" PageSize="50" Title="支付通道" DialogClassName="modal-lg"
+    OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit">
+
+    <TableHeader>
+        <th>IP标识</th>
+        <th>支付方式名称</th>
+        <th>通道编码</th>
+        <th>支付方式</th>
+        <th>是否用户输入</th>
+        <th>最小金额</th>
+        <th>最大金额</th>
+        <th>是否启用</th>
+        <th>排序</th>
+        <th>成功率</th>
+        <th>CreatedTime</th>
+    </TableHeader>
+    <TableRow>
+        <td>@item.IP</td>
+        <td>@item.PayMethodName</td>
+        <td>@item.ChannelCode</td>
+        <td>@item.PayMethod</td>
+        <td>@item.IsUserInput</td>
+        <td>@item.MinAmount</td>
+        <td>@item.MaxAmount</td>
+        <td>@item.IsEnabled</td>
+        <td>@item.Sort</td>
+        <td>@item.SuccessRate</td>
+        <td>@item.CreatedTime?.ToString("yyyy-MM-dd HH:mm:ss")</td>
+    </TableRow>
+    <EditTemplate>
+        <div class="row">
+            <div class="form-group col-3">
+                <label class="form-label">IP标识</label>
+                <SelectEnum TEnum="ServerIP" @bind-Value="item.IP" />
+            </div>
+            <div class="form-group col-3">
+                <label class="form-label">支付方式名称</label>
+                <input @bind="item.PayMethodName" type="text" class="form-control" placeholder="" maxlength="255">
+            </div>
+            <div class="form-group col-3">
+                <label class="form-label">通道编码</label>
+                <input @bind="item.ChannelCode" type="text" class="form-control" placeholder="" maxlength="255">
+            </div>
+            <div class="form-group col-3">
+                <label class="form-label">支付方式</label>
+                <SelectEnum TEnum="PayMethod" @bind-Value="item.PayMethod" />
+            </div>
+            <div class="form-group col-2">
+                <label class="form-label">用户输入</label>
+                <Switch @bind-Value="item.IsUserInput" OnColor="Color.Success" />
+            </div>
+            <div class="form-group col-10">
+                <label class="form-label">默认值</label>
+                <input @bind="item.DefaultValue" type="text" class="form-control" placeholder="" maxlength="255">
+            </div>
+            <div class="form-group col-4">
+                <label class="form-label">最小金额</label>
+                <input @bind="item.MinAmount" type="number" class="form-control" placeholder="">
+            </div>
+            <div class="form-group col-4">
+                <label class="form-label">最大金额</label>
+                <input @bind="item.MaxAmount" type="number" class="form-control" placeholder="">
+            </div>
+            <div class="form-group col-4">
+                <label class="form-label">成功率</label>
+                <input @bind="item.SuccessRate" type="number" class="form-control" placeholder="">
+            </div>
+            <div class="form-group col-4">
+                <label class="form-label">是否启用</label>
+                <Switch @bind-Value="item.IsEnabled" OnColor="Color.Success" />
+            </div>
+            <div class="form-group col-4">
+                <label class="form-label">排序</label>
+                <input @bind="item.Sort" type="number" class="form-control" placeholder="">
+            </div>
+        </div>
+    </EditTemplate> 
+</AdminTable2>
+
+
+@code {
+
+    [Inject] IAggregateRootRepository<DPayApi> repo { get; set; }
+
+    async Task InitQuery(AdminQueryInfo e)
+    {
+        e.Filters = new AdminFilterInfo[]
+        {
+            new AdminFilterInfo("IP标识", "IP", "Pay1,Pay2,Pay_Usdt,Pay3,Pay4_KoiUid", "0,1,2,3,4"),
+            new AdminFilterInfo("支付方式", "PayMethod", "Alipay,Wechat,BankCard,USDT,Other", "0,1,2,3,4"),
+            new AdminFilterInfo("是否启用", "IsEnabled", "0,1", "0,1"),
+        };
+        await Task.Yield();
+    }
+    void OnQuery(AdminQueryEventArgs<DPayApi> e)
+    {
+        e.Select.WhereIf(e.Filters[0].HasValue, a => a.IP == e.Filters[0].Value<ServerIP>())
+            .WhereIf(e.Filters[1].HasValue, a => a.PayMethod == e.Filters[1].Value<PayMethod>())
+            .WhereIf(e.Filters[2].HasValue, a => a.IsEnabled == e.Filters[2].Value<bool>())
+            .WhereIf(!e.SearchText.IsNull(), a => a.PayMethodName.Contains(e.SearchText) || 
+                a.ChannelCode.Contains(e.SearchText) || 
+                a.DefaultValue.Contains(e.SearchText) || 
+                a.CreatedUserName.Contains(e.SearchText) || 
+                a.ModifiedUserName.Contains(e.SearchText))
+            .OrderByDescending(a => a.Id);
+    }
+
+    async Task OnEdit(DPayApi item)
+    {
+        await Task.Yield();
+    }
+}

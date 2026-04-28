@@ -1,0 +1,152 @@
+# MS游戏API配置信息
+
+## 账号信息
+- 账号: levers990
+- 钱包余额: 1000.00
+- 通用分余额: 96238.60
+- 前缀: evl
+- ApiKey: FJdifHOvOSErvpwU73VndWsPJvg4kOtx
+
+## API地址配置
+
+### 主要API基础地址
+- https://apis.msh.best
+- https://apis.msh.cool
+
+### 备用API基础地址
+- https://apis.msgm01.com
+- https://apis.msgm02.com
+- https://apis.msgm03.com
+- https://apis.msgm04.com
+- https://apis.msgm05.com
+- https://apis.msgm06.com
+- https://apis.msgm07.com
+- https://apis.msgm08.com
+- https://apis.msgm09.com
+- https://apis.msgm10.com
+
+
+API基础地址列表
+
+主线路API
+https://apis.ms-bet.com
+
+副线路API
+https://apis.msh.cool
+
+备用API：
+https://apis.msgm01.com
+https://apis.msgm02.com
+https://apis.msgm03.com
+https://apis.msgm04.com
+https://apis.msgm05.com
+https://apis.msgm06.com
+https://apis.msgm07.com
+https://apis.msgm08.com
+https://apis.msgm09.com
+https://apis.msgm10.com
+
+不同后台更换方法：
+① 接口功能-接口管理-基础域名
+② 系统设置-接口设置-API接口地址
+
+## 后台配置方法
+1. 接口功能 → 接口管理 → 基础域名
+2. 系统设置 → 接口设置 → API接口地址
+
+所有接口统一使用POST方式，Content-Type: application/x-www-form-urlencoded;
+Code 状态码
+Code	描述	说明
+0	成功	成功
+-1	未知错误	具体看返回的错误信息
+10	api_code error	一般api_code错误导致
+11	Merchant api_code error	一般api_code错误导致
+33	Member already exists	会员已存在
+34	No user exists, please register	会员未注册
+35	Order No. already exists	订单号重复
+56	Insufficient merchant balance	商户额度不足
+999	Merchant or key error	商户或key错误
+1000	Interface maintenance	部分为维护信息
+9999	IP not authorized	IP未授权
+
+
+游戏API对接 | 会员注册账号
+post
+/ley/register
+参数
+字段	类型	描述
+account	String	
+商户账号
+
+api_key	String	
+商户密钥
+
+api_code	String	
+接口标识：AG,BBIN
+
+username	String	
+注册会员账号
+
+password	String	
+注册会员密码
+
+Success 200
+字段	类型	描述
+Code	Integer	
+返回信息码 0 表示请求成功,其他均为失败
+
+Message	String	
+返回说明信息
+
+Data	Array	
+当Code等于0时才会返回此字段
+
+
+
+会员登陆游戏
+post
+http://api.xxx.com/ley/login
+参数
+字段	类型	描述
+account	String	
+商户账号
+
+api_key	String	
+商户密钥
+
+api_code	String	
+接口标识：AG,BBIN
+
+username	String	
+注册时会员账号
+
+gameType	String	
+游戏类型，参考通用规则
+
+gameCode	String	
+子游戏代码，参考通用规则
+
+isMobile	Integer	
+电脑版 and 手机版，0 电脑板 1手机版 默认 0
+
+Success 200
+字段	类型	描述
+Code	Integer	
+返回信息码 0 表示请求成功,其他均为失败
+
+Message	String	
+返回说明信息
+
+Data	Array	
+当Code等于0时才会返回此字段
+
+请求成功示例
+请求失败示例
+   HTTP/1.1 200 OK
+     {
+       "Code": 0,
+       "Message": "成功",
+       "Data": {
+	          "url":"https://www.baidu.com"
+          },
+      }

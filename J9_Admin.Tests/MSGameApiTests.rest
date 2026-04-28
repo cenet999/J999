@@ -1,0 +1,31 @@
+# 与 J9_Admin Services/GameApi/MSGameApi.cs 中 GetBetHistory 发参一致
+# 默认与类内 apiUrl、account、apiKey 相同（可改 @host 为其他 MS 线路）
+@host = https://apis.msgm01.com
+@account = levers990
+@api_key = FJdifHOvOSErvpwU73VndWsPJvg4kOtx
+@method = betTime
+@page = 1
+@pageSize = 100
+# 10 位 Unix 秒。代码里用 DateTime.TryParse(from/to) 再转秒，时间含义随运行机时区；下列数字为北京时间 2026-04-24 00:00:00～23:59:59 对应示例
+@start_at = 1776960000
+@end_at = 1777046399
+
+### 获取注单（gamerecord，历史注单）
+# 路径: {apiUrl}/ley/gamerecord，POST，application/x-www-form-urlencoded
+# 必填/实际发送: account, api_key, method, page, pageSize, start_at, end_at
+#   method: betTime=按投注时间（代码固定）；部分文档另有 updateTime
+#   pageSize: 1～500，超过 500 时代码会钳到 500
+# 与 XH 对齐：可选附带 username（与源码中非空 player_name 一致）；未列出的 api_code、currency、status 仍不传
+POST {{host}}/ley/gamerecord HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+
+account={{account}}
+&api_key={{api_key}}
+&method={{method}}
+&page={{page}}
+&pageSize={{pageSize}}
+&start_at={{start_at}}
+&end_at={{end_at}}
+
+### 已整理的 MS api_code 列表（其它接口用，本 gamerecord 未传）
+# AG, AT, BBCARD, BBIN, BL, CQ9, DTQP, GDQ, JDB, JOKER, KX, KY, LEG, MG, NW, PG, PNG, PP, PT, WALI, TCG, GW

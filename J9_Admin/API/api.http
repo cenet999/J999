@@ -1,0 +1,171 @@
+### 变量与鉴权
+### - 登录返回格式：{ "data": "<token>", "code": 0, "message": "成功" }
+### - token 就是 data 字段本身，不是 data.token
+### - 先发送下面的 login 请求，再使用 @token 或后续带 Authorization 的请求
+@baseUrl = http://localhost:5231
+
+### 登录（成功时 body.data 即为会员 token）
+# @name login
+POST {{baseUrl}}/api/login/@Login?Username=13012341234&Password=13012341234
+Content-Type: application/json
+
+###
+
+### 从登录响应中提取 token
+@token = {{login.response.body.$.data}}
+
+### 检查登录 / 拉取当前会员信息（需 token）
+GET {{baseUrl}}/api/login/@Check
+Authorization: Bearer {{token}}
+
+### 会员余额
+GET {{baseUrl}}/api/login/@GetBalance
+Authorization: {{token}}
+
+### 登出（后台 Cookie，一般 App 用 token 可忽略）
+GET {{baseUrl}}/api/login/@Logout?tenantId=main
+
+### 修改登录密码（query 不要带 token，用 Authorization）
+POST {{baseUrl}}/api/login/@ChangePassword?Password=新密码
+Authorization: {{token}}
+Content-Type: application/json
+
+### 更新资料（Telegram / USDT / 手机 / 提现密码）
+POST {{baseUrl}}/api/login/@UpdateMemberInfo?Telegram=&USDTAddress=&PhoneNumber=&WithdrawPassword=
+Authorization: {{token}}
+Content-Type: application/json
+
+### 每日签到
+POST {{baseUrl}}/api/login/@PlayerCheckIn
+Authorization: {{token}}
+Content-Type: application/json
+
+### 申请代理
+POST {{baseUrl}}/api/login/@ApplyAgent?HomeUrl=https://example.com&UsdtAddress=&ServerIP=
+Authorization: {{token}}
+Content-Type: application/json
+
+### 找回密码（匿名，按站点校验）
+POST {{baseUrl}}/api/login/@ResetPassword?HomeUrl=test.com&Username=13012341234&BrowserFingerprint=指纹字符串&newPassword=新密码
+Content-Type: application/json
+
+### 会员注册（JSON body，按实体校验手机号等）
+POST {{baseUrl}}/api/login/@Register
+Content-Type: application/json
+
+{
+  "username": "13800138000",
+  "password": "123456",
+  "browserFingerprint": "0123456789ab",
+  "agentId": 710445117251653,
+  "inviteCode": ""
+}
+
+### 初始化库数据（慎用）
+POST {{baseUrl}}/api/login/@InitDbData
+Content-Type: application/json
+
+### 代理信息（匿名）
+GET {{baseUrl}}/api/login/@GetAgentInfo?agentId=710445117251653
+
+### 按域名查代理（匿名）
+GET {{baseUrl}}/api/login/@GetAgentInfo2?domain=example.com
+
+---
+
+### 轮播图列表（匿名）
+GET {{baseUrl}}/api/banner/@GetBanners
+
+### 公告列表（匿名）
+GET {{baseUrl}}/api/notice/@GetNotices
+
+### 游戏列表（匿名） keyword/type/page/limit/sort/apiCode 可选
+GET {{baseUrl}}/api/game/@GetGameList?page=1&limit=20
+
+### MS 游戏列表 JSON（匿名），apiCode 可逗号分隔
+GET {{baseUrl}}/api/game/@GetMSGameList?apiCode=PG
+
+### 首页玩家动态（匿名）
+GET {{baseUrl}}/api/trans/@GetRecentPlayerActivity?count=20
+
+### 支付通道列表
+GET {{baseUrl}}/api/trans/@GetPayApiList
+Authorization: {{token}}
+
+---
+
+### 活动中心：签到状态
+GET {{baseUrl}}/api/event/@GetCheckInStatus
+Authorization: {{token}}
+
+### 活动中心：限时活动
+GET {{baseUrl}}/api/event/@GetTimeLimitedEvents
+Authorization: {{token}}
+
+### 活动中心：每日任务
+GET {{baseUrl}}/api/event/@GetDailyTasks
+Authorization: {{token}}
+
+### 活动中心：月度每日任务积分（日历统计）
+GET {{baseUrl}}/api/event/@GetMonthlyTaskActivity?year=2025&month=3
+Authorization: {{token}}
+
+### 领取每日任务（body 为 JSON 字符串）
+POST {{baseUrl}}/api/event/@ClaimDailyTask
+Authorization: {{token}}
+Content-Type: application/json
+
+"login"
+
+---
+
+### 站内消息列表
+GET {{baseUrl}}/api/message/@GetMessages
+Authorization: {{token}}
+
+### 发送客服消息（content 走 query；鉴权仅 Authorization 头）
+POST {{baseUrl}}/api/message/@SendMessage?content=你好
+Authorization: {{token}}
+Content-Type: application/json
+
+---
+
+### 启动 MS 游戏（player_id 为会员数字 Id，gameId 为 ddd_game 主键）
+GET {{baseUrl}}/api/game/@StartMSGame?player_id=1&gameId=1
+
+### 结束 MS 游戏并下分
+GET {{baseUrl}}/api/game/@EndMSGame?player_id=1&apiCode=PG
+
+### 近2日上分关联游戏去重 ApiCode（按最新流水优先，最多 3 个平台）后一键回收 MS 余额
+POST {{baseUrl}}/api/game/@RecycleRecentTransferInMSGames?player_id=1
+
+### MS 注单历史
+GET {{baseUrl}}/api/game/@GetMSGameHistory?player_id=1&from=2026-03-01 00:00:00&to=2026-03-21 23:59:59&page=1&limit=50
+
+### MS 平台余额
+GET {{baseUrl}}/api/game/@GetMSGameBalance?player_id=1&apiCode=PG
+
+### 启动 XH 游戏（player_id 为会员数字 Id，gameId 为 ddd_game 主键）
+GET {{baseUrl}}/api/game/@StartXHGame?player_id=1&gameId=1
+
+
+### 结束 XH 游戏并下分
+GET {{baseUrl}}/api/game/@EndXHGame?player_id=1&apiCode=XH
+
+### 近2日上分关联游戏去重 ApiCode（按最新流水优先，最多 3 个平台）后一键回收 XH 余额
+POST {{baseUrl}}/api/game/@RecycleRecentTransferInXHGames?player_id=1
+
+
+### XH 注单历史
+GET {{baseUrl}}/api/game/@GetXHGameHistory?player_id=1&from=2026-03-01 00:00:00&to=2026-03-21 23:59:59&page=1&limit=50
+
+### XH 平台余额
+GET {{baseUrl}}/api/game/@GetXHGameBalance?player_id=1&apiCode=XH
+
+---
+
+### 交易流水（依赖后台 SessionAgent 代理上下文，纯 REST+会员 token 可能报「代理未找到」）
+GET {{baseUrl}}/api/trans/@GetTransActionList?Username=13012341234&page=1&pageSize=50
+
+### 以下多为代理/支付流程，需在对应会话或配置下调用；仅作路径备忘
+# GET {{baseUrl}}/api/trans/@CreatePay0Order?...

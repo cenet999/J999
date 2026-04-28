@@ -1,0 +1,158 @@
+@host = https://ap.xh-api.com
+@account = cenet999
+@api_key = MshqzmC6w4O0KmZFwwyGdi9woirawyc8
+@api_code = KY
+@username = 13012341234
+@password = 123456
+@gameType = 6
+@gameCode = 720
+@isMobile = 1
+@amount = 100
+@transferno = 202604230001
+@method = betTime
+@page = 1
+@pageSize = 100
+# 注单 gamerecord 示例：北京时间 2026-04-24 当天 00:00:00 ~ 23:59:59（包含 2026-04-24 07:41:05；间隔 86399 秒，满足「不超过 24 小时」）
+@start_at = 1776960000
+@end_at = 1777046399
+
+### 注册用户
+# 必填: account, api_key, api_code, username, password
+POST {{host}}/ley/register HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+
+account={{account}}
+&api_key={{api_key}}
+&api_code={{api_code}}
+&username={{username}}
+&password={{password}}
+
+### 获取游戏列表
+# 文档: https://doc.xh-api.com/apidoc/#/api?appKey=api&key=App%255CHttp%255CControllers%255CApi%255CIndex%2540gamelist
+# 必填: account, api_key, api_code；可选: page、per_page（与返回中 per_page/last_page 一致；注单 gamerecord 用 pageSize）
+POST {{host}}/ley/gamelist HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+
+account={{account}}
+&api_key={{api_key}}
+&api_code={{api_code}}
+&page={{page}}
+&per_page={{pageSize}}
+
+
+
+
+
+
+### 获取币种/额度配置
+# 旧示例里已有该接口，保留便于调试
+POST {{host}}/ley/credit HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+
+account={{account}}
+&api_key={{api_key}}
+&api_code=CURRENCY
+
+### 查询玩家余额
+# 必填: account, api_key, api_code, username
+POST {{host}}/ley/balance HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+
+account={{account}}
+&api_key={{api_key}}
+&api_code={{api_code}}
+&username={{username}}
+
+### 获取游戏链接（会员登陆游戏）
+# 必填: account, api_key, api_code, username, gameType, gameCode, isMobile
+POST {{host}}/ley/login HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+
+account={{account}}
+&api_key={{api_key}}
+&api_code={{api_code}}
+&username={{username}}
+&gameCode=KG35
+&isMobile={{isMobile}}
+
+### 上分
+# 必填: account, api_key, api_code, username, amount, transferno
+# 注意: amount 按当前接入实现使用整数；transferno 必须为正整数十进制字符串
+POST {{host}}/ley/deposit HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+
+account={{account}}
+&api_key={{api_key}}
+&api_code={{api_code}}
+&username={{username}}
+&amount={{amount}}
+&transferno={{transferno}}
+
+### 下分
+# 必填: account, api_key, api_code, username, amount, transferno
+# 注意: amount 按当前接入实现使用整数；transferno 必须为正整数十进制字符串
+POST {{host}}/ley/withdrawal HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+
+account={{account}}
+&api_key={{api_key}}
+&api_code={{api_code}}
+&username={{username}}
+&amount={{amount}}
+&transferno={{transferno}}
+
+### 获取注单记录
+# 官方参数（application/x-www-form-urlencoded）:
+#   start_at (int, 必填)     开始时间，10 位 Unix 时间戳（秒）
+#   end_at   (int, 必填)     结束时间，10 位 Unix 时间戳（秒）
+#   说明：J9_Admin 内 XHGameApi.GetBetHistory 将 yyyy-MM-dd HH:mm:ss 按「北京时间 Asia/Shanghai」解读再转 Unix，与下方示例「北京时间当天」一致；勿与仅按服务器本地时区解析混用。
+#   限制：开始时间与结束时间最大间隔不允许超过 24 小时（跨更长区间需分页多次请求）
+#   account  (string, 必填)  商户号
+#   api_key  (string, 必填)  商户密钥
+#   currency (string, 可选)  货币代码（取值见官方文档「查看」）
+#   username (string, 可选)  会员账号；不传则所有会员
+#   api_code (string, 可选)  接口代码；不传则所有接口
+#   status   (int, 可选)     状态；不传则所有状态（取值见官方文档「查看」）
+#   page     (int, 可选)     页码，默认第 1 页
+#   pageSize (int, 可选)     每页条数，默认 500，最大 500
+# 另 method：采集维度（如 betTime / updateTime）；本仓库 XHGameApi 拉单当前固定 betTime
+# 可选参数需要时再取消下行注释（不传则一般为「全部」；以官方文档为准）
+# 下方表单字段与 XHGameApi.GetBetHistory 实际发送一致（player_name 非空时会多带 username）
+POST {{host}}/ley/gamerecord HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+
+account={{account}}
+&api_key={{api_key}}
+&method={{method}}
+&page={{page}}
+&pageSize={{pageSize}}
+&start_at=1776920335
+&end_at=1777006735
+# &currency=CNY
+# &username={{username}}
+# &api_code={{api_code}}
+# &status=1
+
+### 登录游戏（桌面版示例）
+POST {{host}}/ley/login HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+
+account={{account}}
+&api_key={{api_key}}
+&api_code=AB
+&username={{username}}
+&gameType=1
+&gameCode=0
+&isMobile=0
+
+### 常用 gameType
+# 1 真人
+# 2 捕鱼
+# 3 电子
+# 4 彩票
+# 5 体育
+# 6 棋牌
+# 7 电竞
+
+### 目前整理到的 api_code
+# AG, AT, BBCARD, BBIN, BL, CQ9, DTQP, GDQ, JDB, JOKER, KX, KY, LEG, MG, NW, PG, PNG, PP, PT, TCG, WALI

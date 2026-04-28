@@ -1,0 +1,80 @@
+@page "/Ddd/DGamePlatform"
+
+<PageTitle>游戏平台</PageTitle>
+
+<AdminTable2 TItem="DGamePlatform" Context="item" PageSize="50" Title="游戏平台"
+    OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit" OnRemoving="OnRemoving">
+
+    <TableHeader>
+        <th>ID</th>
+        <th>显示名称</th>
+        <th>平台状态</th>
+        <th>排序</th>
+        <th>创建时间</th>
+    </TableHeader>
+    <TableRow>
+        <td>@item.Id</td>
+        <td>@item.Name</td>
+        <td>@item.IsEnabled</td>
+        <td>@item.Sort</td>
+        <td>@item.CreatedTime?.ToString("yyyy-MM-dd HH:mm:ss")</td>
+    </TableRow>
+    <EditTemplate>
+        <div class="row">
+            <div class="form-group col-12">
+                <label class="form-label">显示名称</label>
+                <input @bind="item.Name" type="text" class="form-control" placeholder="" maxlength="255">
+            </div>
+            <div class="form-group col-12">
+                <label class="form-label">平台状态</label>
+                <Switch @bind-Value="item.IsEnabled" OnColor="Color.Success" />
+            </div>
+            <div class="form-group col-12">
+                <label class="form-label">排序</label>
+                <input @bind="item.Sort" type="number" class="form-control" placeholder="">
+            </div>
+        </div>
+    </EditTemplate> 
+</AdminTable2>
+
+
+@code {
+
+    [Inject] IAggregateRootRepository<DGamePlatform> repo { get; set; }
+
+    async Task InitQuery(AdminQueryInfo e)
+    {
+        e.Filters = new AdminFilterInfo[]
+        {
+        };
+        await Task.Yield();
+    }
+    void OnQuery(AdminQueryEventArgs<DGamePlatform> e)
+    {
+        e.Select.WhereIf(!e.SearchText.IsNull(), a => a.Name.Contains(e.SearchText) || 
+                a.CreatedUserName.Contains(e.SearchText) || 
+                a.ModifiedUserName.Contains(e.SearchText))
+            .OrderByDescending(a => a.Id);
+    }
+
+    async Task OnEdit(DGamePlatform item)
+    {
+        await Task.Yield();
+    }
+
+    async Task OnRemoving(AdminConfirmEventArgs<List<DGamePlatform>> e)
+    {
+        var platformIds = e.Argument.Select(p => p.Id).ToList();
+        var hasGames = await repo.Orm.Select<DGame>()
+            .Where(a => platformIds.Contains(a.DGamePlatformId))
+            .AnyAsync();
+
+        if (!hasGames)
+        {
+            return;
+        }
+
+        await MessageService.Error("不能删除：所选平台下仍存在游戏，请先清空游戏");
+        e.Cancel = true;
+    }
+}

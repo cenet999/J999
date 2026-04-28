@@ -1,0 +1,101 @@
+- generic [ref=e1]:
+  - generic [ref=e11]:
+    - generic [ref=e14]:
+      - generic [ref=e16]:
+        - generic [ref=e17]:
+          - generic [ref=e18]:
+            - generic [ref=e19]: 九游
+            - generic [ref=e20]: 俱乐部
+          - generic [ref=e21]:
+            - generic [ref=e23] [cursor=pointer]: 登录
+            - generic [ref=e25] [cursor=pointer]: 注册
+        - generic [ref=e27]:
+          - generic [ref=e28] [cursor=pointer]:
+            - img [ref=e30]
+            - generic [ref=e34]: 存款
+            - generic [ref=e36]: 送3%
+          - generic [ref=e37] [cursor=pointer]:
+            - img [ref=e39]
+            - generic [ref=e43]: 取款
+          - generic [ref=e44] [cursor=pointer]:
+            - img [ref=e46]
+            - generic [ref=e50]: 客服
+      - generic [ref=e153] [cursor=pointer]:
+        - generic [ref=e52]: 公告
+        - generic [ref=e155]: 04-23 新服盛大开启！
+        - generic [ref=e156]: 详情
+      - generic [ref=e55]:
+        - generic [ref=e57]:
+          - generic [ref=e58] [cursor=pointer]:
+            - img [ref=e59]
+            - generic [ref=e62]: 热门
+          - generic [ref=e63] [cursor=pointer]:
+            - img [ref=e64]
+            - generic [ref=e67]: 棋牌
+          - generic [ref=e68] [cursor=pointer]:
+            - img [ref=e69]
+            - generic [ref=e72]: 电子
+          - generic [ref=e73] [cursor=pointer]:
+            - img [ref=e74]
+            - generic [ref=e77]: 视讯
+          - generic [ref=e78] [cursor=pointer]:
+            - img [ref=e79]
+            - generic [ref=e82]: 捕鱼
+          - generic [ref=e83] [cursor=pointer]:
+            - img [ref=e84]
+            - generic [ref=e87]: 彩票
+          - generic [ref=e88] [cursor=pointer]:
+            - img [ref=e89]
+            - generic [ref=e92]: 体育
+          - generic [ref=e93] [cursor=pointer]:
+            - img [ref=e94]
+            - generic [ref=e97]: 电竞
+        - generic [ref=e98]:
+          - generic [ref=e99]:
+            - generic [ref=e158] [cursor=pointer]:
+              - generic [ref=e162]: KY
+              - generic [ref=e164]: 极速炸金花
+            - generic [ref=e166] [cursor=pointer]:
+              - generic [ref=e170]: KY
+              - generic [ref=e172]: 百人牛牛
+            - generic [ref=e174] [cursor=pointer]:
+              - generic [ref=e178]: KY
+              - generic [ref=e180]: 十三水
+          - generic [ref=e108]: 已展示全部内容
+          - generic [ref=e111] [cursor=pointer]: 开户注册
+    - generic [ref=e115]:
+      - generic [ref=e119] [cursor=pointer]:
+        - img [ref=e120]
+        - generic [ref=e124]: 首页
+      - generic [ref=e127] [cursor=pointer]:
+        - img [ref=e128]
+        - generic [ref=e131]: 活动
+      - generic [ref=e132] [cursor=pointer]:
+        - generic [ref=e135]: 送3%
+        - generic [ref=e136]:
+          - img [ref=e137]
+          - generic [ref=e140]: 存款
+      - generic [ref=e142] [cursor=pointer]:
+        - img [ref=e143]
+        - generic [ref=e146]: 福利
+      - generic [ref=e148] [cursor=pointer]:
+        - img [ref=e149]
+        - generic [ref=e152]: 我的
+  - dialog [ref=e182]:
+    - generic [ref=e187]:
+      - generic [ref=e190] [cursor=pointer]: ×
+      - generic [ref=e191]:
+        - generic [ref=e192]:
+          - generic [ref=e194] [cursor=pointer]: 登录
+          - generic [ref=e196] [cursor=pointer]: 注册
+        - generic [ref=e198]:
+          - generic [ref=e199]: 会员登录
+          - generic [ref=e200]: 请输入账号信息以继续访问会员服务。
+          - generic [ref=e201]:
+            - generic [ref=e202]: 手机号
+            - textbox "请输入 11 位手机号" [ref=e203]
+          - generic [ref=e204]:
+            - generic [ref=e205]: 密码
+            - textbox "请输入登录密码" [ref=e206]
+          - generic [ref=e208] [cursor=pointer]: 登录账户
+          - generic [ref=e210] [cursor=pointer]: 还没有账户？立即注册

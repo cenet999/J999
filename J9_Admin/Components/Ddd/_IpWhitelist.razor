@@ -1,0 +1,87 @@
+@page "/Ddd/IpWhitelist"
+
+<PageTitle>IpWhitelist</PageTitle>
+
+<AdminTable2 TItem="IpWhitelist" Context="item" PageSize="50" Title="IpWhitelist"
+    OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit">
+
+    <TableHeader>
+        <th>ID</th>
+        <th>IP</th>
+        <th>Enabled</th>
+        <th>LastAccessTime</th>
+        <th>AccessCount</th>
+    </TableHeader>
+    <TableRow>
+        <td>@item.Id</td>
+        <td>@item.IpAddress</td>
+        <td>@item.IsEnabled</td>
+        <td>@item.LastAccessTime?.ToString("yyyy-MM-dd HH:mm:ss")</td>
+        <td>@item.AccessCount</td>
+    </TableRow>
+    <EditTemplate>
+        <div class="row">
+            <div class="form-group col-12">
+                <label class="form-label">IP地址</label>
+                <input @bind="item.IpAddress" type="text" class="form-control" placeholder="" maxlength="50">
+            </div>
+            <div class="form-group col-12">
+                <label class="form-label">描述</label>
+                <textarea @bind="item.Description" class="form-control" placeholder="" maxlength="500"></textarea>
+            </div>
+            <div class="form-group col-12">
+                <label class="form-label">是否启用</label>
+                <Switch @bind-Value="item.IsEnabled" OnColor="Color.Success" />
+            </div>
+            <div class="form-group col-12">
+                <label class="form-label">最后访问时间</label>
+                <input @bind="item.LastAccessTime" type="datetime-local" class="form-control" />
+            </div>
+            <div class="form-group col-12">
+                <label class="form-label">访问次数</label>
+                <input @bind="item.AccessCount" type="number" class="form-control" placeholder="">
+            </div>
+        </div>
+    </EditTemplate> 
+</AdminTable2>
+
+
+@code {
+
+    [Inject] IHttpContextAccessor HttpContextAccessor { get; set; }
+    [Inject] IAggregateRootRepository<IpWhitelist> repo { get; set; }
+
+    async Task InitQuery(AdminQueryInfo e)
+    {
+        e.Filters = new AdminFilterInfo[]
+        {
+        };
+        await Task.Yield();
+    }
+    void OnQuery(AdminQueryEventArgs<IpWhitelist> e)
+    {
+        e.Select.WhereIf(!e.SearchText.IsNull(), a => a.IpAddress.Contains(e.SearchText) || 
+                a.Description.Contains(e.SearchText) || 
+                a.CreatedUserName.Contains(e.SearchText) || 
+                a.ModifiedUserName.Contains(e.SearchText))
+            .OrderByDescending(a => a.Id);
+    }
+
+    async Task OnEdit(IpWhitelist item)
+    {
+        if (item.Id == 0 && string.IsNullOrWhiteSpace(item.IpAddress))
+        {
+            var httpContext = HttpContextAccessor.HttpContext;
+            if (httpContext != null)
+            {
+                var clientIp = J9_Admin.Utils.IpHelper.GetClientIpAddress(httpContext);
+                if (!string.IsNullOrWhiteSpace(clientIp) && !string.Equals(clientIp, "unknown", StringComparison.OrdinalIgnoreCase))
+                {
+                    item.IpAddress = clientIp;
+                }
+            }
+        }
+
+        await Task.Yield();
+    }
+}

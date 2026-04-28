@@ -1,0 +1,165 @@
+@page "/Ddd/DBanner"
+@using System.IO
+@using BootstrapBlazor.Components
+@using Microsoft.AspNetCore.Hosting
+
+<AdminTable2 TItem="DBanner" Context="item" PageSize="50" Title="轮播图管理"
+    OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit">
+
+    <TableHeader>
+        <th>ID</th>
+        <th>图片</th>
+        <th>标题</th>
+        <th>标签</th>
+        <th>排序</th>
+        <th>状态</th>
+        <th>创建时间</th>
+    </TableHeader>
+    <TableRow>
+        <td>@item.Id</td>
+        <td><img src="@item.ImageUrl" style="height: 50px; border-radius: 4px;" /></td>
+        <td>@item.Title</td>
+        <td>@item.Tag</td>
+        <td>@item.Sort</td>
+        <td>
+            <Badge Color="@(item.IsEnabled ? Color.Success : Color.Danger)">
+                @(item.IsEnabled ? "启用" : "禁用")
+            </Badge>
+        </td>
+        <td>@item.CreatedTime?.ToString("yyyy-MM-dd HH:mm:ss")</td>
+    </TableRow>
+    <EditTemplate>
+        <div class="row">
+            <div class="form-group col-12">
+                <label class="form-label">标题</label>
+                <input @bind="item.Title" type="text" class="form-control" placeholder="" maxlength="200">
+            </div>
+            <div class="form-group col-12">
+                <label class="form-label">图片上传</label>
+                <input @bind="item.ImageUrl" type="text" class="form-control mb-2" placeholder="" maxlength="500">
+                <CardUpload TValue="string" IsMultiple="false" IsDirectory="false" IsDisabled="false"
+                    IsUploadButtonAtFirst="false" ShowProgress="true" ShowDeleteButton="true" ShowDownloadButton="false"
+                    ShowZoomButton="true" OnChange="@OnCardUpload" DefaultFileList="@DefaultFormatFileList">
+                </CardUpload>
+            </div>
+            <div class="form-group col-12">
+                <label class="form-label">描述</label>
+                <input @bind="item.Description" type="text" class="form-control" placeholder="" maxlength="500">
+            </div>
+            <div class="form-group col-12">
+                <label class="form-label">标签</label>
+                <input @bind="item.Tag" type="text" class="form-control" placeholder="如：⭐ 本周推荐" maxlength="50">
+            </div>
+            <div class="form-group col-12">
+                <label class="form-label">按钮文字</label>
+                <input @bind="item.CtaText" type="text" class="form-control" placeholder="如：马上开玩" maxlength="50">
+            </div>
+            <div class="form-group col-12">
+                <label class="form-label">颜色主题</label>
+                <input @bind="item.GradientColors" type="text" class="form-control" placeholder="用逗号隔开，如 #7B5CFF,#FF5FA2" maxlength="500">
+            </div>
+            <div class="form-group col-12">
+                <label class="form-label">跳转链接</label>
+                <input @bind="item.LinkUrl" type="text" class="form-control" placeholder="" maxlength="500">
+            </div>
+            <div class="form-group col-12">
+                <label class="form-label">排序</label>
+                <input @bind="item.Sort" type="number" class="form-control" placeholder="">
+            </div>
+            <div class="form-group col-12">
+                <label class="form-label">是否启用</label>
+                <Switch @bind-Value="item.IsEnabled" OnColor="Color.Success" />
+            </div>
+        </div>
+    </EditTemplate> 
+</AdminTable2>
+
+@code {
+    [Inject] IAggregateRootRepository<DBanner> repo { get; set; }
+    [Inject] IWebHostEnvironment Env { get; set; }
+    [Inject] IConfiguration Configuration { get; set; }
+
+    private DBanner currentEditItem;
+    private List<UploadFile> DefaultFormatFileList = [];
+    private CancellationTokenSource? _token;
+    private static long MaxFileLength => 10 * 1024 * 1024; // 10MB max
+
+    async Task InitQuery(AdminQueryInfo e)
+    {
+        e.Filters = new AdminFilterInfo[] { };
+        await Task.Yield();
+    }
+
+    void OnQuery(AdminQueryEventArgs<DBanner> e)
+    {
+        e.Select.WhereIf(!e.SearchText.IsNull(), a => a.Title.Contains(e.SearchText));
+        e.Select.OrderByDescending(a => a.Id);
+    }
+
+    async Task OnEdit(DBanner item)
+    {
+        currentEditItem = item;
+        DefaultFormatFileList.Clear();
+        if (!string.IsNullOrEmpty(item.ImageUrl))
+        {
+            DefaultFormatFileList.Add(new UploadFile { PrevUrl = item.ImageUrl });
+        }
+        await Task.Yield();
+    }
+
+    private async Task OnCardUpload(UploadFile file)
+    {
+        if (file is { File: not null })
+        {
+            if (file.Size > MaxFileLength)
+            {
+                await MessageService.Error("文件大于 10M 请重新选择文件上传");
+                file.Code = 1;
+                file.Error = "文件大于 10M 请重新选择文件上传";
+                return;
+            }
+            else
+            {
+                await SaveToFile(file);
+                if (currentEditItem != null)
+                {
+                    currentEditItem.ImageUrl = $"{Configuration["APIDomain"]}/uploads/{file.FileName}";
+                }
+
+                await MessageService.Success($"文件上传 {file.FileName} 文件保存成功");
+                StateHasChanged();
+            }
+        }
+    }
+
+    private async Task SaveToFile(UploadFile file)
+    {
+        var uploaderFolder = Path.Combine(Env.WebRootPath, "uploads");
+        if (!Directory.Exists(uploaderFolder))
+        {
+            Directory.CreateDirectory(uploaderFolder);
+        }
+        
+        file.FileName = $"{DateTimeOffset.Now:yyyyMMddHHmmss}_{Path.GetFileName(file.OriginFileName)}";
+        var fileName = Path.Combine(uploaderFolder, file.FileName);
+
+        _token ??= new CancellationTokenSource();
+        try
+        {
+            var ret = await file.SaveToFileAsync(fileName, MaxFileLength, token: _token.Token);
+            if (ret)
+            {
+                file.PrevUrl = $"/uploads/{file.FileName}";
+            }
+            else
+            {
+                file.Code = 1;
+                file.Error = "文件保存失败";
+                await MessageService.Error("文件保存失败");
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+}

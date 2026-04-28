@@ -1,0 +1,425 @@
+@page "/Ddd/DAgentSettlement"
+@using System.Globalization
+@using J9_Admin.Utils
+
+<PageTitle>代理结算</PageTitle>
+
+<div class="p-3">
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                <div>
+                    <h5 class="mb-1">代理结算</h5>
+                    <div class="text-muted small">按月汇总会员流水与充值，当前版本先按“流水统计 × 比例 = 应付金额”显示。</div>
+                </div>
+            </div>
+
+            <div class="row g-2 align-items-end mb-3">
+                <div class="col-1">
+                    <label class="form-label">月份</label>
+                    <input @bind="queryMonth" type="text" class="form-control" placeholder="例如 2026-04" maxlength="7">
+                </div>
+                <div class="col-1">
+                    <label class="form-label">关键词</label>
+                    <input @bind="keyword" type="text" class="form-control" placeholder="可搜代理名 / 会员名" maxlength="50">
+                </div>
+                <div class="col-1">
+                    <button type="button" class="btn btn-primary" @onclick="LoadRowsAsync" disabled="@loading">查询</button>
+                    <button type="button" class="btn btn-outline-secondary" @onclick="ResetFilters" disabled="@loading">重置</button>
+                </div>
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-2">
+                    <div class="border rounded p-3 h-100">
+                        <div class="text-muted small">流水总计</div>
+                        <div class="fs-5 fw-bold">@totalTurnover.ToString("0.##")</div>
+                    </div>
+                </div>
+                <div class="col-2">
+                    <div class="border rounded p-3 h-100">
+                        <div class="text-muted small">充值总计</div>
+                        <div class="fs-5 fw-bold">@totalRecharge.ToString("0.##")</div>
+                    </div>
+                </div>
+                <div class="col-2">
+                    <div class="border rounded p-3 h-100">
+                        <div class="text-muted small">应付总计</div>
+                        <div class="fs-5 fw-bold text-danger">@totalPayable.ToString("0.##")</div>
+                    </div>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(loadError))
+            {
+                <div class="alert alert-warning">@loadError</div>
+            }
+
+            @if (loading)
+            {
+                <div class="text-muted">数据加载中...</div>
+            }
+            else if (rows.Count == 0)
+            {
+                <div class="alert alert-light border">暂无结算数据</div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>月份</th>
+                                <th>当前代理</th>
+                                <th>一级下级</th>
+                                <th>二级下级</th>
+                                <th>会员名</th>
+                                <th>流水统计</th>
+                                <th>充值统计</th>
+                                <th>比例</th>
+                                <th>应付金额</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in rows)
+                            {
+                                <tr>
+                                    <td>@item.Id</td>
+                                    <td>@item.MonthText</td>
+                                    <td>@item.CurrentAgentName</td>
+                                    <td>@item.ChildAgentName</td>
+                                    <td>@item.GrandChildAgentName</td>
+                                    <td>@item.MemberName</td>
+                                    <td>@item.TurnoverAmount.ToString("0.##")</td>
+                                    <td>@item.RechargeAmount.ToString("0.##")</td>
+                                    <td>@item.RateText</td>
+                                    <td class="text-danger fw-bold">@item.PayableAmount.ToString("0.##")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+
+    [Inject] IAggregateRootRepository<DTransAction> repo { get; set; }
+    [Inject] J9_Admin.Utils.SessionAgent sessionAgent { get; set; }
+    [Inject] AdminContext AdminContext { get; set; }
+
+    List<AgentSettlementRow> rows = [];
+    bool loading;
+    string loadError = "";
+    string queryMonth = DateTime.Now.ToString("yyyy-MM");
+    string keyword = "";
+    decimal totalTurnover;
+    decimal totalRecharge;
+    decimal totalPayable;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRowsAsync();
+    }
+
+    async Task LoadRowsAsync()
+    {
+        loading = true;
+        loadError = "";
+        rows = [];
+        totalTurnover = 0;
+        totalRecharge = 0;
+        totalPayable = 0;
+
+        try
+        {
+            if (!TryParseMonth(queryMonth, out var monthStart, out var nextMonth))
+            {
+                loadError = "月份格式不对，请按 2026-04 这种格式填写。";
+                return;
+            }
+
+            var monthStartUnix = TimeHelper.LocalToUnix(monthStart);
+            var nextMonthUnix = TimeHelper.LocalToUnix(nextMonth);
+
+
+            var agents = await repo.Orm.Select<DAgent>().ToListAsync();
+            var agentMap = agents.ToDictionary(a => a.Id);
+
+            var visibleAgentIds = VisibleAgentIdsHelper.Build(
+                agents,
+                string.Equals(AdminContext.User?.Username, "admin", StringComparison.OrdinalIgnoreCase),
+                sessionAgent.GetAgentId());
+            if (visibleAgentIds.Count == 0)
+            {
+                loadError = "当前账号没有可查看的代理数据。";
+                return;
+            }
+
+            var visibleAgentIdList = visibleAgentIds.ToList();
+            var members = await repo.Orm.Select<DMember>()
+                .Where(m => visibleAgentIdList.Contains(m.DAgentId))
+                .Where(m => !m.IsSystem)
+                .ToListAsync();
+
+            // 这里只取结算页当前真正关心的两类数据：投注和充值，而且只看成功单。
+            var trans = await repo.Orm.Select<DTransAction>()
+                .Include(t => t.DMember)
+                .Where(t => visibleAgentIdList.Contains(t.DAgentId))
+                .Where(t => t.Status == TransactionStatus.Success)
+                .Where(t => t.TransactionTime >= monthStartUnix && t.TransactionTime < nextMonthUnix)
+                .Where(t => t.TransactionType == TransactionType.Bet || t.TransactionType == TransactionType.Recharge)
+                .ToListAsync();
+
+            var settlementRows = trans
+                .GroupBy(t =>
+                {
+                    var wall = TimeHelper.UnixToLocal(t.TransactionTime);
+                    return new
+                    {
+                        Month = new DateTime(wall.Year, wall.Month, 1),
+                        t.DAgentId,
+                        t.DMemberId
+                    };
+                })
+                .Select(g => BuildSettlementRow(g.ToList(), agentMap))
+                .Where(r => r != null)
+                .Cast<AgentSettlementRow>()
+                .ToList();
+
+            var memberIdsWithRows = settlementRows
+                .Where(r => r.MemberId > 0)
+                .Select(r => r.MemberId)
+                .ToHashSet();
+
+            var emptyMemberRows = members
+                .Where(m => agentMap.ContainsKey(m.DAgentId) && !memberIdsWithRows.Contains(m.Id))
+                .Select(m => BuildEmptyMemberRow(m, agentMap, monthStart));
+
+            // 如果某个代理下面一个会员都没有，也补一条 0 数据，保证代理也能看到。
+            var agentIdsWithMembers = members.Select(m => m.DAgentId).ToHashSet();
+            var agentIdsWithRows = settlementRows.Select(r => r.AgentId).ToHashSet();
+            var emptyAgentRows = visibleAgentIdList
+                .Where(agentId => agentMap.ContainsKey(agentId))
+                .Where(agentId => !agentIdsWithMembers.Contains(agentId) && !agentIdsWithRows.Contains(agentId))
+                .Select(agentId => BuildEmptyAgentRow(agentMap[agentId], agentMap, monthStart));
+
+            settlementRows = settlementRows
+                .Concat(emptyMemberRows)
+                .Concat(emptyAgentRows)
+                .OrderByDescending(r => r.Month)
+                .ThenBy(r => r.CurrentAgentName)
+                .ThenBy(r => r.ChildAgentName)
+                .ThenBy(r => r.GrandChildAgentName)
+                .ThenBy(r => r.MemberName)
+                .ToList();
+
+            if (!string.IsNullOrWhiteSpace(keyword))
+            {
+                var text = keyword.Trim();
+                settlementRows = settlementRows.Where(r =>
+                    r.CurrentAgentName.Contains(text, StringComparison.OrdinalIgnoreCase) ||
+                    r.ChildAgentName.Contains(text, StringComparison.OrdinalIgnoreCase) ||
+                    r.GrandChildAgentName.Contains(text, StringComparison.OrdinalIgnoreCase) ||
+                    r.MemberName.Contains(text, StringComparison.OrdinalIgnoreCase)).ToList();
+            }
+
+            for (var i = 0; i < settlementRows.Count; i++)
+                settlementRows[i].Id = i + 1;
+
+            rows = settlementRows;
+
+            totalTurnover = rows.Sum(r => r.TurnoverAmount);
+            totalRecharge = rows.Sum(r => r.RechargeAmount);
+            totalPayable = rows.Sum(r => r.PayableAmount);
+        }
+        catch (Exception ex)
+        {
+            loadError = $"加载失败：{ex.Message}";
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    void ResetFilters()
+    {
+        queryMonth = DateTime.Now.ToString("yyyy-MM");
+        keyword = "";
+        _ = LoadRowsAsync();
+    }
+
+    AgentSettlementRow? BuildSettlementRow(List<DTransAction> groupRows, Dictionary<long, DAgent> agentMap)
+    {
+        var first = groupRows.FirstOrDefault();
+        if (first == null || !agentMap.TryGetValue(first.DAgentId, out var agent))
+            return null;
+
+        var (currentAgentName, childAgentName, grandChildAgentName) = GetAgentDisplayNames(agent, agentMap);
+
+        var turnoverAmount = groupRows
+            .Where(t => t.TransactionType == TransactionType.Bet)
+            .Sum(t => t.BetAmount);
+
+        var rechargeAmount = groupRows
+            .Where(t => t.TransactionType == TransactionType.Recharge)
+            .Sum(t => t.ActualAmount);
+
+        var ratio = agent.RebateRate;
+        var payableAmount = Math.Round(turnoverAmount * ratio, 2, MidpointRounding.AwayFromZero);
+
+        var firstWall = TimeHelper.UnixToLocal(first.TransactionTime);
+        return new AgentSettlementRow
+        {
+            AgentId = agent.Id,
+            MemberId = first.DMemberId,
+            Month = new DateTime(firstWall.Year, firstWall.Month, 1),
+            MonthText = firstWall.ToString("yyyy-MM"),
+            CurrentAgentName = currentAgentName,
+            ChildAgentName = childAgentName,
+            GrandChildAgentName = grandChildAgentName,
+            MemberName = first.DMember?.Username ?? $"会员ID:{first.DMemberId}",
+            TurnoverAmount = turnoverAmount,
+            RechargeAmount = rechargeAmount,
+            Ratio = ratio,
+            RateText = ratio.ToString("P2", CultureInfo.InvariantCulture),
+            PayableAmount = payableAmount
+        };
+    }
+
+    AgentSettlementRow BuildEmptyMemberRow(DMember member, Dictionary<long, DAgent> agentMap, DateTime monthStart)
+    {
+        if (!agentMap.TryGetValue(member.DAgentId, out var agent))
+            return new AgentSettlementRow();
+
+        var (currentAgentName, childAgentName, grandChildAgentName) = GetAgentDisplayNames(agent, agentMap);
+
+        return new AgentSettlementRow
+        {
+            AgentId = agent.Id,
+            MemberId = member.Id,
+            Month = monthStart,
+            MonthText = monthStart.ToString("yyyy-MM"),
+            CurrentAgentName = currentAgentName,
+            ChildAgentName = childAgentName,
+            GrandChildAgentName = grandChildAgentName,
+            MemberName = member.Username,
+            TurnoverAmount = 0,
+            RechargeAmount = 0,
+            Ratio = agent.RebateRate,
+            RateText = agent.RebateRate.ToString("P2", CultureInfo.InvariantCulture),
+            PayableAmount = 0
+        };
+    }
+
+    AgentSettlementRow BuildEmptyAgentRow(DAgent agent, Dictionary<long, DAgent> agentMap, DateTime monthStart)
+    {
+        var (currentAgentName, childAgentName, grandChildAgentName) = GetAgentDisplayNames(agent, agentMap);
+
+        return new AgentSettlementRow
+        {
+            AgentId = agent.Id,
+            Month = monthStart,
+            MonthText = monthStart.ToString("yyyy-MM"),
+            CurrentAgentName = currentAgentName,
+            ChildAgentName = childAgentName,
+            GrandChildAgentName = grandChildAgentName,
+            MemberName = "",
+            TurnoverAmount = 0,
+            RechargeAmount = 0,
+            Ratio = agent.RebateRate,
+            RateText = agent.RebateRate.ToString("P2", CultureInfo.InvariantCulture),
+            PayableAmount = 0
+        };
+    }
+
+    /// <summary>
+    /// 非 admin：以登录账号关联代理为锚点，在「根→本条归属代理」链上取从该锚点向下的最多三级（当前代理、一级下级、二级下级）。
+    /// admin：从组织根向下取三级。
+    /// </summary>
+    (string CurrentAgentName, string ChildAgentName, string GrandChildAgentName) GetAgentDisplayNames(DAgent agent, Dictionary<long, DAgent> agentMap)
+    {
+        var chain = BuildChainRootToAgent(agent, agentMap);
+        if (chain.Count == 0)
+            return ("-", "-", "-");
+
+        var isAdmin = string.Equals(AdminContext.User?.Username, "admin", StringComparison.OrdinalIgnoreCase);
+        var viewerId = sessionAgent.GetAgentId();
+
+        List<DAgent> slice;
+        if (isAdmin)
+            slice = chain.Take(3).ToList();
+        else if (viewerId <= 0)
+            slice = chain.Take(3).ToList();
+        else
+        {
+            var idx = chain.FindIndex(a => a.Id == viewerId);
+            slice = idx < 0 ? chain.Take(3).ToList() : chain.Skip(idx).Take(3).ToList();
+        }
+
+        static string Cell(List<DAgent> s, int i) =>
+            i < s.Count ? GetAgentName(s[i]) : "-";
+
+        var current = Cell(slice, 0);
+        var child = slice.Count > 1 ? Cell(slice, 1) : "-";
+        var grand = slice.Count > 2 ? Cell(slice, 2) : "-";
+
+        return (current, child, grand);
+    }
+
+    /// <summary>从组织根到指定代理的一条链（根在索引 0，本条在末尾）。</summary>
+    static List<DAgent> BuildChainRootToAgent(DAgent leaf, Dictionary<long, DAgent> agentMap)
+    {
+        var up = new List<DAgent>();
+        DAgent? cur = leaf;
+        var guard = 0;
+        while (cur != null && guard++ < 64)
+        {
+            up.Add(cur);
+            if (cur.ParentId <= 0) break;
+            if (!agentMap.TryGetValue(cur.ParentId, out cur)) break;
+        }
+
+        up.Reverse();
+        return up;
+    }
+
+    static string GetAgentName(DAgent agent)
+    {
+        return string.IsNullOrWhiteSpace(agent.AgentName) ? $"ID:{agent.Id}" : agent.AgentName;
+    }
+
+    static bool TryParseMonth(string text, out DateTime monthStart, out DateTime nextMonth)
+    {
+        monthStart = default;
+        nextMonth = default;
+        if (!DateTime.TryParseExact(text?.Trim(), "yyyy-MM", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed))
+            return false;
+
+        monthStart = new DateTime(parsed.Year, parsed.Month, 1);
+        nextMonth = monthStart.AddMonths(1);
+        return true;
+    }
+
+    class AgentSettlementRow
+    {
+        public int Id { get; set; }
+        public long AgentId { get; set; }
+        public long MemberId { get; set; }
+        public DateTime Month { get; set; }
+        public string MonthText { get; set; } = "";
+        public string CurrentAgentName { get; set; } = "";
+        public string ChildAgentName { get; set; } = "";
+        public string GrandChildAgentName { get; set; } = "";
+        public string MemberName { get; set; } = "";
+        public decimal TurnoverAmount { get; set; }
+        public decimal RechargeAmount { get; set; }
+        public decimal Ratio { get; set; }
+        public string RateText { get; set; } = "";
+        public decimal PayableAmount { get; set; }
+    }
+}

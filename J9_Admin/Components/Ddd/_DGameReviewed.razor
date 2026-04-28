@@ -1,0 +1,195 @@
+@page "/Ddd/DGameReviewed"
+@using System
+@using BootstrapBlazor.Components
+@using System.Linq
+
+<PageTitle>已审游戏</PageTitle>
+
+<AdminTable2 @ref="adminTable" TItem="DGame" Context="item" PageSize="50" Title="已审游戏"
+    DialogClassName="modal-lg" OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit" TableTd99Width="150"
+    OnSaving="OnSaving">
+
+    <TableHeader>
+        <th>游戏ID</th>
+        <th>游戏中文名</th>
+        <th>游戏UID</th>
+        <th>游戏Code</th>
+        <th>游戏类型</th>
+        <th>接口代码</th>
+        <th>平台</th>
+        <th>是否推荐</th>
+        <th>创建时间</th>
+    </TableHeader>
+    <TableRow>
+        <td>@item.Id</td>
+        <td>@item.GameCnName</td>
+        <td>@item.GameUID</td>
+        <td>@item.GameCode</td>
+        <td>@item.GameType</td>
+        <td>@item.ApiCode</td>
+        <td>@item.DGamePlatform?.Name</td>
+        <td>
+            <Badge Color="@(item.IsRecommended ? Color.Warning : Color.Secondary)">
+                <i class="fa-solid @(item.IsRecommended ? "fa-star" : "fa-minus") me-1"></i>@(item.IsRecommended ? "推荐" : "普通")
+            </Badge>
+        </td>
+        <td>@item.CreatedTime?.ToString("yyyy-MM-dd HH:mm:ss")</td>
+    </TableRow>
+
+    <EditTemplate>
+        <div class="row">
+            <div class="form-group col-4">
+                <label class="form-label">游戏UID</label>
+                <input @bind="item.GameUID" type="text" class="form-control" maxlength="255" @oninput="OnGameUIDChange">
+            </div>
+            <div class="form-group col-4">
+                <label class="form-label">游戏名称</label>
+                <input @bind="item.GameName" type="text" class="form-control" maxlength="255">
+            </div>
+            <div class="form-group col-4">
+                <label class="form-label">游戏中文名</label>
+                <input @bind="item.GameCnName" type="text" class="form-control" maxlength="255">
+            </div>
+
+            <div class="form-group col-3">
+                <label class="form-label">游戏类型</label>
+                <SelectEnum TEnum="GameType" @bind-Value="item.GameType" />
+            </div>
+            <div class="form-group col-3">
+                <label class="form-label">游戏Code</label>
+                <input @bind="item.GameCode" type="text" class="form-control" placeholder="子游戏代码" maxlength="255">
+            </div>
+            <div class="form-group col-3">
+                <label class="form-label">接口代码</label>
+                <input @bind="item.ApiCode" type="text" class="form-control" placeholder="如 AG, BBIN" maxlength="50">
+            </div>
+            <div class="form-group col-3">
+                <label class="form-label">游戏平台</label>
+                <SelectEntity TItem="DGamePlatform" TKey="long" @bind-Value="item.DGamePlatformId"
+                    DisplayText="e => e.Name" />
+            </div>
+
+            <div class="form-group col-3">
+                <label class="form-label">是否推荐</label>
+                <Switch @bind-Value="item.IsRecommended" OnColor="Color.Success" />
+            </div>
+            <div class="form-group col-3">
+                <label class="form-label">在玩人数</label>
+                <input @bind="item.PlayerCount" type="number" class="form-control">
+            </div>
+            <div class="form-group col-3">
+                <label class="form-label">游戏评分</label>
+                <input @bind="item.Rating" type="number" step="0.1" class="form-control">
+            </div>
+            <div class="form-group col-3">
+                <label class="form-label">已启用</label>
+                <input value="是" type="text" class="form-control" >
+            </div>
+
+            <div class="form-group col-12">
+                <label class="form-label">图标</label>
+                <input @bind="item.Icon" type="text" class="form-control" maxlength="255">
+            </div>
+            <div class="form-group col-12">
+                <label class="form-label">游戏描述</label>
+                <textarea @bind="item.Description" class="form-control" rows="3"></textarea>
+            </div>
+        </div>
+    </EditTemplate>
+</AdminTable2>
+
+@code {
+    [Inject] IAggregateRootRepository<DGame> repo { get; set; }
+
+    private AdminTable2<DGame> adminTable = new();
+    private DGame currentEditItem = new();
+
+    async Task InitQuery(AdminQueryInfo e)
+    {
+        var allDGamePlatforms = await repo.Orm.Select<DGamePlatform>().Where(a => a.IsEnabled).ToListAsync();
+        var apiCodesRaw = await repo.Orm.Select<DGame>()
+            .Where(a => a.IsEnabled && !string.IsNullOrEmpty(a.ApiCode))
+            .ToListAsync(a => a.ApiCode);
+        var distinctApiCodes = apiCodesRaw.Distinct().OrderBy(x => x).ToList();
+
+        e.Filters = new AdminFilterInfo[]
+        {
+            new("游戏类型", "GameType", "真人,捕鱼,电子,彩票,体育,棋牌,电竞", "1,2,3,4,5,6,7"),
+            new("游戏平台", "DGamePlatformId", false, 12,
+                string.Join(",", allDGamePlatforms.Select(a => a.Name)),
+                string.Join(",", allDGamePlatforms.Select(a => a.Id))),
+            new("接口代码", "ApiCode", false, 12,
+                string.Join(",", distinctApiCodes),
+                string.Join(",", distinctApiCodes)),
+        };
+        await Task.Yield();
+    }
+
+    void OnQuery(AdminQueryEventArgs<DGame> e)
+    {
+        e.Select
+            .Include(a => a.DGamePlatform)
+            .Where(a => a.IsEnabled)
+            .WhereIf(e.Filters[0].HasValue, a => a.GameType == e.Filters[0].Value<GameType>())
+            .WhereIf(e.Filters[1].HasValue, a => a.DGamePlatformId == e.Filters[1].Value<long>())
+            .WhereIf(e.Filters[2].HasValue, a => a.ApiCode != null && a.ApiCode == e.Filters[2].Value<string>())
+            .WhereIf(!e.SearchText.IsNull(), a =>
+                a.GameName.Contains(e.SearchText) ||
+                a.GameCnName.Contains(e.SearchText) ||
+                a.GameUID.Contains(e.SearchText) ||
+                (a.GameCode != null && a.GameCode.Contains(e.SearchText)) ||
+                (a.ApiCode != null && a.ApiCode.Contains(e.SearchText)))
+            .OrderByDescending(a => a.Id);
+    }
+
+    async Task OnEdit(DGame item)
+    {
+        currentEditItem = item;
+        await Task.Yield();
+    }
+
+    async Task OnSaving(AdminConfirmEventArgs<DGame> e)
+    {
+        if (string.IsNullOrWhiteSpace(e.Argument.GameName))
+        {
+            await MessageService.Error("请录入游戏名称！");
+            e.Cancel = true;
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(e.Argument.GameUID))
+        {
+            await MessageService.Error("请录入游戏UID！");
+            e.Cancel = true;
+            return;
+        }
+
+        if (e.Argument.DGamePlatformId == 0)
+        {
+            await MessageService.Error("请选择游戏平台！");
+            e.Cancel = true;
+            return;
+        }
+
+        // 这个页面固定展示已启用游戏，保存时也维持启用状态
+        e.Argument.IsEnabled = true;
+    }
+
+    async Task OnGameUIDChange(ChangeEventArgs e)
+    {
+        var gameUID = e.Value as string;
+        var game = await repo.Orm.Select<DGame>().Where(a => a.GameUID == gameUID).FirstAsync();
+        if (game != null)
+        {
+            currentEditItem.GameName = game.GameName;
+            currentEditItem.GameCnName = game.GameCnName;
+            currentEditItem.GameCode = game.GameCode;
+            currentEditItem.ApiCode = game.ApiCode;
+            currentEditItem.Icon = game.Icon;
+            currentEditItem.DGamePlatformId = game.DGamePlatformId;
+            currentEditItem.GameType = game.GameType;
+            currentEditItem.IsEnabled = true;
+            currentEditItem.IsRecommended = game.IsRecommended;
+        }
+    }
+}

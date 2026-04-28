@@ -1,0 +1,7 @@
+/bin
+/obj
+/Logs
+/buyu.db
+
+# macOS
+.DS_Store

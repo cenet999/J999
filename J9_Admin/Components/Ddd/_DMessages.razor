@@ -1,0 +1,178 @@
+@page "/Ddd/DMessages"
+@using System
+
+<PageTitle>客服系统</PageTitle>
+
+<AdminTable2 @ref="adminTable" TItem="DMessage" Context="item" PageSize="50" Title="客服系统" DialogClassName="modal-lg"
+    OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit" TableTd99Width="300" IsRefersh="true">
+
+    <TableTd99>
+        @if (item.SenderRole == MessageSenderRole.Customer && item.Status != MessageStatus.已回复)
+        {
+            <button @onclick="e => ShowSendMessage(item)" type="button" class="mr-2 btn btn-light btn-xs">回复</button>
+        }
+
+    </TableTd99>
+    <TableHeader>
+        <th>发送方角色</th>
+        <th>文本内容</th>
+        <th>发送时间</th>
+        <th>消息状态</th>
+        <th>发送方IP</th>
+        <th>会员</th>
+    </TableHeader>
+    <TableRow>
+        <td>@item.SenderRole</td>
+        <td>@item.Content</td>
+        <td>@item.SentAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
+        <td>@item.Status</td>
+        <td>@item.SenderIp</td>
+        <td>@item.DMember?.Username</td>
+    </TableRow>
+    <EditTemplate>
+        <div class="row">
+            <div class="form-group col-6">
+                <label class="form-label">发送方角色</label>
+                <SelectEnum TEnum="MessageSenderRole" @bind-Value="item.SenderRole" />
+            </div>
+            <div class="form-group col-12">
+                <label class="form-label">文本内容</label>
+                <textarea @bind="item.Content" class="form-control" placeholder="" maxlength="65535"></textarea>
+            </div>
+            <div class="form-group col-6">
+                <label class="form-label">发送时间</label>
+                <!-- <DateTimePicker TValue="DateTime" @bind-Value="item.SentAt" ViewMode="DatePickerViewMode.DateTime" Format="yyyy-MM-dd HH:mm:ss" /> -->
+                <input type="datetime-local" @bind="item.SentAt" />
+            </div>
+            <div class="form-group col-6">
+                <label class="form-label">消息状态</label>
+                <SelectEnum TEnum="MessageStatus" @bind-Value="item.Status" />
+            </div>
+            <div class="form-group col-6">
+                <label class="form-label">发送方IP</label>
+                <input @bind="item.SenderIp" type="text" class="form-control" placeholder="" maxlength="64">
+            </div>
+            <div class="form-group col-6">
+                <label class="form-label">会员ID</label>
+                <SelectEntity TItem="DMember" TKey="long?" @bind-Value="item.DMemberId" DisplayText="e => e.Username" />
+            </div>
+        </div>
+    </EditTemplate>
+</AdminTable2>
+
+<AdminModal Visible="@showModal" Title="发送消息" YesButton="发送" CloseButton="取消" OnYes="@HandleSendMessage"
+    OnClose="@HandleCloseModal">
+    <div class="p-3">
+        <div class="mb-3">
+            <label class="form-label">会员</label>
+            <input value="@(item.DMember?.Username)" class="form-control" disabled />
+        </div>
+        <div class="mb-3">
+            <label class="form-label">消息内容</label>
+            <input @bind="item.Content" class="form-control" disabled />
+        </div>
+        <div class="mb-3">
+            <label class="form-label">客服回复</label>
+            <textarea @bind="message" class="form-control" placeholder="请输入消息内容" maxlength="65535" rows="5"></textarea>
+        </div>
+    </div>
+</AdminModal>
+
+@code {
+
+    [Inject] IAggregateRootRepository<DMessage> repo { get; set; }
+
+    AdminTable2<DMessage> adminTable = new AdminTable2<DMessage>();
+
+    // AdminModal 相关变量
+    bool showModal = false;
+    DMessage item = new DMessage();
+
+    /// <summary>
+    /// 客服回复内容
+    /// </summary>
+    string message = "";
+
+    /// <summary>
+    /// 显示发送消息的模态框
+    /// </summary>
+    /// <param name="selectedItem">选中的消息项</param>
+    void ShowSendMessage(DMessage selectedItem)
+    {
+        this.item = selectedItem;
+        this.message = ""; // 清空之前的消息内容
+        showModal = true;
+    }
+
+    /// <summary>
+    /// 处理发送消息的逻辑
+    /// </summary>
+    async Task HandleSendMessage()
+    {
+        // 验证消息内容不能为空
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            // 这里可以添加提示消息
+            return;
+        }
+        await repo.Orm.Update<DMessage>().Set(a => a.Status, MessageStatus.已回复).Where(a => a.Id ==
+        item.Id).ExecuteAffrowsAsync();
+
+        // 创建新的消息记录
+        var newMessage = new DMessage()
+        {
+            DMemberId = item.DMemberId,
+            Content = message,
+            SentAt = DateTime.Now,
+            SenderRole = MessageSenderRole.Agent,
+            Status = MessageStatus.未读,
+            SenderIp = "",
+        };
+
+        // 保存到数据库
+        await repo.Orm.Insert(newMessage).ExecuteAffrowsAsync();
+
+        // 关闭模态框
+        showModal = false;
+
+        await adminTable.Load();
+    }
+
+    /// <summary>
+    /// 处理关闭模态框的逻辑
+    /// </summary>
+    void HandleCloseModal()
+    {
+        showModal = false;
+        message = ""; // 清空消息内容
+    }
+
+    async Task InitQuery(AdminQueryInfo e)
+    {
+        var allDMembers = await repo.Orm.Select<DMember>().ToListAsync();
+        e.Filters = new AdminFilterInfo[]
+        {
+new AdminFilterInfo("发送角色", "SenderRole", "Customer,Agent,System", "0,1,2"),
+new AdminFilterInfo("消息状态", "Status", "未读,已读,已回复,已撤回", "0,1,2,3"),
+
+        };
+        await Task.Yield();
+    }
+    void OnQuery(AdminQueryEventArgs<DMessage> e)
+    {
+        e.Select.Include(a => a.DMember).WhereIf(e.Filters[0].HasValue, a => a.SenderRole ==
+        e.Filters[0].Value<MessageSenderRole>())
+        .WhereIf(e.Filters[1].HasValue, a => a.Status == e.Filters[1].Value<MessageStatus>())
+        .WhereIf(!e.SearchText.IsNull(), a => a.Content.Contains(e.SearchText) ||
+        a.SenderIp.Contains(e.SearchText) ||
+        a.CreatedUserName.Contains(e.SearchText) ||
+        a.ModifiedUserName.Contains(e.SearchText))
+        .OrderByDescending(a => a.Id)
+        .Limit(500);
+    }
+
+    async Task OnEdit(DMessage item)
+    {
+        await Task.Yield();
+    }
+}
