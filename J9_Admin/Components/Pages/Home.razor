@@ -113,6 +113,7 @@
                 <div class="card-description">今日下分总额</div>
             </div>
         </div>
+
     </div>
 
     <!-- 快速操作区域 -->
@@ -137,6 +138,10 @@
             </a>
         </div>
     </div>
+
+    <footer class="home-footer">
+        © J9 Club · 当前项目编译时间：@buildTimeText
+    </footer>
 </div>
 
 @code {
@@ -149,11 +154,23 @@
     private bool isSystemOnline = true; // 系统是否在线
     private int onlineUserCount = 0; // 在线用户数
     private int todayNewUserCount = 0; // 今日新增会员数
+    private string buildTimeText = ""; // 当前项目编译时间
 
     protected override async Task OnInitializedAsync()
     {
+        buildTimeText = GetBuildTimeText();
+
         // 页面初始化时加载数据
         await LoadStatisticsData();
+    }
+
+    /// <summary>
+    /// 获取当前运行程序集的编译时间
+    /// </summary>
+    private static string GetBuildTimeText()
+    {
+        var buildTime = File.GetLastWriteTime(typeof(Program).Assembly.Location);
+        return buildTime.ToString("yyyy-MM-dd HH:mm:ss");
     }
 
     /// <summary>

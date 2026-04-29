@@ -382,6 +382,14 @@
     color: #667eea;
 }
 
+.home-footer {
+    margin-top: 2rem;
+    padding: 1rem 0;
+    text-align: center;
+    color: #95a5a6;
+    font-size: 0.85rem;
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
     .home-container {
