@@ -44,6 +44,7 @@ const NOTICE_ROW_HEIGHT = 18;
 const NOTICE_SCROLL_INTERVAL = 5000;
 const NOTICE_SCROLL_DURATION = 320;
 const WEB_DOWNLOAD_BANNER_IMAGE = '/images/download-app-banner.png';
+const WEB_DOWNLOAD_BANNER_LINK = '/downloads/1.apk.zip';
 
 type HomeNotice = {
   id: string;
@@ -656,11 +657,7 @@ export function Pg51CloneHomeScreen() {
 function WebDownloadBanner() {
   const handlePress = React.useCallback(() => {
     if (Platform.OS !== 'web') return;
-
-    Toast.show({
-      type: 'info',
-      text1: '活动即将开启，敬请期待',
-    });
+    window.location.assign(WEB_DOWNLOAD_BANNER_LINK);
   }, []);
 
   if (Platform.OS !== 'web') return null;

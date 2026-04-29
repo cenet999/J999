@@ -21,14 +21,14 @@ cd J9_Admin && dotnet run
 cd J9_Admin && ./dotnet.sh
 
 # Build backend project / solution
-cd /root/DD/J999 && dotnet build J9_Admin.sln
-cd /root/DD/J999/J9_Admin && dotnet build J9_Admin.csproj
+dotnet build J9_Admin.sln
+cd J9_Admin && dotnet build J9_Admin.csproj
 
 # Run tests in solution (when test projects exist)
-cd /root/DD/J999 && dotnet test J9_Admin.sln
+dotnet test J9_Admin.sln
 
 # Run a single test
-cd /root/DD/J999 && dotnet test J9_Admin.sln --filter FullyQualifiedName~SomeNamespace.SomeTestClass.SomeTestMethod
+dotnet test J9_Admin.sln --filter FullyQualifiedName~SomeNamespace.SomeTestClass.SomeTestMethod
 
 # Docker（通用流程见 .cursor/skills/dotnet-aspnet-docker/；J9 端口与卷见该 skill 文末对照表）
 cd J9_Admin
