@@ -6,7 +6,7 @@ const DEV_API =
     ? process.env.EXPO_PUBLIC_API_URL
     : 'http://localhost:5231';
 
-const PROD_API = 'https://bc.moneysb.com/';
+const PROD_API = 'https://sss.shgold.xyz/';
 
 function normalizeBaseUrl(url: string) {
   return url.replace(/\/+$/, '');
