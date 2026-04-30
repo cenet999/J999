@@ -2,6 +2,7 @@ using FreeScheduler;
 using FreeSql;
 using J9_Admin.API;
 using J9_Admin.Services;
+using J9_Admin.TelegramBot;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.FileProviders;
@@ -194,6 +195,9 @@ try
         J9_Admin.SeedData.Ddd.NoticeSeedData.Initialize(fsql);
     }
     #endregion
+
+    // 网站启动完成后，可选向指定 Telegram 会话发送成功提示（配置 TelegramBot:StartupNotifyChatIds，逗号分隔）
+    MessageHandler.RegisterWebsiteInitializedTelegramNotification(app, environment);
 
     app.Run();
 }

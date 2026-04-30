@@ -8,6 +8,10 @@ using Microsoft.VisualBasic;
 using System.Text.RegularExpressions;
 using System.Data;
 using System.Text.Json;
+using J9_Admin.API;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
+using Serilog;
 
 namespace J9_Admin.TelegramBot
 {
@@ -337,6 +341,46 @@ namespace J9_Admin.TelegramBot
             return telegramChatIdsCsv
                 .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                 .Any(id => string.Equals(id, targetChatId, StringComparison.Ordinal));
+        }
+
+        /// <summary>
+        /// 站点真正进入已启动状态后，可选向配置的 Telegram 会话发送成功提示；失败不阻断启动。
+        /// </summary>
+        public static void RegisterWebsiteInitializedTelegramNotification(WebApplication app, string environmentName)
+        {
+            app.Lifetime.ApplicationStarted.Register(() =>
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var chatIds = app.Configuration["TelegramBot:StartupNotifyChatIds"];
+                        if (string.IsNullOrWhiteSpace(chatIds))
+                            return;
+
+                        using var scope = app.Services.CreateScope();
+                        var tg = scope.ServiceProvider.GetRequiredService<TGMessageApi>();
+                        var apiDomain = app.Configuration["APIDomain"] ?? "";
+                        var machine = Environment.MachineName;
+                        var html =
+                            $"<b>J9 管理后台</b> 网站初始化成功\n\n" +
+                            $"环境：<code>{TGMessageApi.EscapeHtml(environmentName)}</code>\n" +
+                            $"机器：<code>{TGMessageApi.EscapeHtml(machine)}</code>\n" +
+                            $"时间：<code>{DateTime.Now:yyyy-MM-dd HH:mm:ss}</code>\n" +
+                            $"API：<code>{TGMessageApi.EscapeHtml(apiDomain)}</code>";
+
+                        var ok = await tg.SendMessageAsync(chatIds, html);
+                        if (ok)
+                            Log.Information("已向 Telegram 发送网站初始化成功通知");
+                        else
+                            Log.Information("网站初始化成功通知未送达（检查 TelegramBot:ApiKey 与 StartupNotifyChatIds）");
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warning(ex, "发送网站初始化成功 Telegram 通知时出错");
+                    }
+                });
+            });
         }
     }
 }
