@@ -53,10 +53,14 @@ try
     });
 
 
-    // 数据库连接：优先读取 ConnectionStrings:Default / ConnectionStrings:DataType
-    // 默认开发环境 SQLite；生产环境在 appsettings.Production.json 中切换为 PostgreSQL（Supabase）
-    var dbTypeText = builder.Configuration["ConnectionStrings:DataType"];
-    var dbConnStr = builder.Configuration.GetConnectionString("Default");
+    // 数据库连接：优先读取新的多数据库配置 ConnectionStrings:ActiveProvider
+    // 若未配置，则回退到旧格式 ConnectionStrings:Default / ConnectionStrings:DataType
+    var activeDbProvider = builder.Configuration["ConnectionStrings:ActiveProvider"];
+    var dbSection = !string.IsNullOrWhiteSpace(activeDbProvider)
+        ? builder.Configuration.GetSection($"ConnectionStrings:{activeDbProvider}")
+        : builder.Configuration.GetSection("ConnectionStrings");
+    var dbTypeText = dbSection["DataType"] ?? builder.Configuration["ConnectionStrings:DataType"];
+    var dbConnStr = dbSection["Default"] ?? builder.Configuration.GetConnectionString("Default");
     DataType dbType;
     if (!string.IsNullOrWhiteSpace(dbTypeText) && Enum.TryParse<DataType>(dbTypeText, true, out var parsedType))
     {
@@ -71,6 +75,7 @@ try
         dbConnStr = "Data Source=buyu.db";
         dbType = DataType.Sqlite;
     }
+    Log.Information("数据库配置节点: {DbProvider}", string.IsNullOrWhiteSpace(activeDbProvider) ? "ConnectionStrings(Default)" : activeDbProvider);
     Log.Information("数据库类型: {DbType}", dbType);
 
     var shouldAutoSyncStructure = true;
