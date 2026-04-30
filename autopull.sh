@@ -7,7 +7,8 @@
 # 若在 TTY 下手动运行（交互终端），默认自动开启 --force。
 #
 # 建议通过 cron 每 10 分钟执行一次（请改成你机器上的真实路径）：
-#   */10 * * * * /home/DD/J999/autopull.sh >> /home/DD/J999/autopull.log 2>&1
+#   */10 * * * * /root/dd/J999/autopull.sh >> /root/dd/J999/autopull.log 2>&1
+# 查看crontab: crontab -l
 #
 # 每次运行开始会按「日志行日期」裁剪 autopull.log：仅保留最近 3 天（含 cutoff
 # 当天）以内内容；无 [YYYY-MM-DD ...] 前缀的行归属其上一条带日期的 log 块。
