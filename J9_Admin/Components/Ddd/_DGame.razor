@@ -8,6 +8,7 @@
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.AspNetCore.Hosting
 @using J9_Admin.Services.GameApi
+@using J9_Admin.Services
 @using System.Linq
 
 <PageTitle>Game Management</PageTitle>
@@ -32,6 +33,14 @@
                 <button @onclick="() => BatchSetEnabledAsync(false)" type="button" class="btn btn-secondary btn-sm"
                     disabled="@(selectedItems.Count == 0)">
                     <i class="fa-solid fa-circle-xmark me-1"></i>批量禁用
+                </button>
+                <button @onclick="BatchDownloadImagesAsync" type="button" class="btn btn-primary btn-sm"
+                    disabled="@localizingGameIcons">
+                    @if (localizingGameIcons)
+                    {
+                        <span class="spinner-border spinner-border-sm mr-1" role="status" aria-hidden="true"></span>
+                    }
+                    <i class="fa-solid fa-cloud-arrow-down me-1"></i>批量下载图片
                 </button>
             </span>
             <span class="d-inline-flex align-items-center flex-nowrap gap-2" style="width: 500px">
@@ -258,6 +267,7 @@
     [Inject] IAggregateRootRepository<DGame> repo { get; set; }
     [Inject] J9_Admin.Utils.SessionAgent sessionAgent { get; set; }
     [Inject] J9_Admin.API.GameService GameService { get; set; }
+    [Inject] GameIconLocalizationService GameIconLocalizationService { get; set; }
     [Inject] MSGameApi MsGameApi { get; set; }
     [Inject] XHGameApi XhGameApi { get; set; }
 
@@ -280,6 +290,7 @@ new() { Code = "XH", DisplayName = "星汇游戏" }
     private string syncApiCode = "PG";
     private string selectedSyncPlatform = "MS";
     private bool syncingGames;
+    private bool localizingGameIcons;
     private GameListSyncViewModel? lastSync;
     private string lastSyncPlatform = "MS";
     private string lastSyncApiCode = "";
@@ -333,6 +344,32 @@ new() { Code = "XH", DisplayName = "星汇游戏" }
         selectedItems = new List<AdminItem<DGame>>();
         await adminTable.Load();
         await MessageService.Success($"已{(isEnabled ? "启用" : "禁用")} {affectedRows} 个游戏");
+    }
+
+    private async Task BatchDownloadImagesAsync()
+    {
+        if (localizingGameIcons)
+        {
+            return;
+        }
+
+        localizingGameIcons = true;
+        try
+        {
+            var result = await GameIconLocalizationService.LocalizeExternalIconsAsync();
+            await adminTable.Load();
+            await MessageService.Success(
+                $"处理完成：扫描 {result.Scanned} 条，下载 {result.Downloaded} 张，更新 {result.Updated} 条，已存在 {result.AlreadyExists} 条，失败 {result.Failed} 条");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "批量下载游戏图片失败");
+            await MessageService.Error("批量下载图片失败，请稍后重试");
+        }
+        finally
+        {
+            localizingGameIcons = false;
+        }
     }
 
     protected override async Task OnInitializedAsync()

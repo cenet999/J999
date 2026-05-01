@@ -17,6 +17,7 @@ services:
       # 映射日志目录
       - ./Logs:/app/Logs
       - ./wwwroot/uploads:/app/wwwroot/uploads
+      - ./wwwroot/game:/app/wwwroot/game
       - ./keys:/app/keys
       # 同步宿主时钟；仅保留 localtime（不挂载 /etc/timezone，避免宿主为目录或缺失时容器启动失败）
       # 业务时区以 environment 的 TZ 为准

@@ -40,6 +40,7 @@ COPY --from=publish /app/publish .
 # 创建必要的目录并设置权限
 RUN mkdir -p /app/Logs && \
     mkdir -p /app/wwwroot/uploads && \
+    mkdir -p /app/wwwroot/game && \
     mkdir -p /app/wwwroot/avatars && \
     mkdir -p /app/wwwroot/badge-photos && \
     mkdir -p /app/keys && \

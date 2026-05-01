@@ -5,6 +5,7 @@ using BootstrapBlazor.Components;
 using FreeScheduler;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using J9_Admin.Services;
 using J9_Admin.Utils;
 using RestSharp;
 using J9_Admin.Services.GameApi;
@@ -27,6 +28,7 @@ public class GameService : BaseService
     private readonly MSGameApi _msGameApi;
     private readonly XHGameApi _xhGameApi;
     private readonly PerMemberAsyncGate _perMemberGate;
+    private readonly GameIconLocalizationService _gameIconLocalizationService;
 
     public GameService(
         FreeSqlCloud freeSqlCloud,
@@ -36,12 +38,14 @@ public class GameService : BaseService
         IConfiguration configuration,
         MSGameApi msGameApi,
         XHGameApi xhGameApi,
+        GameIconLocalizationService gameIconLocalizationService,
         IWebHostEnvironment webHostEnvironment,
         PerMemberAsyncGate perMemberGate)
         : base(freeSqlCloud, scheduler, logger, adminContext, configuration, webHostEnvironment)
     {
         _msGameApi = msGameApi;
         _xhGameApi = xhGameApi;
+        _gameIconLocalizationService = gameIconLocalizationService;
         _perMemberGate = perMemberGate;
     }
 
@@ -169,6 +173,29 @@ public class GameService : BaseService
         {
             _logger.LogError(ex, "获取游戏列表时发生异常");
             return ApiResult.Error.SetMessage("获取游戏列表失败，请稍后重试");
+        }
+    }
+
+    /// <summary>
+    /// 将 DGame.Icon 的外链图片下载到本地 game 目录，并更新为本站地址。
+    /// </summary>
+    [HttpPost($"@{nameof(LocalizeExternalGameIcons)}")]
+    public async Task<ApiResult> LocalizeExternalGameIcons(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await _gameIconLocalizationService.LocalizeExternalIconsAsync(cancellationToken);
+            return ApiResult.Success.SetMessage("处理完成").SetData(result);
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogWarning("本地化 DGame 外链图标操作被取消");
+            return ApiResult.Error.SetMessage("操作已取消");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "本地化 DGame 外链图标时发生异常");
+            return ApiResult.Error.SetMessage("处理失败，请稍后重试");
         }
     }
 

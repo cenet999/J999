@@ -125,6 +125,7 @@ try
 
     // // 注册其他业务服务
     builder.Services.AddScoped<GameBetHistorySyncService>();
+    builder.Services.AddScoped<GameIconLocalizationService>();
     builder.Services.AddHostedService<GameBetHistorySyncHostedService>();
 
     builder.Services.AddScoped<J9_Admin.API.TransActionService>();

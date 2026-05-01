@@ -2,6 +2,7 @@
 /obj
 /Logs
 /buyu.db
+/wwwroot/game
 
 # macOS
 .DS_Store
