@@ -1361,8 +1361,8 @@ public class MSGameApi
                     var exist = await _fsql.Select<DGame>()
                           .Where(g => g.DGamePlatformId == gamePlatformId)
                           .Where(g =>
-                              (!string.IsNullOrEmpty(tmp.GameUID) && g.GameUID == tmp.GameUID) ||
-                              (!string.IsNullOrEmpty(tmp.GameCode) && g.ApiCode == tmp.ApiCode && g.GameCode == tmp.GameCode) ||
+                              (!string.IsNullOrEmpty(tmp.GameUID) && g.GameUID == tmp.GameUID) &&
+                              (!string.IsNullOrEmpty(tmp.GameCode) && g.ApiCode == tmp.ApiCode && g.GameCode == tmp.GameCode) &&
                               g.GameCnName == tmp.GameCnName)
                           .FirstAsync();
 
