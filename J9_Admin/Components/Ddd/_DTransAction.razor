@@ -72,7 +72,7 @@
         <th>当前代理</th>
         <th>一级下级</th>
         <th>二级下级</th>
-        <th>游戏信息ID</th>
+        <th>游戏信息</th>
         <th>代理名</th>
     </TableHeader>
     <TableRow>
@@ -92,7 +92,7 @@
         <td>@agentLabels.Current</td>
         <td>@agentLabels.Child</td>
         <td>@agentLabels.Grand</td>
-        <td>@item.DGameId</td>
+        <td>@(item.DGame?.GameCnName ?? item.DGame?.GameName ?? (item.DGameId > 0 ? $"ID:{item.DGameId}" : "-"))</td>
         <td>@GetRowAgentLabel(item)</td>
     </TableRow>
     <EditTemplate>
@@ -568,7 +568,7 @@ string.Join(",", agents.Select(a => a.Id))),
                 : select.Where(a => a.Id == 0);
         }
 
-        select.WhereIf(e.Filters[0].HasValue, a => a.TransactionType == e.Filters[0].Value<TransactionType>())
+        select.Include(a=>a.DGame).WhereIf(e.Filters[0].HasValue, a => a.TransactionType == e.Filters[0].Value<TransactionType>())
             .WhereIf(e.Filters[1].HasValue, a => a.Status == e.Filters[1].Value<TransactionStatus>())
             .WhereIf(e.Filters[2].HasValue, a => e.Filters[2].Values<long>().Contains(a.DAgentId))
             .WhereIf(!e.SearchText.IsNull(), a => a.CurrencyCode.Contains(e.SearchText) ||

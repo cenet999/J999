@@ -673,14 +673,15 @@ new AdminFilterInfo("接口代码", "ApiCode", false, 12, apiCodeLabels, apiCode
         .WhereIf(e.Filters[3].HasValue, a => a.IsTestPassed == e.Filters[3].Value<bool>())
         .WhereIf(e.Filters[4].HasValue, a => a.ApiCode != null && a.ApiCode == e.Filters[4].Value<string>())
         .WhereIf(!e.SearchText.IsNull(), a =>
-        a.GameName.Contains(e.SearchText) ||
-        a.GameCnName.Contains(e.SearchText) ||
-        a.GameUID.Contains(e.SearchText) ||
-        (a.GameCode != null && a.GameCode.Contains(e.SearchText)) ||
-        (a.ApiCode != null && a.ApiCode.Contains(e.SearchText)) ||
-        a.Icon.Contains(e.SearchText) ||
-        a.CreatedUserName.Contains(e.SearchText) ||
-        a.ModifiedUserName.Contains(e.SearchText))
+            a.Id.ToString().Contains(e.SearchText)||
+            a.GameName.Contains(e.SearchText) ||
+            a.GameCnName.Contains(e.SearchText) ||
+            a.GameUID.Contains(e.SearchText) ||
+            (a.GameCode != null && a.GameCode.Contains(e.SearchText)) ||
+            (a.ApiCode != null && a.ApiCode.Contains(e.SearchText)) ||
+            a.Icon.Contains(e.SearchText) ||
+            a.CreatedUserName.Contains(e.SearchText) ||
+            a.ModifiedUserName.Contains(e.SearchText))
         .OrderByDescending(a => a.Id);
     }
 
