@@ -92,7 +92,7 @@
         <td>@agentLabels.Current</td>
         <td>@agentLabels.Child</td>
         <td>@agentLabels.Grand</td>
-        <td>@(item.DGame?.GameCnName ?? item.DGame?.GameName ?? (item.DGameId > 0 ? $"ID:{item.DGameId}" : "-"))</td>
+        <td>@(item.DGame?.ApiCode ?? "-")</td>
         <td>@GetRowAgentLabel(item)</td>
     </TableRow>
     <EditTemplate>

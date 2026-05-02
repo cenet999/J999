@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.FileProviders;
 using Serilog;
+using J9_Admin.Services.DatabaseSync;
 
 
 // 配置 Serilog - 支持环境特定配置
@@ -25,6 +26,19 @@ try
 {
     Log.Information("启动应用程序...");
     Log.Information($"当前环境: {environment}");
+
+    if (args.Length > 0 && string.Equals(args[0], "sync-pg-to-sqlite", StringComparison.OrdinalIgnoreCase))
+    {
+        var syncConfiguration = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
+            .AddJsonFile($"appsettings.{environment}.json", optional: true, reloadOnChange: false)
+            .AddEnvironmentVariables()
+            .Build();
+
+        await PostgreSqlToSqliteSyncRunner.RunAsync(syncConfiguration, environment);
+        return;
+    }
 
     var builder = WebApplication.CreateBuilder(args);
 
@@ -205,6 +219,7 @@ try
 catch (Exception ex)
 {
     Log.Fatal(ex, "应用程序启动失败");
+    Environment.ExitCode = 1;
 }
 finally
 {
