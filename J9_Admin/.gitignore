@@ -3,6 +3,7 @@
 /Logs
 /buyu.db
 /wwwroot/game
+/backend.log
 
 # macOS
 .DS_Store
