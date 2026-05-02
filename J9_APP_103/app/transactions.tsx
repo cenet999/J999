@@ -182,24 +182,24 @@ const TX_STATUS_NAME_TO_VALUE: Record<string, number> = {
 };
 
 const TX_TYPE_MAP: Record<number, { label: string; icon: LucideIcon; color: string; bg: string }> =
-  {
-    0: { label: '上分', icon: ArrowUpRight, color: '#FF8A34', bg: '#35261d' },
-    1: { label: '下分', icon: ArrowDownLeft, color: '#35D07F', bg: '#1b3128' },
-    2: { label: '游戏投注', icon: Gamepad2, color: '#7B5CFF', bg: '#241d39' },
-    3: { label: '提现', icon: ArrowUpRight, color: '#FF8A34', bg: '#35261d' },
-    4: { label: '充值到账', icon: ArrowDownLeft, color: '#35D07F', bg: '#1b3128' },
-    5: { label: '退款', icon: Undo2, color: '#B794F4', bg: '#2b2240' },
-    6: { label: '返佣', icon: TrendingUp, color: '#35D07F', bg: '#1b3128' },
-    7: { label: '活动', icon: Gift, color: '#FF5FA2', bg: '#3a1f29' },
-    8: { label: '其他', icon: Repeat2, color: '#9da7bd', bg: '#2b3345' },
-    9: { label: '代理上分', icon: ArrowUpRight, color: '#FF8A34', bg: '#35261d' },
-    10: { label: '代理下分', icon: ArrowDownLeft, color: '#35D07F', bg: '#1b3128' },
-    11: { label: '反水', icon: Percent, color: '#7B5CFF', bg: '#241d39' },
-    12: { label: '代理充值', icon: ArrowDownLeft, color: '#35D07F', bg: '#1b3128' },
-    13: { label: '登录奖励', icon: Gift, color: '#FF5FA2', bg: '#3a1f29' },
-    14: { label: '签到奖励', icon: Gift, color: '#FFD84D', bg: '#383119' },
-    15: { label: '注册奖励', icon: Gift, color: '#35D07F', bg: '#1b3128' },
-  };
+{
+  0: { label: '上分', icon: ArrowUpRight, color: '#FF8A34', bg: '#35261d' },
+  1: { label: '下分', icon: ArrowDownLeft, color: '#35D07F', bg: '#1b3128' },
+  2: { label: '游戏投注', icon: Gamepad2, color: '#7B5CFF', bg: '#241d39' },
+  3: { label: '提现', icon: ArrowUpRight, color: '#FF8A34', bg: '#35261d' },
+  4: { label: '充值到账', icon: ArrowDownLeft, color: '#35D07F', bg: '#1b3128' },
+  5: { label: '退款', icon: Undo2, color: '#B794F4', bg: '#2b2240' },
+  6: { label: '返佣', icon: TrendingUp, color: '#35D07F', bg: '#1b3128' },
+  7: { label: '活动', icon: Gift, color: '#FF5FA2', bg: '#3a1f29' },
+  8: { label: '其他', icon: Repeat2, color: '#9da7bd', bg: '#2b3345' },
+  9: { label: '代理上分', icon: ArrowUpRight, color: '#FF8A34', bg: '#35261d' },
+  10: { label: '代理下分', icon: ArrowDownLeft, color: '#35D07F', bg: '#1b3128' },
+  11: { label: '反水', icon: Percent, color: '#7B5CFF', bg: '#241d39' },
+  12: { label: '代理充值', icon: ArrowDownLeft, color: '#35D07F', bg: '#1b3128' },
+  13: { label: '登录奖励', icon: Gift, color: '#FF5FA2', bg: '#3a1f29' },
+  14: { label: '签到奖励', icon: Gift, color: '#FFD84D', bg: '#383119' },
+  15: { label: '注册奖励', icon: Gift, color: '#35D07F', bg: '#1b3128' },
+};
 
 const DEFAULT_TX_META = { label: '其他', icon: Repeat2, color: '#9da7bd', bg: '#2b3345' };
 
@@ -986,6 +986,7 @@ function TransactionCard({ record }: { record: TransactionRecord }) {
   const currency = pickText(obj.currencyCode ?? obj.CurrencyCode) || 'CNY';
   const serialNumber = pickText(obj.serialNumber ?? obj.SerialNumber);
   const gameRound = pickText(obj.gameRound ?? obj.GameRound);
+  const apiCode = pickText(obj.apiCode ?? obj.ApiCode);
   const transactionTime = pickTransactionTimeText(
     obj.transactionTime ?? obj.TransactionTime ?? obj.createdTime ?? obj.CreatedTime
   );
@@ -1002,6 +1003,7 @@ function TransactionCard({ record }: { record: TransactionRecord }) {
         <View className="flex-1 gap-1">
           <View className="flex-row flex-wrap items-center gap-2">
             <Text className="text-[15px] font-black text-white">{typeMeta.label}</Text>
+            {apiCode ? <Text className="text-[15px] font-black text-white"> {apiCode}</Text> : null}
             <View
               className="flex-row items-center gap-1 rounded-full px-2 py-0.5"
               style={{ backgroundColor: statusMeta.bg }}>
@@ -1034,11 +1036,8 @@ function TransactionCard({ record }: { record: TransactionRecord }) {
       <View className="gap-0.5">
         <MetaRow label="流水 ID" value={transactionId} />
         <MetaRow label="业务单号" value={serialNumber || '—'} />
+
         {gameRound ? <MetaRow label="游戏局号" value={gameRound} /> : null}
-        {createdTime && createdTime !== transactionTime ? (
-          <MetaRow label="创建时间" value={formatFullDate(createdTime)} />
-        ) : null}
-        {modifiedTime ? <MetaRow label="修改时间" value={formatFullDate(modifiedTime)} /> : null}
       </View>
     </View>
   );
