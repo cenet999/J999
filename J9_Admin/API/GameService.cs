@@ -82,18 +82,9 @@ public class GameService : BaseService
     {
         var sinceUnix = TimeHelper.LocalToUnix(DateTime.Now.AddDays(-2));
         var platformIds = await ResolveGamePlatformIdsAsync(platformNames);
-
-        List<long>? gameIds = null;
-        if (platformIds.Count > 0)
+        if (platformIds.Count == 0)
         {
-            gameIds = await _fsql.Select<DGame>()
-                .Where(game => platformIds.Contains(game.DGamePlatformId))
-                .ToListAsync(game => game.Id);
-
-            if (gameIds.Count == 0)
-            {
-                return ([], 0);
-            }
+            return ([], 0);
         }
 
         var transQuery = _fsql.Select<DTransAction>()
@@ -102,15 +93,13 @@ public class GameService : BaseService
                 && t.TransactionTime >= sinceUnix
                 && t.TransactionType == TransactionType.TransferIn
                 && t.Status == TransactionStatus.Success
-                && t.DGameId > 0);
-
-        if (gameIds != null)
-        {
-            transQuery = transQuery.Where(t => gameIds.Contains(t.DGameId));
-        }
+                && t.DGameId > 0
+                && t.DGame != null
+                && platformIds.Contains(t.DGame.DGamePlatformId));
 
         var transRows = await transQuery
             .OrderByDescending(t => t.TransactionTime)
+            .Limit(100)
             .ToListAsync(t => new
             {
                 t.DGameId,
@@ -175,30 +164,6 @@ public class GameService : BaseService
             return ApiResult.Error.SetMessage("获取游戏列表失败，请稍后重试");
         }
     }
-
-    /// <summary>
-    /// 将 DGame.Icon 的外链图片下载到本地 game 目录，并更新为本站地址。
-    /// </summary>
-    [HttpPost($"@{nameof(LocalizeExternalGameIcons)}")]
-    public async Task<ApiResult> LocalizeExternalGameIcons(CancellationToken cancellationToken)
-    {
-        try
-        {
-            var result = await _gameIconLocalizationService.LocalizeExternalIconsAsync(cancellationToken);
-            return ApiResult.Success.SetMessage("处理完成").SetData(result);
-        }
-        catch (OperationCanceledException)
-        {
-            _logger.LogWarning("本地化 DGame 外链图标操作被取消");
-            return ApiResult.Error.SetMessage("操作已取消");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "本地化 DGame 外链图标时发生异常");
-            return ApiResult.Error.SetMessage("处理失败，请稍后重试");
-        }
-    }
-
 
     /// <summary>
     /// 启动 MS 局
@@ -491,7 +456,7 @@ public class GameService : BaseService
     }
 
     /// <summary>
-    /// 近两日回收
+    /// 近两日回收 MS 游戏
     /// </summary>
     /// <param name="player_id">玩家ID（会员 Id）</param>
     [HttpPost($"@{nameof(RecycleRecentTransferInMSGames)}")]
@@ -1141,7 +1106,7 @@ public class GameService : BaseService
     }
 
     /// <summary>
-    /// 近两日回收
+    /// 近两日回收 XH 游戏
     /// </summary>
     /// <param name="player_id">玩家ID（会员 Id）</param>
     [HttpPost($"@{nameof(RecycleRecentTransferInXHGames)}")]
