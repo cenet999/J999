@@ -1203,7 +1203,12 @@ public class MSGameApi
             netAmount = parsedNetAmount;
         }
 
-        var transactionTimeUnix = ReadBetTimeAsLong(betRecord);
+        // validBetAmount
+        decimal validBetAmount = 0;
+        if (decimal.TryParse(betRecord["validBetAmount"]?.ToString(), out decimal parsedValidBetAmount))
+        {
+            validBetAmount = parsedValidBetAmount;
+        }
 
         // 解析结算状态
         TransactionStatus status = TransactionStatus.Pending;
@@ -1232,16 +1237,19 @@ public class MSGameApi
             TransactionType = TransactionType.Bet,           // 投注类型
             BetAmount = betAmount,                           // 投注金额
             ActualAmount = netAmount,                        // 输赢金额（不包含本金）
+            ValidBetAmount = validBetAmount,                // 会员有效投注额
             CurrencyCode = "CNY",                           // 货币代码
             SerialNumber = betRecord["rowid"]?.ToString() ?? "", // 注单单号
+            BillNo = betRecord["billNo"]?.ToString() ?? "", // 注单流水号
+            PlayName = betRecord["playName"]?.ToString() ?? "", // 游戏账号
             GameRound = betRecord["roundNo"]?.ToString() ?? "",   // 游戏局号
-            TransactionTime = transactionTimeUnix,         // 投注时间（Unix 秒；0 表示本次未解析到真实时间）
+            TransactionTime = ReadBetTimeAsLong(betRecord), // 投注时间（Unix 秒）
             Status = status,                                 // 结算状态
             Description = description,                       // 交易描述
             Data = betRecord["result"]?.ToString() ?? "",    // 详细数据
             IsRebate = false,                               // 默认未反水
             DMemberId = 0,                                  // 需要根据username查找对应的会员ID
-            DGameId = 0,                                    // 需要根据游戏代码查找对应的游戏ID
+            DGameId = 0,                                    // 由 betRecord["code"] -> DGame.ApiCode 批量解析后回填
             DAgentId = 0                                    // 需要根据会员查找对应的代理ID
         };
 
@@ -1254,7 +1262,18 @@ public class MSGameApi
                    ?? betRecord["updateTime"]?.ToString()
                    ?? "0";
 
-        return long.TryParse(text, out var value) ? value : 0L;
+        if (!long.TryParse(text, out var value))
+        {
+            return TimeHelper.UtcUnix();
+        }
+
+        const long minPlausibleUnixSeconds = 946684800L; // 2000-01-01 00:00:00 UTC
+        if (value < minPlausibleUnixSeconds)
+        {
+            return TimeHelper.UtcUnix();
+        }
+
+        return value;
     }
 
     private async Task<long> ResolveMsGamePlatformIdAsync()

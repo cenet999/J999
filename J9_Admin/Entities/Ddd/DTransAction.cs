@@ -33,6 +33,11 @@ public partial class DTransAction : EntityModified
     public decimal ActualAmount { get; set; }
 
     /// <summary>
+    /// 有效投注额
+    /// </summary>
+    public decimal ValidBetAmount { get; set; }
+
+    /// <summary>
     /// 货币代码
     /// </summary>
     public string CurrencyCode { get; set; }
@@ -41,6 +46,16 @@ public partial class DTransAction : EntityModified
     /// 记录唯一编号
     /// </summary>
     public string SerialNumber { get; set; }
+
+    /// <summary>
+    /// 注单流水号
+    /// </summary>
+    public string BillNo { get; set; }
+
+    /// <summary>
+    /// 游戏账号
+    /// </summary>
+    public string PlayName { get; set; }
 
     /// <summary>
     /// 游戏局号

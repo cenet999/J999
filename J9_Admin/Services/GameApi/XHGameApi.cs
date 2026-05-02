@@ -827,6 +827,7 @@ public class XHGameApi {
 
                             // 解析注单数据中的会员名称
                             await ApplyMemberResolutionFromBetRecordsAsync(transActions, okBetRecords);
+                            await ApplyGameResolutionFromBetRecordsAsync(transActions, okBetRecords);
 
                             _logger.LogInformation("XH游戏获取注单历史成功 - 玩家ID: {PlayerId}, 获取到 {Count} 条记录",
                                 player_name ?? "全部", transActions.Count);
@@ -925,15 +926,21 @@ public class XHGameApi {
                     if (existDict.TryGetValue(row.SerialNumber, out var old)) {
                         old.BetAmount = row.BetAmount;
                         old.ActualAmount = row.ActualAmount;
+                        old.ValidBetAmount = row.ValidBetAmount;
                         old.Status = row.Status;
                         old.Description = row.Description;
                         old.Data = row.Data ?? "";
 
                         old.GameRound = row.GameRound ?? "";
+                        old.BillNo = row.BillNo ?? "";
+                        old.PlayName = row.PlayName ?? "";
                         old.CurrencyCode = string.IsNullOrWhiteSpace(row.CurrencyCode) ? "CNY" : row.CurrencyCode;
                         if (row.DMemberId > 0) {
                             old.DMemberId = row.DMemberId;
                             old.DAgentId = row.DAgentId;
+                        }
+                        if (row.DGameId > 0) {
+                            old.DGameId = row.DGameId;
                         }
 
                         old.ModifiedTime = DateTime.Now;
@@ -1024,6 +1031,63 @@ public class XHGameApi {
         }
     }
 
+    private static string? ReadXhBetApiCode(JToken betRecord) {
+        static string? Pick(params string?[] xs) {
+            foreach (var s in xs) {
+                if (!string.IsNullOrWhiteSpace(s))
+                    return s.Trim();
+            }
+
+            return null;
+        }
+
+        return Pick(
+            betRecord["code"]?.ToString(),
+            betRecord["apiCode"]?.ToString(),
+            betRecord["ApiCode"]?.ToString());
+    }
+
+    // 
+    /// <summary>
+    /// 根据注单中的接口代码（如 betRecord["code"]）批量解析本地游戏，并回填 <see cref="DTransAction.DGameId"/>。
+    /// </summary>
+    private async Task ApplyGameResolutionFromBetRecordsAsync(List<DTransAction> transActions, IReadOnlyList<JToken> betRecords) {
+        var n = Math.Min(transActions.Count, betRecords.Count);
+        if (n == 0)
+            return;
+
+        var apiCodes = new List<string?>(n);
+        for (var i = 0; i < n; i++)
+            apiCodes.Add(ReadXhBetApiCode(betRecords[i]));
+
+        var distinct = apiCodes
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .Select(s => s!.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (distinct.Count == 0)
+            return;
+
+        // 按 ApiCode 一次性查询，避免逐条注单查库。
+        var games = await _fsql.Select<DGame>()
+            .Where(g => distinct.Contains(g.ApiCode))
+            .OrderBy(g => g.Id)
+            .ToListAsync();
+        var dict = games
+            .GroupBy(g => g.ApiCode ?? "", StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First().Id, StringComparer.OrdinalIgnoreCase);
+
+        for (var i = 0; i < n; i++) {
+            var apiCode = apiCodes[i];
+            if (string.IsNullOrWhiteSpace(apiCode))
+                continue;
+            if (dict.TryGetValue(apiCode.Trim(), out var gameId)) {
+                // 将接口代码匹配到的本地 DGame.Id 回填到交易记录。
+                transActions[i].DGameId = gameId;
+            }
+        }
+    }
+
     /// <summary>
     /// 注单转流水
     /// </summary>
@@ -1040,6 +1104,13 @@ public class XHGameApi {
         decimal netAmount = 0;
         if (decimal.TryParse(betRecord["netAmount"]?.ToString(), out decimal parsedNetAmount)) {
             netAmount = parsedNetAmount;
+        }
+
+        
+        // validBetAmount
+        decimal validBetAmount = 0;
+        if (decimal.TryParse(betRecord["validBetAmount"]?.ToString(), out decimal parsedValidBetAmount)) {
+            validBetAmount = parsedValidBetAmount;
         }
 
         // 解析结算状态
@@ -1068,8 +1139,11 @@ public class XHGameApi {
             TransactionType = TransactionType.Bet,           // 投注类型
             BetAmount = betAmount,                           // 投注金额
             ActualAmount = netAmount,                        // 输赢金额（不包含本金）
+            ValidBetAmount = validBetAmount,                //	会员有效投注额  
             CurrencyCode = "CNY",                           // 货币代码
             SerialNumber = betRecord["rowid"]?.ToString() ?? "", // 注单单号
+            BillNo = betRecord["billNo"]?.ToString() ?? "", // 注单流水号  
+            PlayName = betRecord["playName"]?.ToString() ?? "", // 	游戏账号  
             GameRound = betRecord["roundNo"]?.ToString() ?? "",   // 游戏局号
             TransactionTime = ReadBetTimeAsLong(betRecord),           // 投注时间（Unix 秒）
             Status = status,                                 // 结算状态
@@ -1077,7 +1151,7 @@ public class XHGameApi {
             Data = betRecord["result"]?.ToString() ?? "",    // 详细数据
             IsRebate = false,                               // 默认未反水
             DMemberId = 0,                                  // 需要根据username查找对应的会员ID
-            DGameId = 0,                                    // 需要根据游戏代码查找对应的游戏ID
+            DGameId = 0,                                    // 由 betRecord["code"] -> DGame.ApiCode 批量解析后回填
             DAgentId = 0                                    // 需要根据会员查找对应的代理ID
         };
 
