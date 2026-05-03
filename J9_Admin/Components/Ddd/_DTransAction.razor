@@ -61,27 +61,27 @@
     <TableHeader>
         <th>ID</th>
         <th>交易类型</th>
+        <th>游戏信息</th>
         <th>交易前金额</th>
         <th>交易后金额</th>
         <th>投注金额</th>
         <th>赢/输金额</th>
+        <th>有效投注额</th>
         <th>交易时间</th>
         <th>交易状态</th>
         <th>已反水</th>
         <th>会员名</th>
         <th>当前代理</th>
-        <th>一级下级</th>
-        <th>二级下级</th>
-        <th>游戏信息</th>
-        <th>代理名</th>
     </TableHeader>
     <TableRow>
         <td>@item.Id</td>
         <td>@GetTransactionTypeText(item.TransactionType)</td>
+        <td>@(item.DGame?.ApiCode ?? "-")</td>
         <td>@item.BeforeAmount</td>
         <td>@item.AfterAmount</td>
         <td>@item.BetAmount</td>
         <td>@item.ActualAmount</td>
+        <td>@item.ValidBetAmount</td>
         <td>@TimeHelper.UnixToLocal(item.TransactionTime).ToString("yyyy-MM-dd HH:mm:ss")</td>
         <td>@item.Status</td>
         <td>@item.IsRebate</td>
@@ -90,10 +90,6 @@
             var agentLabels = GetTransactionAgentLabels(item);
         }
         <td>@agentLabels.Current</td>
-        <td>@agentLabels.Child</td>
-        <td>@agentLabels.Grand</td>
-        <td>@(item.DGame?.ApiCode ?? "-")</td>
-        <td>@GetRowAgentLabel(item)</td>
     </TableRow>
     <EditTemplate>
         <div class="row">
@@ -590,15 +586,7 @@ string.Join(",", agents.Select(a => a.Id))),
         return ("-", "-", "-");
     }
 
-    /// <summary>本条流水归属代理的展示名（无名称时退回 ID）。</summary>
-    string GetRowAgentLabel(DTransAction item)
-    {
-        if (item.DAgent != null)
-            return GetAgentName(item.DAgent);
-        if (agentMapForDisplay.TryGetValue(item.DAgentId, out var agent))
-            return GetAgentName(agent);
-        return item.DAgentId > 0 ? $"ID:{item.DAgentId}" : "-";
-    }
+
 
     /// <summary>
     /// 非 admin：以登录账号关联代理为锚点，在「根→本条归属代理」链上取从该锚点向下的最多三级（当前代理、一级下级、二级下级）。
