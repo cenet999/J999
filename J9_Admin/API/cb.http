@@ -1,5 +1,5 @@
 ### Pay0 支付回调（示例 payload，Signature 等需与真实订单一致）
-POST http://localhost:5231/api/trans/@Pay0Callback
+POST https://bc.moneysb.com/api/trans/@Pay0Callback
 Content-Type: application/json
 
 {

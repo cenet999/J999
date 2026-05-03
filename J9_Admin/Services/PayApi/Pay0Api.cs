@@ -18,6 +18,7 @@ public class Pay0Api
     private readonly ILogger<Pay0Api> _logger;
     private readonly FreeSqlCloud _fsql;
     private readonly TaskProgressService _taskProgressService;
+    private readonly IConfiguration _configuration;
 
     // TokenPay配置参数
     private string TokenPayUrl = "https://payu.moneysb.com"; // TokenPay API地址
@@ -26,11 +27,12 @@ public class Pay0Api
     /// <summary>
     /// 支付服务构造
     /// </summary>
-    public Pay0Api(ILogger<Pay0Api> logger, FreeSqlCloud fsql, TaskProgressService taskProgressService)
+    public Pay0Api(ILogger<Pay0Api> logger, FreeSqlCloud fsql, TaskProgressService taskProgressService, IConfiguration configuration)
     {
         _logger = logger;
         _fsql = fsql;
         _taskProgressService = taskProgressService ?? throw new ArgumentNullException(nameof(taskProgressService));
+        _configuration = configuration;
         _logger.LogInformation("Pay0Api initialized");
     }
 
@@ -77,23 +79,31 @@ public class Pay0Api
                 return ApiResult.Error.SetMessage("订单不存在");
             }
 
-            // 4. 构建订单参数
+            // 4. 回调地址：与 appsettings 中 APIDomain 一致（支付网关需能访问的公网/API 根地址）
+            var apiDomain = _configuration["APIDomain"]?.Trim().TrimEnd('/');
+            if (string.IsNullOrWhiteSpace(apiDomain))
+            {
+                _logger.LogWarning("APIDomain 未配置，无法生成支付回调 NotifyUrl");
+                return ApiResult.Error.SetMessage("APIDomain 未配置");
+            }
+
+            // 5. 构建订单参数
             var orderParams = new Dictionary<string, string>
             {
                 ["OutOrderId"] = transAction.Id.ToString(),
                 ["OrderUserKey"] = transAction.DMember.Username,
                 ["ActualAmount"] = amount.ToString(),
                 ["Currency"] = "USDT_TRC20",
-                ["NotifyUrl"] = $"{httpContext.Request.Scheme}://{httpContext.Request.Host}/api/trans/@Pay0Callback",
+                ["NotifyUrl"] = $"{apiDomain}/api/trans/@Pay0Callback",
                 ["RedirectUrl"] = returnUrl,
                 ["Address_TRON"] = transAction.DAgent.UsdtAddress
             };
 
-            // 5. 生成签名
+            // 6. 生成签名
             string signature = StringHelper.GenerateSignature(orderParams, TokenPayApiToken);
             orderParams["Signature"] = signature;
 
-            // 6. 调用TokenPay接口创建订单
+            // 7. 调用TokenPay接口创建订单
             var tokenPayResult = await CallTokenPayCreateOrder(orderParams);
             if (tokenPayResult == null)
             {
