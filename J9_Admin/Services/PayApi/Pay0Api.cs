@@ -20,7 +20,7 @@ public class Pay0Api
     private readonly TaskProgressService _taskProgressService;
 
     // TokenPay配置参数
-    private string TokenPayUrl = "https://usdt_pay.800800.win"; // TokenPay API地址
+    private string TokenPayUrl = "https://payu.moneysb.com"; // TokenPay API地址
     private string TokenPayApiToken = "ABC123"; // API Token
 
     /// <summary>

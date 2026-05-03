@@ -17,7 +17,7 @@
         <th>代理域名</th>
         <th>服务器IP</th>
         <th>登录IP</th>
-        <th>反水比例</th>
+        <th>会员反水比例</th>
         <th>代理备注</th>
         <th>创建时间</th>
     </TableHeader>
@@ -58,12 +58,12 @@
                 <label class="form-label">代理游戏分</label>
                 <input @bind="item.GamePoints" type="number" class="form-control" placeholder="">
             </div>
-            <div class="form-group col-6">
-                <label class="form-label">代理USDT地址</label>
+            <div class="form-group col-6 d-none">
+                <label class="form-label">USDT地址</label>
                 <input type="text" class="form-control" readonly value="@item.UsdtAddress" placeholder="与当前登录代理一致，不可编辑" maxlength="100">
             </div>
             <div class="form-group col-6">
-                <label class="form-label">Telegram聊天ID</label>
+                <label class="form-label">Telegram机器人ID</label>
                 <input @bind="item.TelegramChatId" type="number" class="form-control" placeholder="">
             </div>
             <div class="form-group col-6">
@@ -87,7 +87,7 @@
                 <input @bind="item.IPWhiteList" type="text" class="form-control" placeholder="" maxlength="200">
             </div>
             <div class="form-group col-6">
-                <label class="form-label">反水比例</label>
+                <label class="form-label">会员反水比例</label>
                 <input @bind="item.RebateRate" type="number" class="form-control" placeholder="">
             </div>
             <div class="form-group col-6">

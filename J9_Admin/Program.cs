@@ -29,10 +29,11 @@ try
 
     if (args.Length > 0 && string.Equals(args[0], "sync-pg-to-sqlite", StringComparison.OrdinalIgnoreCase))
     {
+        // 同步专用：PostgreSQL 等连接串只读 appsettings.json，避免 Development 里占位串覆盖真实密码。
+        // 仍支持环境变量覆盖（如 ConnectionStrings__PostgreSQL__Default）。
         var syncConfiguration = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
-            .AddJsonFile($"appsettings.{environment}.json", optional: true, reloadOnChange: false)
             .AddEnvironmentVariables()
             .Build();
 

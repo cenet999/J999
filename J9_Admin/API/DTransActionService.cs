@@ -373,8 +373,8 @@ public class TransActionService : BaseService
                             a.IsRebate == false)
                     .ToListAsync();
 
-            // 计算反水金额佣金收入
-            var rebateAmount = transActionList.Sum(a => a.ActualAmount * agent.RebateRate);
+            // 按有效投注额计算会员返水
+            var rebateAmount = transActionList.Sum(a => a.ValidBetAmount * agent.RebateRate);
 
             if (rebateAmount <= 0)
             {

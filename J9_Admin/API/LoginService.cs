@@ -327,13 +327,13 @@ IP：{TGMessageApi.EscapeHtml(ip)}
             var todayBet = await _fsql.Select<DTransAction>().Where(a => a.DMemberId == userId && a.CreatedTime >= DateTime.Today && a.CreatedTime < DateTime.Today.AddDays(1)).SumAsync(a => a.BetAmount);
             var totalBet = await _fsql.Select<DTransAction>().Where(a => a.DMemberId == userId).SumAsync(a => a.BetAmount);
 
-            // 与 TransActionService.PlayerRebate 一致：仅统计成功投注且未返水，按 ActualAmount 合计后再乘返水比例
+            // 与 TransActionService.PlayerRebate 一致：仅统计成功投注且未返水，按有效投注额合计后再乘返水比例
             var rebateTotalAmount = await _fsql.Select<DTransAction>()
                 .Where(a => a.DMemberId == userId
                     && a.TransactionType == TransactionType.Bet
                     && a.Status == TransactionStatus.Success
                     && a.IsRebate == false)
-                .SumAsync(a => a.ActualAmount);
+                .SumAsync(a => a.ValidBetAmount);
             var rebateRate = member.DAgent?.RebateRate ?? 0;
             var rebateAmount = rebateTotalAmount * rebateRate;
 

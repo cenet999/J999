@@ -11,42 +11,52 @@
     <TableHeader>
         <th>ID</th>
         <th>用户名</th>
-        <th>昵称</th>
         <th>密码</th>
         <th>是否启用</th>
-        <th>登录时间</th>
-        <th>组织ID</th>
-        <th>是否系统</th>
         <th>父ID</th>
         <th>邀请码</th>
         <th>余额</th>
         <th>反水开关</th>
-        <th>更新时间</th>
         <th>注册IP</th>
         <th>代理名</th>
         <th>最后签到</th>
         <th>连续签到</th>
-        <th>创建时间</th>
+        <th>登录时间</th>
     </TableHeader>
     <TableRow>
         <td>@item.Id</td>
         <td>@item.Username</td>
-        <td>@item.Nickname</td>
         <td>@item.Password</td>
-        <td>@item.IsEnabled</td>
-        <td>@item.LoginTime.ToString("yyyy-MM-dd HH:mm:ss")</td>
-        <td>@item.OrgId</td>
-        <td>@item.IsSystem</td>
+        <td>
+            @if (item.IsEnabled)
+            {
+                <span class="badge bg-success">启用</span>
+            }
+            else
+            {
+                <span class="badge bg-secondary">停用</span>
+            }
+        </td>
         <td>@item.ParentId</td>
         <td>@item.InviteCode</td>
-        <td>@item.CreditAmount</td>
+        <td>
+            <span class="badge @(item.CreditAmount >= 0 ? "bg-success" : "bg-danger")">@item.CreditAmount.ToString("N2")</span>
+        </td>
         <td>@item.IsRebateSwitch</td>
-        <td>@item.UpdatedTime.ToString("yyyy-MM-dd HH:mm:ss")</td>
-        <td>@item.RegisterIp</td>
+        <td>
+            @if (string.IsNullOrWhiteSpace(item.RegisterIp))
+            {
+                <span class="badge bg-secondary">未记录</span>
+            }
+            else
+            {
+                <span class="badge bg-dark font-monospace">@item.RegisterIp.Trim()</span>
+            }
+        </td>
         <td>@item.DAgent?.AgentName</td>
         <td>@item.LastCheckInDate?.ToString("yyyy-MM-dd HH:mm:ss")</td>
         <td>@item.ContinuousCheckInDays</td>
-        <td>@item.CreatedTime?.ToString("yyyy-MM-dd HH:mm:ss")</td>
+        <td>@item.LoginTime.ToString("yyyy-MM-dd HH:mm:ss")</td>
     </TableRow>
     <EditTemplate>
         <div class="row">
@@ -164,6 +174,7 @@
     {
         showAllMembers = string.Equals(AdminContext.User?.Username, "admin", StringComparison.OrdinalIgnoreCase);
         var allAgents = await repo.Orm.Select<DAgent>().OrderByDescending(a => a.Id).ToListAsync();
+        
         visibleAgentIds = VisibleAgentIdsHelper.Build(allAgents, showAllMembers, sessionAgent.GetAgentId());
         var agents = showAllMembers
             ? allAgents
@@ -245,6 +256,9 @@
             }
             repo.Attach(item);
         }
+        // 仅新建或邀请码为空时生成，避免每次打开编辑覆盖已有邀请码
+        if (item.Id == default || string.IsNullOrWhiteSpace(item.InviteCode))
+            item.InviteCode = new Random().Next(1000, 10000).ToString();
 
         EnsureMemberAgentSelectCoversCurrent(item);
         await Task.Yield();
