@@ -215,18 +215,43 @@ public class Pay0Api
     {
         try
         {
-            _logger.LogInformation("收到TokenPay支付回调通知，请求内容长度：{ContentLength}", httpContext.Request.ContentLength);
+            _logger.LogInformation(
+                "收到TokenPay支付回调通知，Method={Method}，ContentLength={ContentLength}",
+                httpContext.Request.Method,
+                httpContext.Request.ContentLength);
 
-            // 读取请求体 - 从当前HTTP请求中获取JSON数据
             var options = new JsonSerializerOptions();
             options.Converters.Add(new NumberToStringConverter());
-            var requestBody = await httpContext.Request.ReadFromJsonAsync<Dictionary<string, string>>(options);
 
-            _logger.LogInformation("收到TokenPay支付回调请求体：{RequestBody}", requestBody);
-
-            if (requestBody == null)
+            // POST 通常为 JSON；GET 或部分网关会把参数放在 Query，需兼容以免 405 或 body 为空
+            Dictionary<string, string>? requestBody = null;
+            if (string.Equals(httpContext.Request.Method, "POST", StringComparison.OrdinalIgnoreCase))
             {
-                _logger.LogWarning("收到空的TokenPay回调请求体");
+                try
+                {
+                    requestBody = await httpContext.Request.ReadFromJsonAsync<Dictionary<string, string>>(options);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "解析 TokenPay 回调 JSON 失败，将尝试从 Query 读取");
+                }
+            }
+
+            if (requestBody == null || requestBody.Count == 0)
+            {
+                requestBody = new Dictionary<string, string>(StringComparer.Ordinal);
+                foreach (var kv in httpContext.Request.Query)
+                {
+                    if (kv.Value.Count > 0)
+                        requestBody[kv.Key] = kv.Value.ToString();
+                }
+            }
+
+            _logger.LogInformation("收到TokenPay支付回调参数：{RequestBody}", requestBody);
+
+            if (requestBody == null || requestBody.Count == 0)
+            {
+                _logger.LogWarning("收到空的TokenPay回调参数");
                 return "error";
             }
 
