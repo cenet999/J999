@@ -5,32 +5,34 @@
 
 <PageTitle>交易流水</PageTitle>
 
-<AdminTable2 @ref="adminTable" TItem="DTransAction" Context="item" PageSize="50" Title="交易流水" DialogClassName="modal-lg" OnQuery="OnQuery"
-    InitQuery="InitQuery" OnEdit="OnEdit" TableTd99Width="150" IsRefersh="true">
+<AdminTable2 @ref="adminTable" TItem="DTransAction" Context="item" PageSize="50" Title="交易流水" DialogClassName="modal-lg"
+    OnQuery="OnQuery" InitQuery="InitQuery" TableTd99Width="150" IsRefersh="true" IsAdd="false" IsEdit="false">
 
     <TableTd99>
         @if (item.Status == TransactionStatus.Processing)
         {
             <button @onclick="e => MarkProcessingSuccess(item)" type="button" class="mr-2 btn btn-light btn-xs"
                 title="处理完成，标为成功"><i class="fa-solid fa-circle-check text-success"></i></button>
-            <button @onclick="e => RejectProcessing(item)" type="button" class="mr-2 btn btn-light btn-xs"
-                title="拒绝"><i class="fa-solid fa-circle-xmark text-danger"></i></button>
+            <button @onclick="e => RejectProcessing(item)" type="button" class="mr-2 btn btn-light btn-xs" title="拒绝"><i
+                    class="fa-solid fa-circle-xmark text-danger"></i></button>
         }
         @if (item.TransactionType == TransactionType.Recharge && item.Status == TransactionStatus.Pending)
         {
-            <button @onclick="e => ManualCallback(item)" type="button" class="mr-2 btn btn-light btn-xs"
-                title="手动入账"><i class="fa-solid fa-money-bill-transfer"></i></button>
+            <button @onclick="e => ManualCallback(item)" type="button" class="mr-2 btn btn-light btn-xs" title="手动入账"><i
+                    class="fa-solid fa-money-bill-transfer"></i></button>
         }
     </TableTd99>
     <CardHeader>
         <span class="w-auto my-2">
             <div class="d-inline-flex align-items-center flex-nowrap gap-2" style="width: 500px;">
-                
+
                 <div class="input-group input-group-sm flex-nowrap" style="flex: 1 1 auto; max-width: 18rem;">
                     <span class="input-group-text flex-shrink-0">会员登录名</span>
-                    <input type="text" class="form-control" @bind="syncBetUsername" placeholder="可选，空=全部" maxlength="64" />
+                    <input type="text" class="form-control" @bind="syncBetUsername" placeholder="可选，空=全部"
+                        maxlength="64" />
                 </div>
-                <button type="button" class="btn btn-sm btn-primary flex-shrink-0" disabled="@syncingBetHistory" @onclick="SyncBetHistoryAsync">
+                <button type="button" class="btn btn-sm btn-primary flex-shrink-0" disabled="@syncingBetHistory"
+                    @onclick="SyncBetHistoryAsync">
                     @if (syncingBetHistory)
                     {
                         <span class="spinner-border spinner-border-sm mr-1" role="status" aria-hidden="true"></span>
@@ -45,8 +47,12 @@
                 @if (lastBetOutcome.BothSuccess)
                 {
                     <div class="alert alert-success mb-0 mt-2 py-2 small">
-                        <div><strong>MS</strong>：拉取 <strong>@ms.RemoteFetched</strong> · 新 <strong class="text-success">@ms.Inserted</strong> · 更 <strong>@ms.Updated</strong> · 无单号跳过 <strong>@ms.SkippedNoSerial</strong> · <strong>@ms.PagesDone</strong> 页</div>
-                        <div><strong>XH</strong>：拉取 <strong>@xh.RemoteFetched</strong> · 新 <strong class="text-success">@xh.Inserted</strong> · 更 <strong>@xh.Updated</strong> · 无单号跳过 <strong>@xh.SkippedNoSerial</strong> · <strong>@xh.PagesDone</strong> 页</div>
+                        <div><strong>MS</strong>：拉取 <strong>@ms.RemoteFetched</strong> · 新 <strong
+                                class="text-success">@ms.Inserted</strong> · 更 <strong>@ms.Updated</strong> · 无单号跳过
+                            <strong>@ms.SkippedNoSerial</strong> · <strong>@ms.PagesDone</strong> 页</div>
+                        <div><strong>XH</strong>：拉取 <strong>@xh.RemoteFetched</strong> · 新 <strong
+                                class="text-success">@xh.Inserted</strong> · 更 <strong>@xh.Updated</strong> · 无单号跳过
+                            <strong>@xh.SkippedNoSerial</strong> · <strong>@xh.PagesDone</strong> 页</div>
                     </div>
                 }
                 else
@@ -79,9 +85,11 @@
         <td>@(item.DGame?.ApiCode ?? "-")</td>
         <td>@item.BeforeAmount</td>
         <td>@item.AfterAmount</td>
-        <td>@item.BetAmount</td>
-        <td>@item.ActualAmount</td>
-        <td>@item.ValidBetAmount</td>
+        <td>@item.BetAmount.ToString("N2")</td>
+        <td><span
+                class="badge @(item.ActualAmount > 0 ? "bg-success" : item.ActualAmount < 0 ? "bg-danger" : "bg-secondary")">@item.ActualAmount.ToString("N2")</span>
+        </td>
+        <td><span class="badge bg-info">@item.ValidBetAmount.ToString("N2")</span></td>
         <td>@TimeHelper.UnixToLocal(item.TransactionTime).ToString("yyyy-MM-dd HH:mm:ss")</td>
         <td>@item.Status</td>
         <td>@item.IsRebate</td>
@@ -239,8 +247,8 @@
             {
                 row.Status = TransactionStatus.Success;
                 row.Description = string.IsNullOrWhiteSpace(row.Description)
-                    ? "后台标为成功"
-                    : $"{row.Description} - 后台标为成功";
+                ? "后台标为成功"
+                : $"{row.Description} - 后台标为成功";
                 row.ModifiedTime = DateTime.Now;
                 row.ModifiedUserName = AdminContext.User?.Username ?? "系统";
             }
@@ -258,7 +266,8 @@
                 }
             }
 
-            var reverseList = await rep.Select.Where(t => t.RelatedTransActionId == current.Id && t.Status == TransactionStatus.Processing).ToListAsync();
+            var reverseList = await rep.Select.Where(t => t.RelatedTransActionId == current.Id && t.Status ==
+            TransactionStatus.Processing).ToListAsync();
             foreach (var rev in reverseList)
             {
                 MarkOne(rev);
@@ -305,7 +314,8 @@
                 var related = await rep.Select.Where(t => t.Id == rid && t.Status == TransactionStatus.Processing).ToOneAsync();
                 if (related != null) rows.Add(related);
             }
-            var reverseList = await rep.Select.Where(t => t.RelatedTransActionId == current.Id && t.Status == TransactionStatus.Processing).ToListAsync();
+            var reverseList = await rep.Select.Where(t => t.RelatedTransActionId == current.Id && t.Status ==
+            TransactionStatus.Processing).ToListAsync();
             foreach (var rev in reverseList)
                 if (!rows.Any(x => x.Id == rev.Id)) rows.Add(rev);
 
@@ -331,8 +341,8 @@
             {
                 row.Status = TransactionStatus.Cancelled;
                 row.Description = string.IsNullOrWhiteSpace(row.Description)
-                    ? "后台拒绝"
-                    : $"{row.Description} - 后台拒绝";
+                ? "后台拒绝"
+                : $"{row.Description} - 后台拒绝";
                 row.ModifiedTime = DateTime.Now;
                 row.ModifiedUserName = AdminContext.User?.Username ?? "系统";
             }
@@ -418,7 +428,7 @@
                 currentTransAction.ModifiedTime = DateTime.Now;
                 currentTransAction.ModifiedUserName = AdminContext.User?.Username ?? "系统";
 
-              
+
 
                 // 5. 查找并更新用户余额
                 var rep_dMember = uow.GetRepository<DMember>();
@@ -529,10 +539,10 @@
         visibleAgentIds = VisibleAgentIdsHelper.Build(allDAgents, showAllTransactions, sessionAgent.GetAgentId());
         agentMapForDisplay = allDAgents.ToDictionary(a => a.Id);
         var agents = showAllTransactions
-            ? allDAgents
-            : visibleAgentIds.Count > 0
-            ? allDAgents.Where(a => visibleAgentIds.Contains(a.Id)).ToList()
-            : [];
+        ? allDAgents
+        : visibleAgentIds.Count > 0
+        ? allDAgents.Where(a => visibleAgentIds.Contains(a.Id)).ToList()
+        : [];
         // AdminFilterInfo 用英文逗号拼接选项，展示文案里不能含 ','
         static string NoComma(string? s) => (s ?? "").Replace(",", " ");
         string AgentLabel(DAgent a)
@@ -560,21 +570,22 @@ string.Join(",", agents.Select(a => a.Id))),
         if (!showAllTransactions)
         {
             select = visibleAgentIds.Count > 0
-                ? select.Where(a => visibleAgentIds.Contains(a.DAgentId))
-                : select.Where(a => a.Id == 0);
+            ? select.Where(a => visibleAgentIds.Contains(a.DAgentId))
+            : select.Where(a => a.Id == 0);
         }
 
-        select.Include(a=>a.DGame).WhereIf(e.Filters[0].HasValue, a => a.TransactionType == e.Filters[0].Value<TransactionType>())
-            .WhereIf(e.Filters[1].HasValue, a => a.Status == e.Filters[1].Value<TransactionStatus>())
-            .WhereIf(e.Filters[2].HasValue, a => e.Filters[2].Values<long>().Contains(a.DAgentId))
-            .WhereIf(!e.SearchText.IsNull(), a => a.CurrencyCode.Contains(e.SearchText) ||
-            a.SerialNumber.Contains(e.SearchText) ||
-            a.GameRound.Contains(e.SearchText) ||
-            a.Data.Contains(e.SearchText) ||
-            a.Description.Contains(e.SearchText) ||
-            a.CreatedUserName.Contains(e.SearchText) ||
-            a.ModifiedUserName.Contains(e.SearchText))
-            .OrderByDescending(a => a.TransactionTime);
+        select.Include(a => a.DGame).WhereIf(e.Filters[0].HasValue, a => a.TransactionType ==
+        e.Filters[0].Value<TransactionType>())
+        .WhereIf(e.Filters[1].HasValue, a => a.Status == e.Filters[1].Value<TransactionStatus>())
+        .WhereIf(e.Filters[2].HasValue, a => e.Filters[2].Values<long>().Contains(a.DAgentId))
+        .WhereIf(!e.SearchText.IsNull(), a => a.CurrencyCode.Contains(e.SearchText) ||
+        a.SerialNumber.Contains(e.SearchText) ||
+        a.GameRound.Contains(e.SearchText) ||
+        a.Data.Contains(e.SearchText) ||
+        a.Description.Contains(e.SearchText) ||
+        a.CreatedUserName.Contains(e.SearchText) ||
+        a.ModifiedUserName.Contains(e.SearchText))
+        .OrderByDescending(a => a.TransactionTime);
     }
 
     (string Current, string Child, string Grand) GetTransactionAgentLabels(DTransAction item)
@@ -592,7 +603,8 @@ string.Join(",", agents.Select(a => a.Id))),
     /// 非 admin：以登录账号关联代理为锚点，在「根→本条归属代理」链上取从该锚点向下的最多三级（当前代理、一级下级、二级下级）。
     /// admin：从组织根向下取三级。
     /// </summary>
-    (string CurrentAgentName, string ChildAgentName, string GrandChildAgentName) GetAgentDisplayNames(DAgent agent, Dictionary<long, DAgent> agentMap)
+    (string CurrentAgentName, string ChildAgentName, string GrandChildAgentName) GetAgentDisplayNames(DAgent agent,
+    Dictionary<long, DAgent> agentMap)
     {
         var chain = BuildChainRootToAgent(agent, agentMap);
         if (chain.Count == 0)
@@ -613,7 +625,7 @@ string.Join(",", agents.Select(a => a.Id))),
         }
 
         static string Cell(List<DAgent> s, int i) =>
-            i < s.Count ? GetAgentName(s[i]) : "-";
+        i < s.Count ? GetAgentName(s[i]) : "-";
 
         var current = Cell(slice, 0);
         var child = slice.Count > 1 ? Cell(slice, 1) : "-";
@@ -664,9 +676,4 @@ string.Join(",", agents.Select(a => a.Id))),
         TransactionType.Register => "注册",
         _ => type.ToString()
     };
-
-    async Task OnEdit(DTransAction item)
-    {
-        await Task.Yield();
-    }
 }
