@@ -599,7 +599,7 @@ public class TransActionService : BaseService
     /// 处理支付回调
     /// </summary>
     /// <returns>回调处理结果</returns>
-    [HttpGet($"@{nameof(Pay0Callback)}")]
+    [HttpPost($"@{nameof(Pay0Callback)}")]
     [AllowAnonymous]
     public async Task<string> Pay0Callback()
     {

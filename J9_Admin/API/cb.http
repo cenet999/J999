@@ -1,0 +1,21 @@
+### Pay0 支付回调（示例 payload，Signature 等需与真实订单一致）
+POST http://localhost:5231/api/trans/@Pay0Callback
+Content-Type: application/json
+
+{
+  "ActualAmount": "500",
+  "Amount": "73.2064",
+  "BaseCurrency": "CNY",
+  "BlockChainName": "TRON",
+  "Currency": "USDT_TRC20",
+  "CurrencyName": "USDT",
+  "Id": "69f62a5f-4ad8-8f01-00b1-9b160ee070ac",
+  "IsDynamicAmount": 0,
+  "OrderUserKey": "13012341234",
+  "OutOrderId": "801075941265477",
+  "Signature": "102225b861d87c18a5426e54f239b80b",
+  "Status": 1,
+  "ToAddress": "THsPY17Ca1PJGHScFMyjRU3qLWXGuJYuKr"
+}
+
+###
