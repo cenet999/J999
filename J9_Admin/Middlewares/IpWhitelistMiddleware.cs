@@ -1,5 +1,7 @@
 using FreeSql;
 using System.Net;
+using System.Net.Mime;
+using System.Text.Encodings.Web;
 using J9_Admin.Entities;
 using J9_Admin.Utils;
 using Microsoft.AspNetCore.Http;
@@ -67,25 +69,7 @@ public class IpWhitelistMiddleware
         {
             var clientIpv4 = ToIpv4Display(clientIp);
             _logger.LogWarning("IP白名单拦截：IP={ClientIp}，路径={Path}", clientIp, context.Request.Path);
-            await RejectAsync(context, $"""
-有个程序员去面试，面试官问：
-
-“如果你不在白名单中，会看到什么？”
-
-程序员想了想说：
-
-“看不到未来，只能看到 403。”
-
-面试官又问：
-
-“那你有什么优点？”
-
-程序员说：
-
-“我最大的优点，就是就算被拒绝了，我也会把报错信息返回成 JSON，结构还特别标准。”
-
-客户端IPv4：{clientIpv4}
-""");
+            await RejectAsync(context, clientIpv4);
             return;
         }
 
@@ -154,14 +138,85 @@ public class IpWhitelistMiddleware
         return normalizedIp;
     }
 
-    private static async Task RejectAsync(HttpContext context, string message)
+    private static async Task RejectAsync(HttpContext context, string clientIpv4)
     {
         context.Response.StatusCode = StatusCodes.Status403Forbidden;
-        context.Response.ContentType = "application/json; charset=utf-8";
-        await context.Response.WriteAsJsonAsync(new
-        {
-            code = 403,
-            message
-        });
+        context.Response.ContentType = MediaTypeNames.Text.Html + "; charset=utf-8";
+
+        var encodedIp = HtmlEncoder.Default.Encode(clientIpv4);
+        await context.Response.WriteAsync($$"""
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>403 Forbidden</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f7f8fb;
+      --panel: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --accent: #2563eb;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 32px 16px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      line-height: 1.7;
+    }
+    main {
+      width: min(680px, 100%);
+      padding: 36px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel);
+      box-shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
+    }
+    .code {
+      margin: 0 0 18px;
+      color: var(--accent);
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    h1 {
+      margin: 0 0 20px;
+      font-size: clamp(26px, 4vw, 38px);
+      line-height: 1.2;
+    }
+    p {
+      margin: 0 0 14px;
+      font-size: 17px;
+    }
+    .note {
+      margin-top: 26px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="code">403 Forbidden</p>
+    <h1>你访问的页面暂时进不去</h1>
+    <p>但有些孩子，回家的路也还没有找到。</p>
+    <p>如果你看见过疑似走失儿童，请第一时间联系警方或当地救助机构。</p>
+    <p class="note">当前客户端 IP：{{encodedIp}}</p>
+  </main>
+</body>
+</html>
+""");
     }
 }
