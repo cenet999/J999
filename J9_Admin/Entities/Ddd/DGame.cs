@@ -23,6 +23,7 @@ public partial class DGame : EntityModified
     /// <summary>
     /// 游戏描述
     /// </summary>
+    [Column(StringLength = -1)]
     public string Description { get; set; }
 
     /// <summary>

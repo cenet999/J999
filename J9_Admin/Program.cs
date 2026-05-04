@@ -210,6 +210,7 @@ try
         J9_Admin.SeedData.Ddd.TaskSeedData.Initialize(fsql);
         J9_Admin.SeedData.Ddd.EventSeedData.Initialize(fsql);
         J9_Admin.SeedData.Ddd.NoticeSeedData.Initialize(fsql);
+        EnsureSysUserLoginLogIpLength(fsql, dbType);
     }
     #endregion
 
@@ -256,6 +257,42 @@ static bool ShouldApplyIpWhitelist(PathString path)
 
     return !path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase)
         && !path.StartsWithSegments("/profile", StringComparison.OrdinalIgnoreCase);
+}
+
+static void EnsureSysUserLoginLogIpLength(FreeSqlCloud fsql, DataType dbType)
+{
+    switch (dbType)
+    {
+        case DataType.Sqlite:
+            // SQLite 不按 VARCHAR(n) 强制限制文本长度，无需修改列定义。
+            Log.Information("SQLite 数据库无需调整 SysUserLoginLog.Ip 字段长度");
+            break;
+        case DataType.PostgreSQL:
+            fsql.Ado.ExecuteNonQuery(@"
+DO $$
+DECLARE
+    target_table_name text;
+    target_column_name text;
+BEGIN
+    SELECT c.table_name, c.column_name
+      INTO target_table_name, target_column_name
+      FROM information_schema.columns c
+     WHERE c.table_schema = current_schema()
+       AND lower(c.table_name) = lower('SysUserLoginLog')
+       AND lower(c.column_name) = lower('Ip')
+       AND (c.character_maximum_length IS NULL OR c.character_maximum_length < 500)
+     LIMIT 1;
+
+    IF target_table_name IS NOT NULL THEN
+        EXECUTE format('ALTER TABLE %I ALTER COLUMN %I TYPE VARCHAR(500)', target_table_name, target_column_name);
+    END IF;
+END $$;");
+            Log.Information("已检查 PostgreSQL SysUserLoginLog.Ip 字段长度");
+            break;
+        default:
+            Log.Warning("当前数据库类型 {DbType} 未配置 SysUserLoginLog.Ip 字段长度调整逻辑", dbType);
+            break;
+    }
 }
 
 static bool IsPublicAssetPath(PathString path)
