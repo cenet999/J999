@@ -97,6 +97,12 @@ try
 
     var shouldAutoSyncStructure = true;
 
+    // PostgreSQL：在 AdminBlazor 注册 FreeSql（含 AutoSyncStructure）之前放宽 SysUserLoginLog.Ip，避免历史列长与实体不一致阻塞启动。
+    using (var startupFs = new FreeSqlBuilder().UseConnectionString(dbType, dbConnStr).Build())
+    {
+        EnsureSysUserLoginLogIpLength(startupFs, dbType);
+    }
+
     builder.AddAdminBlazor(new AdminBlazorOptions
     {
         Assemblies = [typeof(Program).Assembly],
@@ -211,7 +217,6 @@ try
         J9_Admin.SeedData.Ddd.TaskSeedData.Initialize(fsql);
         J9_Admin.SeedData.Ddd.EventSeedData.Initialize(fsql);
         J9_Admin.SeedData.Ddd.NoticeSeedData.Initialize(fsql);
-        EnsureSysUserLoginLogIpLength(fsql, dbType);
     }
     #endregion
 
@@ -260,7 +265,7 @@ static bool ShouldApplyIpWhitelist(PathString path)
         && !path.StartsWithSegments("/profile", StringComparison.OrdinalIgnoreCase);
 }
 
-static void EnsureSysUserLoginLogIpLength(FreeSqlCloud fsql, DataType dbType)
+static void EnsureSysUserLoginLogIpLength(IFreeSql fsql, DataType dbType)
 {
     switch (dbType)
     {
