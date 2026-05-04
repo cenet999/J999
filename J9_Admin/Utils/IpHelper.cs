@@ -28,66 +28,52 @@ namespace J9_Admin.Utils
                     return "unknown";
                 }
 
-                // 优先从 X-Forwarded-For 头获取（适用于代理服务器场景）
-                // 这个头部通常包含客户端的真实IP地址
-                var forwardedFor = httpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
-                if (!string.IsNullOrEmpty(forwardedFor))
+                var remoteIp = httpContext.Connection.RemoteIpAddress;
+                var normalizedRemoteIp = NormalizeIpAddress(remoteIp);
+
+                // 只有请求来自可信代理时才读取转发头，避免外部客户端伪造 X-Forwarded-For 绕过限制。
+                if (IsTrustedProxy(remoteIp))
                 {
-                    // X-Forwarded-For 可能包含多个IP，格式：clientIP, proxy1IP, proxy2IP
-                    // 取第一个IP（真实客户端IP）
-                    var firstIp = forwardedFor.Split(',')[0].Trim();
-                    if (!string.IsNullOrEmpty(firstIp) && IsValidIpAddress(firstIp))
+                    var realIp = NormalizeIpAddress(httpContext.Request.Headers["X-Real-IP"].FirstOrDefault());
+                    if (!string.IsNullOrEmpty(realIp))
                     {
-                        logger?.LogInformation("从X-Forwarded-For头获取到IP地址: {IpAddress}", firstIp);
-                        return firstIp;
+                        logger?.LogInformation("从可信代理的X-Real-IP头获取到IP地址: {IpAddress}", realIp);
+                        return realIp;
+                    }
+
+                    var cfConnectingIp = NormalizeIpAddress(httpContext.Request.Headers["CF-Connecting-IP"].FirstOrDefault());
+                    if (!string.IsNullOrEmpty(cfConnectingIp))
+                    {
+                        logger?.LogInformation("从可信代理的CF-Connecting-IP头获取到IP地址: {IpAddress}", cfConnectingIp);
+                        return cfConnectingIp;
+                    }
+
+                    var forwardedFor = httpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+                    var forwardedIp = GetForwardedIpNearestTrustedProxy(forwardedFor);
+                    if (!string.IsNullOrEmpty(forwardedIp))
+                    {
+                        logger?.LogInformation("从可信代理的X-Forwarded-For头获取到IP地址: {IpAddress}", forwardedIp);
+                        return forwardedIp;
+                    }
+
+                    var originalForwardedFor = httpContext.Request.Headers["X-Original-Forwarded-For"].FirstOrDefault();
+                    var originalForwardedIp = GetForwardedIpNearestTrustedProxy(originalForwardedFor);
+                    if (!string.IsNullOrEmpty(originalForwardedIp))
+                    {
+                        logger?.LogInformation("从可信代理的X-Original-Forwarded-For头获取到IP地址: {IpAddress}", originalForwardedIp);
+                        return originalForwardedIp;
                     }
                 }
-
-                // 从 X-Real-IP 头获取（Nginx代理常用）
-                // 这个头部通常只包含一个IP地址
-                var realIp = httpContext.Request.Headers["X-Real-IP"].FirstOrDefault();
-                if (!string.IsNullOrEmpty(realIp) && IsValidIpAddress(realIp))
+                else if (HasForwardedIpHeader(httpContext))
                 {
-                    logger?.LogInformation("从X-Real-IP头获取到IP地址: {IpAddress}", realIp);
-                    return realIp;
-                }
-
-                // 从 CF-Connecting-IP 头获取（Cloudflare代理专用）
-                // Cloudflare会在这个头部设置原始客户端IP
-                var cfConnectingIp = httpContext.Request.Headers["CF-Connecting-IP"].FirstOrDefault();
-                if (!string.IsNullOrEmpty(cfConnectingIp) && IsValidIpAddress(cfConnectingIp))
-                {
-                    logger?.LogInformation("从CF-Connecting-IP头获取到IP地址: {IpAddress}", cfConnectingIp);
-                    return cfConnectingIp;
-                }
-
-                // 从 X-Original-Forwarded-For 头获取（某些代理服务器使用）
-                var originalForwardedFor = httpContext.Request.Headers["X-Original-Forwarded-For"].FirstOrDefault();
-                if (!string.IsNullOrEmpty(originalForwardedFor))
-                {
-                    var firstOriginalIp = originalForwardedFor.Split(',')[0].Trim();
-                    if (!string.IsNullOrEmpty(firstOriginalIp) && IsValidIpAddress(firstOriginalIp))
-                    {
-                        logger?.LogInformation("从X-Original-Forwarded-For头获取到IP地址: {IpAddress}", firstOriginalIp);
-                        return firstOriginalIp;
-                    }
+                    logger?.LogWarning("忽略非可信来源的转发IP头，RemoteIpAddress: {RemoteIp}", normalizedRemoteIp);
                 }
 
                 // 最后从 RemoteIpAddress 获取（直连场景）
-                var remoteIp = httpContext.Connection.RemoteIpAddress;
                 if (remoteIp != null)
                 {
-                    // 如果是IPv6的IPv4映射地址，转换为IPv4格式
-                    if (remoteIp.IsIPv4MappedToIPv6)
-                    {
-                        var ipv4 = remoteIp.MapToIPv4().ToString();
-                        logger?.LogInformation("从RemoteIpAddress获取到IPv4映射地址: {IpAddress}", ipv4);
-                        return ipv4;
-                    }
-
-                    var ipAddress = remoteIp.ToString();
-                    logger?.LogInformation("从RemoteIpAddress获取到IP地址: {IpAddress}", ipAddress);
-                    return ipAddress;
+                    logger?.LogInformation("从RemoteIpAddress获取到IP地址: {IpAddress}", normalizedRemoteIp);
+                    return normalizedRemoteIp;
                 }
 
                 // 如果都获取不到，返回默认值
@@ -115,6 +101,85 @@ namespace J9_Admin.Utils
             // 使用IPAddress.TryParse验证IP地址格式
             // 支持IPv4和IPv6格式
             return IPAddress.TryParse(ipAddress, out _);
+        }
+
+        private static string GetForwardedIpNearestTrustedProxy(string? forwardedFor)
+        {
+            if (string.IsNullOrWhiteSpace(forwardedFor))
+            {
+                return string.Empty;
+            }
+
+            var parts = forwardedFor.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            return parts.Length == 0 ? string.Empty : NormalizeIpAddress(parts[^1]);
+        }
+
+        private static string NormalizeIpAddress(string? ipAddress)
+        {
+            if (string.IsNullOrWhiteSpace(ipAddress))
+            {
+                return string.Empty;
+            }
+
+            return IPAddress.TryParse(ipAddress.Trim(), out var ip)
+                ? NormalizeIpAddress(ip)
+                : string.Empty;
+        }
+
+        private static string NormalizeIpAddress(IPAddress? ip)
+        {
+            if (ip == null)
+            {
+                return string.Empty;
+            }
+
+            if (ip.IsIPv4MappedToIPv6)
+            {
+                ip = ip.MapToIPv4();
+            }
+
+            return ip.ToString();
+        }
+
+        private static bool HasForwardedIpHeader(HttpContext httpContext)
+        {
+            return httpContext.Request.Headers.ContainsKey("X-Forwarded-For")
+                || httpContext.Request.Headers.ContainsKey("X-Real-IP")
+                || httpContext.Request.Headers.ContainsKey("CF-Connecting-IP")
+                || httpContext.Request.Headers.ContainsKey("X-Original-Forwarded-For");
+        }
+
+        private static bool IsTrustedProxy(IPAddress? ip)
+        {
+            if (ip == null)
+            {
+                return false;
+            }
+
+            if (ip.IsIPv4MappedToIPv6)
+            {
+                ip = ip.MapToIPv4();
+            }
+
+            if (IPAddress.IsLoopback(ip))
+            {
+                return true;
+            }
+
+            var bytes = ip.GetAddressBytes();
+            if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+            {
+                return bytes[0] == 10
+                    || (bytes[0] == 172 && bytes[1] >= 16 && bytes[1] <= 31)
+                    || (bytes[0] == 192 && bytes[1] == 168);
+            }
+
+            if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6)
+            {
+                return ip.IsIPv6LinkLocal || ip.IsIPv6SiteLocal;
+            }
+
+            return false;
         }
 
         /// <summary>

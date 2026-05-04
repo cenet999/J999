@@ -44,12 +44,6 @@ public class IpWhitelistMiddleware
             return;
         }
 
-        if (IsLoopback(clientIp))
-        {
-            await _next(context);
-            return;
-        }
-
         await using var scope = _serviceScopeFactory.CreateAsyncScope();
         var fsql = scope.ServiceProvider.GetRequiredService<FreeSqlCloud>();
 
@@ -94,11 +88,6 @@ public class IpWhitelistMiddleware
     {
         return path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase)
             || path.StartsWithSegments("/profile", StringComparison.OrdinalIgnoreCase);
-    }
-
-    private static bool IsLoopback(string ip)
-    {
-        return ip == "127.0.0.1" || ip == "::1";
     }
 
     private static string NormalizeIp(string? ip)
