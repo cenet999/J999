@@ -95,7 +95,10 @@ try
     Log.Information("数据库配置节点: {DbProvider}", string.IsNullOrWhiteSpace(activeDbProvider) ? "ConnectionStrings(Default)" : activeDbProvider);
     Log.Information("数据库类型: {DbType}", dbType);
 
-    var shouldAutoSyncStructure = true;
+    // 生产环境 PostgreSQL 不自动改表：AdminBlazor 内置 SysUserLoginLog.Ip 仍是 VARCHAR(50)，
+    // AutoSyncStructure 会尝试把已放宽的字段收窄，遇到历史长 IP 数据会导致启动失败。
+    var shouldAutoSyncStructure = !(dbType == DataType.PostgreSQL && builder.Environment.IsProduction());
+    Log.Information("FreeSql AutoSyncStructure: {AutoSyncStructure}", shouldAutoSyncStructure);
 
     // PostgreSQL：在 AdminBlazor 注册 FreeSql（含 AutoSyncStructure）之前放宽 SysUserLoginLog.Ip，避免历史列长与实体不一致阻塞启动。
     using (var startupFs = new FreeSqlBuilder().UseConnectionString(dbType, dbConnStr).Build())
