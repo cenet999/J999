@@ -41,7 +41,7 @@ Authorization: {{token}}
 Content-Type: application/json
 
 ### 申请代理
-POST {{baseUrl}}/api/login/@ApplyAgent?HomeUrl=https://example.com&UsdtAddress=&ServerIP=
+POST {{baseUrl}}/api/login/@ApplyAgent?HomeUrl=https://example.com&ServerIP=
 Authorization: {{token}}
 Content-Type: application/json
 

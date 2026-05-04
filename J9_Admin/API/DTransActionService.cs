@@ -250,8 +250,8 @@ public class TransActionService : BaseService
             {
                 DMemberId = agentMember.Id,
                 DAgentId = agent.Id,
-                BeforeAmount = agent.GamePoints,
-                AfterAmount = agent.GamePoints + amount,
+                BeforeAmount = 0,
+                AfterAmount = amount,
                 BetAmount = 0,
                 ActualAmount = amount,
                 CurrencyCode = "CNY",
@@ -293,10 +293,6 @@ public class TransActionService : BaseService
             member.CreditAmount -= amount;
             await uow.GetRepository<DMember>().InsertOrUpdateAsync(member);
 
-            // 更新代理余额
-            agent.GamePoints = agent.GamePoints + amount;
-            await uow.GetRepository<DAgent>().InsertOrUpdateAsync(agent);
-
             // 提交事务
             uow.Commit();
 
@@ -311,8 +307,7 @@ public class TransActionService : BaseService
 下分完成后，请尽快标记为成功。
 
 ======================
-代理用户: {agent.HomeUrl}
-代理余额: {agent.GamePoints} 分"
+代理用户: {agent.HomeUrl}"
 );
 
             return ApiResult.Success.SetData(new
@@ -425,8 +420,7 @@ public class TransActionService : BaseService
 状态: {rebateTransAction.Status}
 
 ======================
-代理用户: {agent.HomeUrl}
-代理余额: {agent.GamePoints} 分"
+代理用户: {agent.HomeUrl}"
 );
 
             _logger.LogInformation("会员 {Username} 反水成功，金额：{Amount}", Username, rebateAmount);
@@ -496,7 +490,8 @@ public class TransActionService : BaseService
                 _logger.LogInformation("会员 {MemberId} 未绑定代理，已自动绑定至默认代理 {AgentId}", member.Id, defaultAgent.Id);
             }
             
-            if (string.IsNullOrEmpty(member.DAgent.UsdtAddress)) return ApiResult.Error.SetMessage("代理未配置 USDT 收款地址，暂无法充值");
+            var usdtAddress = _configuration["Payment:UsdtAddress"]?.Trim();
+            if (string.IsNullOrWhiteSpace(usdtAddress)) return ApiResult.Error.SetMessage("系统未配置 USDT 收款地址，暂无法充值");
 
             // 清理 10 天前的待支付充值订单
             var oldPending = await uow.Orm.Select<DTransAction>()

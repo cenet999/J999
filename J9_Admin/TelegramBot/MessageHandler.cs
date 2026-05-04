@@ -227,9 +227,7 @@ namespace J9_Admin.TelegramBot
                         msg += $"• Agent ID: {agent.Id}\n";
                         msg += $"• Agent Type: {agent.AgentType}\n";
                         msg += $"• Status: {(agent.IsEnabled ? "Enabled" : "Disabled")}\n";
-                        msg += $"• Game Points: {agent.GamePoints}\n";
-                        msg += $"• USDT Address: <code>{agent.UsdtAddress}</code>\n";
-                        msg += $"• Credit Discount: {agent.CreditDiscount}\n";
+                        msg += $"• USDT Address: <code>{_configuration["Payment:UsdtAddress"]}</code>\n";
                         msg += $"• Agent Domain: {agent.HomeUrl}\n";
                         msg += $"• Server IP: {agent.ServerIP}\n";
                         msg += $"• IP Whitelist: {agent.IPWhiteList}\n";

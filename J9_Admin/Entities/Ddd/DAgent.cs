@@ -28,26 +28,10 @@ public partial class DAgent : EntityModified
     public bool IsEnabled { get; set; } = true;
 
     /// <summary>
-    /// 代理游戏分
-    /// </summary>
-    public decimal GamePoints { get; set; } = 0;
-
-    /// <summary>
-    /// 代理USDT地址
-    /// </summary>
-    [Column(StringLength = 100)]
-    public string UsdtAddress { get; set; }
-
-    /// <summary>
     /// Telegram ChatId
     /// </summary>
     [Column(StringLength = 100)]
     public string TelegramChatId { get; set; } = "";
-
-    /// <summary>
-    /// 分折扣
-    /// </summary>
-    public decimal CreditDiscount { get; set; } = 0.20m;
 
     /// <summary>
     /// 代理域名
@@ -73,7 +57,7 @@ public partial class DAgent : EntityModified
     public string IPWhiteList { get; set; } = "";
 
     /// <summary>
-    /// 反水比例
+    /// 会员反水比例
     /// </summary>
     [Column(Scale = 4)]
     public decimal RebateRate { get; set; } = 0.0080m;

@@ -160,7 +160,7 @@
             </div>
             <div class="form-group col-6">
                 <label class="form-label">代理ID</label>
-                <SelectEntity TItem="DAgent" TKey="long" @bind-Value="item.DAgentId" DisplayText="e => e.UsdtAddress" />
+                <SelectEntity TItem="DAgent" TKey="long" @bind-Value="item.DAgentId" DisplayText="e => e.AgentName" />
             </div>
             <div class="form-group col-6">
                 <label class="form-label">关联交易Id</label>
@@ -324,16 +324,10 @@
             {
                 var amt = withdraw.ActualAmount;
                 var member = await repMember.Select.Where(m => m.Id == withdraw.DMemberId).ToOneAsync();
-                var agent = await repAgent.Select.Where(a => a.Id == withdraw.DAgentId).ToOneAsync();
                 if (member != null)
                 {
                     member.CreditAmount += amt;
                     await repMember.UpdateAsync(member);
-                }
-                if (agent != null)
-                {
-                    agent.GamePoints -= amt;
-                    await repAgent.UpdateAsync(agent);
                 }
             }
 
@@ -484,17 +478,6 @@
 
                         await rep_dTransAction.UpdateAsync(relatedTransaction);
 
-                        // 更新代理余额（减少可出售金额）
-                        var rep_dAgent = uow.GetRepository<DAgent>();
-                        var agent = await rep_dAgent.Select
-                        .Where(a => a.Id == relatedTransaction.DAgentId)
-                        .ToOneAsync();
-
-                        if (agent != null)
-                        {
-                            agent.GamePoints -= currentTransAction.ActualAmount;
-                            await rep_dAgent.UpdateAsync(agent);
-                        }
                     }
                 }
 

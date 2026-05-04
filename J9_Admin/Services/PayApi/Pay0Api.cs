@@ -87,6 +87,13 @@ public class Pay0Api
                 return ApiResult.Error.SetMessage("APIDomain 未配置");
             }
 
+            var usdtAddress = _configuration["Payment:UsdtAddress"]?.Trim();
+            if (string.IsNullOrWhiteSpace(usdtAddress))
+            {
+                _logger.LogWarning("Payment:UsdtAddress 未配置，无法创建 TokenPay 支付订单");
+                return ApiResult.Error.SetMessage("USDT 收款地址未配置");
+            }
+
             // 5. 构建订单参数
             var orderParams = new Dictionary<string, string>
             {
@@ -96,7 +103,7 @@ public class Pay0Api
                 ["Currency"] = "USDT_TRC20",
                 ["NotifyUrl"] = $"{apiDomain}/api/trans/@Pay0Callback",
                 ["RedirectUrl"] = returnUrl,
-                ["Address_TRON"] = transAction.DAgent.UsdtAddress
+                ["Address_TRON"] = usdtAddress
             };
 
             // 6. 生成签名
@@ -369,14 +376,6 @@ public class Pay0Api
                     // 更新会员余额（增加充值金额）
                     member.CreditAmount = transAction.AfterAmount;
                     await uow.Orm.Update<DMember>().SetSource(member).Where(m => m.Id == member.Id).ExecuteAffrowsAsync();
-
-                    // 更新代理余额（减少代理游戏分，含赠送部分）
-                    var agent = await uow.Orm.Select<DAgent>().Where(m => m.Id == transAction.DAgentId).ToOneAsync();
-                    if (agent != null)
-                    {
-                        agent.GamePoints = agent.GamePoints - totalCredit;
-                        await uow.Orm.Update<DAgent>().SetSource(agent).Where(m => m.Id == agent.Id).ExecuteAffrowsAsync();
-                    }
 
                     _logger.LogInformation($"TokenPay订单处理成功，订单ID：{orderId}，会员：{member.Username}，余额已更新",
                         orderId, member.Username);

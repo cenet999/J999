@@ -125,8 +125,10 @@ public class LoginService : BaseService
                 LoginTime = DateTime.Now,
                 UpdatedTime = DateTime.Now,
                 WithdrawPassword = "123456",
-                // 注册时默认使用所属代理的 USDT 收款地址，若代理未配置则落回空串
-                USDTAddress = dAgent.UsdtAddress ?? "usdt00000000",
+                // 注册时默认使用系统配置的 USDT 收款地址
+                USDTAddress = string.IsNullOrWhiteSpace(_configuration["Payment:UsdtAddress"])
+                    ? "usdt00000000"
+                    : _configuration["Payment:UsdtAddress"]!.Trim(),
             });
 
             // 分配角色
@@ -670,7 +672,7 @@ IP：{TGMessageApi.EscapeHtml(ip)}
     /// 申请代理
     /// </summary>
     [HttpPost($"@{nameof(ApplyAgent)}")]
-    public async Task<ApiResult> ApplyAgent(string HomeUrl, string UsdtAddress, string ServerIP)
+    public async Task<ApiResult> ApplyAgent(string HomeUrl, string ServerIP)
     {
         var userId = await GetCurrentUserIdAsync();
         if (userId == null)
@@ -698,7 +700,6 @@ IP：{TGMessageApi.EscapeHtml(ip)}
                 agent.ParentId = 0;
                 agent.AgentType = AgentType.General;
                 agent.TelegramChatId = "";
-                agent.UsdtAddress = UsdtAddress;
 
                 // 创建代理记录
                 agent = await uow.GetRepository<DAgent>().InsertOrUpdateAsync(agent);
@@ -1038,10 +1039,7 @@ IP：{TGMessageApi.EscapeHtml(ip)}
                 AgentType = AgentType.Direct,
                 HomeUrl = "test.com", // 代理主页域名
                 IsEnabled = true, // 启用状态
-                GamePoints = 10000, // 初始游戏分
-                UsdtAddress = "", // USDT地址，可后续配置
                 TelegramChatId = "", // Telegram聊天ID，可后续配置
-                CreditDiscount = 0.20m, // 默认分折扣 20%
                 ServerIP = "", // 服务器IP，可后续配置
                 LogoUrl = "", // Logo URL，可后续配置
                 IPWhiteList = "", // IP白名单，默认为空

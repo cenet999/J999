@@ -11,9 +11,7 @@
         <th>代理名</th>
         <th>代理类型</th>
         <th>代理状态</th>
-        <th>代理游戏分</th>
         <th>TelegramID</th>
-        <th>分折扣</th>
         <th>代理域名</th>
         <th>服务器IP</th>
         <th>登录IP</th>
@@ -26,9 +24,7 @@
         <td>@item.AgentName</td>
         <td>@item.AgentType</td>
         <td>@item.IsEnabled</td>
-        <td>@item.GamePoints</td>
         <td>@item.TelegramChatId</td>
-        <td>@item.CreditDiscount</td>
         <td>@item.HomeUrl</td>
         <td>@item.ServerIP</td>
         <td>@item.IPWhiteList</td>
@@ -55,20 +51,8 @@
                 <Switch @bind-Value="item.IsEnabled" OnColor="Color.Success" />
             </div>
             <div class="form-group col-6">
-                <label class="form-label">代理游戏分</label>
-                <input @bind="item.GamePoints" type="number" class="form-control" placeholder="">
-            </div>
-            <div class="form-group col-6 d-none">
-                <label class="form-label">USDT地址</label>
-                <input type="text" class="form-control" readonly value="@item.UsdtAddress" placeholder="与当前登录代理一致，不可编辑" maxlength="100">
-            </div>
-            <div class="form-group col-6">
                 <label class="form-label">Telegram机器人ID</label>
                 <input @bind="item.TelegramChatId" type="number" class="form-control" placeholder="">
-            </div>
-            <div class="form-group col-6">
-                <label class="form-label">分折扣</label>
-                <input @bind="item.CreditDiscount" type="number" class="form-control" placeholder="">
             </div>
             <div class="form-group col-6">
                 <label class="form-label">代理域名</label>
@@ -307,7 +291,7 @@
     {
         e.Select.WhereIf(e.Filters[0].HasValue, a => a.AgentType == e.Filters[0].Value<AgentType>())
             .WhereIf(visibleAgentIds.Count > 0, a => visibleAgentIds.Contains(a.Id))
-            .WhereIf(!e.SearchText.IsNull(), a => (a.AgentName ?? "").Contains(e.SearchText) || a.UsdtAddress.Contains(e.SearchText) || 
+            .WhereIf(!e.SearchText.IsNull(), a => (a.AgentName ?? "").Contains(e.SearchText) ||
                 a.HomeUrl.Contains(e.SearchText) || 
                 a.ServerIP.Contains(e.SearchText) || 
                 a.LogoUrl.Contains(e.SearchText) || 
@@ -320,7 +304,7 @@
 
     async Task OnEdit(DAgent item)
     {
-        // 新增代理时：上级默认为自己；USDT 地址默认与当前登录代理一致。
+        // 新增代理时：上级默认为自己。
         if (item.Id == 0)
         {
             var currentAgentId = sessionAgent.GetAgentId();
@@ -328,12 +312,6 @@
             {
                 if (item.ParentId == 0)
                     item.ParentId = currentAgentId;
-
-                var current = await repo.Orm.Select<DAgent>()
-                    .Where(a => a.Id == currentAgentId)
-                    .ToOneAsync();
-                if (current != null)
-                    item.UsdtAddress = current.UsdtAddress ?? "";
             }
         }
 
