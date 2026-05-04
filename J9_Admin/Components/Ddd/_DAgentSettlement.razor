@@ -207,7 +207,8 @@
     const string RecentFourWeeksValue = "__recent_4_weeks__";
     string queryWeek = RecentFourWeeksValue;
     string keyword = "";
-    readonly List<WeekOption> weekOptions = BuildWeekOptions();
+    DateTime businessToday = DateTime.Today;
+    List<WeekOption> weekOptions = [];
     decimal totalTurnover;
     decimal totalValidBet;
     decimal totalRebate;
@@ -215,7 +216,29 @@
 
     protected override async Task OnInitializedAsync()
     {
+        weekOptions = BuildWeekOptions(businessToday);
         await LoadRowsAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        var browserTodayText = await JS.InvokeAsync<string>(
+            "eval",
+            "(() => { const d = new Date(); const m = String(d.getMonth() + 1).padStart(2, '0'); const day = String(d.getDate()).padStart(2, '0'); return d.getFullYear() + '-' + m + '-' + day; })()");
+
+        if (!DateTime.TryParseExact(browserTodayText, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var browserToday))
+            return;
+
+        if (browserToday.Date == businessToday.Date)
+            return;
+
+        businessToday = browserToday.Date;
+        weekOptions = BuildWeekOptions(businessToday);
+        await LoadRowsAsync();
+        StateHasChanged();
     }
 
     async Task OnQueryWeekChanged(ChangeEventArgs e)
@@ -338,7 +361,7 @@
             {
                 Id = index + 1,
                 SettlementId = x.Id,
-                WeekText = $"{x.WeekKey}（{x.WeekStartDate:MM-dd} 至 {x.WeekEndDate.AddDays(-1):MM-dd}）",
+                WeekText = FormatWeekText(x.WeekKey, x.WeekStartDate, x.WeekEndDate, businessToday),
                 MemberName = x.MemberName,
                 SourceAgentName = x.SourceAgentName,
                 ParentAgentName = x.ParentAgentName,
@@ -397,6 +420,16 @@
                 return;
             }
 
+            if (item.SelectedStatus == AgentSettlementStatus.Paid)
+            {
+                var confirmed = await JS.InvokeAsync<bool>(
+                    "confirm",
+                    $"确认将 {item.MemberName}（{item.WeekText}）标记为已付款吗？已付款后状态不可再修改。");
+
+                if (!confirmed)
+                    return;
+            }
+
             var affected = await repo.Orm.Update<DAgentWeeklySettlement>()
                 .Set(x => x.Status, item.SelectedStatus)
                 .Where(x => x.Id == item.SettlementId)
@@ -432,16 +465,16 @@
     List<DateTime> GetSelectedWeekStarts()
     {
         if (string.IsNullOrWhiteSpace(queryWeek) || queryWeek == RecentFourWeeksValue)
-            return GetRecentWeekStarts(4);
+            return GetRecentWeekStarts(4, businessToday);
 
         return TryParseWeek(queryWeek, out var weekStart)
             ? [weekStart]
             : [];
     }
 
-    static List<DateTime> GetRecentWeekStarts(int count)
+    static List<DateTime> GetRecentWeekStarts(int count, DateTime today)
     {
-        var current = AgentWeeklySettlementService.NormalizeWeekStart(DateTime.Today);
+        var current = AgentWeeklySettlementService.NormalizeWeekStart(today);
         var list = new List<DateTime>();
         for (var i = 0; i < count; i++)
             list.Add(current.AddDays(-7 * i));
@@ -476,13 +509,13 @@
         }
     }
 
-    static List<WeekOption> BuildWeekOptions()
+    static List<WeekOption> BuildWeekOptions(DateTime today)
     {
         var list = new List<WeekOption>
         {
             new() { Value = RecentFourWeeksValue, Text = "最近 4 周" }
         };
-        var current = AgentWeeklySettlementService.NormalizeWeekStart(DateTime.Today);
+        var current = AgentWeeklySettlementService.NormalizeWeekStart(today);
         for (var i = 0; i < 12; i++)
         {
             var weekStart = current.AddDays(-7 * i);
@@ -491,11 +524,21 @@
             list.Add(new WeekOption
             {
                 Value = key,
-                Text = $"{key}（{weekStart:yyyy-MM-dd} 至 {weekEnd.AddDays(-1):yyyy-MM-dd}）"
+                Text = FormatWeekText(key, weekStart, weekEnd, today)
             });
         }
 
         return list;
+    }
+
+    static string FormatWeekText(string weekKey, DateTime weekStart, DateTime weekEnd) =>
+        FormatWeekText(weekKey, weekStart, weekEnd, DateTime.Today);
+
+    static string FormatWeekText(string weekKey, DateTime weekStart, DateTime weekEnd, DateTime today)
+    {
+        var weekLastDay = weekEnd.AddDays(-1);
+        var displayEnd = today >= weekStart && today < weekEnd ? today : weekLastDay;
+        return $"{weekKey}（{weekStart:yyyy-MM-dd} 至 {displayEnd:yyyy-MM-dd}）";
     }
 
     static bool TryParseWeek(string text, out DateTime weekStart)
