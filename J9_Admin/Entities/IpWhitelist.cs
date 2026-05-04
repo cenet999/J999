@@ -9,7 +9,7 @@ public partial class IpWhitelist : EntityModified
     /// <summary>
     /// IP地址
     /// </summary>
-    [Column(StringLength = 50)]
+    [Column(StringLength = 300)]
     public string IpAddress { get; set; }
 
     /// <summary>
