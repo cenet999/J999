@@ -57,11 +57,12 @@ try
     builder.Host.UseSerilog();
 
     // 添加CORS服务
+    var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? [];
     builder.Services.AddCors(options =>
     {
         options.AddPolicy("CorsPolicy", corsBuilder =>
         {
-            corsBuilder.SetIsOriginAllowed(_ => true) // 允许任意完全符合规范的 Origin
+            corsBuilder.SetIsOriginAllowed(origin => IsAllowedOrigin(origin, allowedOrigins))
                        .AllowAnyMethod()
                        .AllowAnyHeader()
                        .AllowCredentials(); // 必须开启以支持携带 Token 等身份凭证
@@ -321,6 +322,77 @@ static bool IsPublicAssetPath(PathString path)
         || value.EndsWith(".woff", StringComparison.OrdinalIgnoreCase)
         || value.EndsWith(".woff2", StringComparison.OrdinalIgnoreCase)
         || value.EndsWith(".ttf", StringComparison.OrdinalIgnoreCase);
+}
+
+static bool IsAllowedOrigin(string origin, string[] allowedOrigins)
+{
+    if (!Uri.TryCreate(origin, UriKind.Absolute, out var originUri))
+    {
+        return false;
+    }
+
+    var normalizedOrigin = originUri.GetLeftPart(UriPartial.Authority).TrimEnd('/');
+
+    foreach (var allowedOrigin in allowedOrigins)
+    {
+        if (string.IsNullOrWhiteSpace(allowedOrigin))
+        {
+            continue;
+        }
+
+        var rule = allowedOrigin.Trim().TrimEnd('/');
+        if (!rule.Contains("*."))
+        {
+            if (string.Equals(normalizedOrigin, rule, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            continue;
+        }
+
+        if (IsWildcardOriginMatch(originUri, rule))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static bool IsWildcardOriginMatch(Uri originUri, string rule)
+{
+    var wildcardMarkerIndex = rule.IndexOf("*.", StringComparison.Ordinal);
+    if (wildcardMarkerIndex < 0)
+    {
+        return false;
+    }
+
+    string? scheme = null;
+    string hostRule;
+    int? port = null;
+
+    if (wildcardMarkerIndex > 0)
+    {
+        var parserRule = rule.Replace("*.", "wildcard.");
+        if (!Uri.TryCreate(parserRule, UriKind.Absolute, out var ruleUri))
+        {
+            return false;
+        }
+
+        scheme = ruleUri.Scheme;
+        hostRule = ruleUri.Host["wildcard.".Length..];
+        port = ruleUri.Port;
+    }
+    else
+    {
+        hostRule = rule[2..];
+    }
+
+    return (scheme == null || string.Equals(originUri.Scheme, scheme, StringComparison.OrdinalIgnoreCase))
+        && (!port.HasValue || originUri.Port == port.Value)
+        && originUri.Host.Length > hostRule.Length
+        && originUri.Host.EndsWith($".{hostRule}", StringComparison.OrdinalIgnoreCase);
 }
 
 // 供集成测试项目 WebApplicationFactory<Program> 引用入口类型（与顶层语句生成的 Program 合并）
