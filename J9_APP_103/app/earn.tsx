@@ -14,6 +14,7 @@ import {
   type DailyTask,
 } from '@/lib/api/event';
 import { apiOk } from '@/lib/api/request';
+import { isInstalledAppRuntime } from '@/lib/platform-mode';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import {
   CalendarDays,
@@ -27,7 +28,7 @@ import {
 } from 'lucide-react-native';
 import type { LucideIcon } from 'lucide-react-native';
 import { useCallback, useState } from 'react';
-import { Platform, Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 
 const TASK_MILESTONES = [
   { target: 20, reward: 2 },
@@ -55,10 +56,6 @@ function getTaskActionPath(task: DailyTask) {
 
 function normalizeDailyTasks(tasks: DailyTask[]) {
   return tasks.map((task) => (task.title.includes('邀请') ? { ...task, rewardAmount: 100 } : task));
-}
-
-function isNativeAppPlatform() {
-  return Platform.OS === 'ios' || Platform.OS === 'android';
 }
 
 function getTaskPendingVisual(task: DailyTask): {
@@ -364,12 +361,8 @@ function DailyTasksCard({
 
   const handleClaimChest = useCallback(
     async (target: number) => {
-      if (APP_ONLY_CHEST_TARGETS.has(target) && !isNativeAppPlatform()) {
-        Toast.show({
-          type: 'info',
-          text1: '请在 App 内领取',
-          text2: '45分及以上的积分宝箱仅支持在 App 内领取。',
-        });
+      if (APP_ONLY_CHEST_TARGETS.has(target) && !isInstalledAppRuntime()) {
+        router.push('/download');
         return;
       }
 
@@ -391,7 +384,7 @@ function DailyTasksCard({
 
       setActingChest(null);
     },
-    [actingChest, onRefresh]
+    [actingChest, onRefresh, router]
   );
 
   const finishedTaskCount = tasks.filter((item) => item.status >= 1).length;
@@ -560,7 +553,13 @@ function MilestoneCard({
                   style={{
                     backgroundColor: claimed ? '#2fd17c' : canClaim ? '#ff8a34' : '#2d2940',
                     borderWidth: 1,
-                    borderColor: claimed ? '#62e2a0' : canClaim ? '#ffc07b' : isAppOnly ? '#8f6a35' : '#574f73',
+                    borderColor: claimed
+                      ? '#62e2a0'
+                      : canClaim
+                        ? '#ffc07b'
+                        : isAppOnly
+                          ? '#8f6a35'
+                          : '#574f73',
                   }}>
                   {claimed ? (
                     <Icon as={Check} size={16} className="text-white" />
@@ -572,7 +571,9 @@ function MilestoneCard({
                     <Text className="text-[11px] font-bold text-[#b3a9d1]">{item.target}</Text>
                   )}
                 </View>
-                <Text className="mt-2 text-[10px] font-semibold text-[#d1c6e9]">¥{item.reward}</Text>
+                <Text className="mt-2 text-[10px] font-semibold text-[#d1c6e9]">
+                  ¥{item.reward}
+                </Text>
               </Pressable>
             );
           })}

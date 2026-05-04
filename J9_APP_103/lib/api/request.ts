@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getClientPlatform } from '@/lib/platform-mode';
 import { Platform } from 'react-native';
 
 const DEV_API =
@@ -14,8 +15,7 @@ function normalizeBaseUrl(url: string) {
 
 export const BASE_URL = normalizeBaseUrl(__DEV__ ? DEV_API : PROD_API);
 export const FRONTEND_CACHE_ENABLED =
-  typeof process !== 'undefined' &&
-  process.env?.EXPO_PUBLIC_DISABLE_FRONTEND_CACHE === 'true'
+  typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_DISABLE_FRONTEND_CACHE === 'true'
     ? false
     : true;
 
@@ -150,7 +150,7 @@ export async function request<T>(
     const method = getMethod(options);
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      'X-Client-Platform': Platform.OS,
+      'X-Client-Platform': getClientPlatform(),
       ...(options.headers as Record<string, string>),
     };
 
@@ -170,10 +170,7 @@ export async function request<T>(
     if (requestOptions.params && Object.keys(requestOptions.params).length > 0) {
       const query = Object.entries(requestOptions.params)
         .filter(([, value]) => value !== null && value !== undefined && value !== '')
-        .map(
-          ([key, value]) =>
-            `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`
-        )
+        .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`)
         .join('&');
 
       if (query) {
@@ -198,7 +195,9 @@ export async function request<T>(
       try {
         const response = await fetch(url, {
           ...fetchOptions,
-          ...(Platform.OS === 'web' && method === 'GET' ? { cache: 'no-store' as RequestCache } : null),
+          ...(Platform.OS === 'web' && method === 'GET'
+            ? { cache: 'no-store' as RequestCache }
+            : null),
           headers,
           signal: fetchOptions.signal ?? controller?.signal,
         });
@@ -314,9 +313,7 @@ export async function request<T>(
         return {
           success: false,
           code: -1,
-          message: isAbortError(error)
-            ? '请求超时，请稍后重试'
-            : '网络连接异常，请检查网络后重试',
+          message: isAbortError(error) ? '请求超时，请稍后重试' : '网络连接异常，请检查网络后重试',
         };
       }
     }

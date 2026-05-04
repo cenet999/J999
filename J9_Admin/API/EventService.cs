@@ -54,6 +54,11 @@ public class EventService : BaseService
             return true;
         }
 
+        if (clientPlatform == "ios-home-screen")
+        {
+            return false;
+        }
+
         var origin = HttpContext.Request.Headers["Origin"].FirstOrDefault();
         if (!string.IsNullOrWhiteSpace(origin))
         {

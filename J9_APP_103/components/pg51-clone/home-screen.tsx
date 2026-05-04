@@ -10,6 +10,7 @@ import type { Pg51Category, Pg51CategoryId, Pg51GameItem } from '@/components/pg
 import { getGameList, type BackendGame } from '@/lib/api/game';
 import { getNotices, type Notice } from '@/lib/api/notice';
 import { apiOk, toAbsoluteUrl } from '@/lib/api/request';
+import { isIosHomeScreenRuntime } from '@/lib/platform-mode';
 import { Text } from '@/components/ui/text';
 import { Toast } from '@/components/ui/toast';
 import * as React from 'react';
@@ -655,18 +656,22 @@ export function Pg51CloneHomeScreen() {
 }
 
 function WebDownloadBanner() {
+  const [shouldHide, setShouldHide] = React.useState(() => Platform.OS !== 'web');
+
+  React.useEffect(() => {
+    setShouldHide(Platform.OS !== 'web' || isIosHomeScreenRuntime());
+  }, []);
+
   const handlePress = React.useCallback(() => {
     if (Platform.OS !== 'web') return;
     window.location.assign(WEB_DOWNLOAD_PAGE_LINK);
   }, []);
 
-  if (Platform.OS !== 'web') return null;
+  if (shouldHide) return null;
 
   return (
     <View className="px-2 pb-2 pt-2">
-      <Pressable
-        onPress={handlePress}
-        accessibilityRole="link">
+      <Pressable onPress={handlePress} accessibilityRole="link">
         <Image
           source={{ uri: WEB_DOWNLOAD_BANNER_IMAGE }}
           style={{ width: '100%', aspectRatio: 577 / 81 }}
