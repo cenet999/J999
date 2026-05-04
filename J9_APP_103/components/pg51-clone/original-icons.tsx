@@ -32,7 +32,10 @@ type IconSpec = {
   height: number;
   viewBox: string;
   transform?: string;
-  path: string;
+  /** 单色块矢量（多数图标） */
+  path?: string;
+  /** 多块同色填充（与 path 二选一） */
+  paths?: string[];
   fillRule?: 'nonzero' | 'evenodd';
   clipRule?: 'nonzero' | 'evenodd';
   rect?: {
@@ -52,7 +55,7 @@ type IconSpec = {
   };
 };
 
-type QuickActionIconName = 'deposit' | 'withdraw' | 'service';
+export type QuickActionIconName = 'deposit' | 'withdraw' | 'service' | 'recycle' | 'rebate';
 type BottomIconName = 'home' | 'activity' | 'deposit' | 'earn' | 'mine';
 export type Pg51MineMenuIconName =
   | 'transactions'
@@ -117,6 +120,29 @@ const QUICK_ICON_SPECS: Record<QuickActionIconName, IconSpec> = {
     height: 32,
     viewBox: '0 0 36 36',
     path: 'M18.335 10.287a8.357 8.357 0 0 1 8.357 8.357v2.25a8.357 8.357 0 1 1-16.714 0v-2.25a8.357 8.357 0 0 1 8.357-8.357zm3.27 13.644a.562.562 0 0 0-.795.042c-.627.698-1.442 1.1-2.314 1.1-.872 0-1.687-.402-2.314-1.1a.562.562 0 1 0-.836.752c.808.899 1.913 1.472 3.15 1.472 1.237 0 2.342-.573 3.15-1.472a.562.562 0 0 0-.042-.794zM18.656 7.394c6.035 0 10.928 4.893 10.928 10.929v-.29a1.608 1.608 0 0 1 1.286 1.575v2.25a1.607 1.607 0 1 1-3.214 0v-3.535a9 9 0 0 0-9-9h-.643a9 9 0 0 0-9 9v3.535a1.607 1.607 0 0 1-3.214 0v-2.25c0-.777.552-1.426 1.285-1.575v.29c0-6.036 4.893-10.93 10.929-10.93h.643z',
+    circle: { cx: 18, cy: 18, r: 18, fill: '#8F8BA9', opacity: 0.2 },
+  },
+  /** 余额回收：环形双箭头，风格对齐存款/取款快捷图标 */
+  recycle: {
+    width: 32,
+    height: 32,
+    viewBox: '0 0 36 36',
+    paths: [
+      'M 10 18 A 8 8 0 0 1 26 18 L 29 18 L 22.5 10.5 Z',
+      'M 26 18 A 8 8 0 0 1 10 18 L 7 18 L 13.5 25.5 Z',
+    ],
+    circle: { cx: 18, cy: 18, r: 18, fill: '#8F8BA9', opacity: 0.2 },
+  },
+  /** 返水：% 符号，与「奖励比例」语义一致 */
+  rebate: {
+    width: 32,
+    height: 32,
+    viewBox: '0 0 36 36',
+    paths: [
+      'M 11.5 12.25 A 3.15 3.15 0 1 1 17.8 12.25 A 3.15 3.15 0 1 1 11.5 12.25 Z',
+      'M 18.2 23.75 A 3.15 3.15 0 1 1 24.5 23.75 A 3.15 3.15 0 1 1 18.2 23.75 Z',
+      'M 24.85 10.35 L 26.65 12.15 L 11.15 27.65 L 9.35 25.85 Z',
+    ],
     circle: { cx: 18, cy: 18, r: 18, fill: '#8F8BA9', opacity: 0.2 },
   },
 };
@@ -370,12 +396,15 @@ function Pg51SvgIcon({
           />
         ) : null}
 
-        <Path
-          d={spec.path}
-          fill={`url(#${gradientId})`}
-          fillRule={spec.fillRule}
-          clipRule={spec.clipRule}
-        />
+        {(spec.paths ?? (spec.path ? [spec.path] : [])).map((d, pathIndex) => (
+          <Path
+            key={pathIndex}
+            d={d}
+            fill={`url(#${gradientId})`}
+            fillRule={spec.fillRule}
+            clipRule={spec.clipRule}
+          />
+        ))}
       </G>
     </Svg>
   );

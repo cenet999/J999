@@ -18,7 +18,7 @@ export function Pg51PlaceholderScreen({
 
   return (
     <Pg51PageShell>
-      <View className="flex-1 px-4 pt-5">
+      <View className="flex-1 px-2 pt-5">
         <View className="rounded-[28px] border border-[#323a4d] bg-[#242c3d] px-5 py-6">
           <Text className="text-[28px] font-black text-white">{title}</Text>
           <Text className="mt-2 text-[14px] leading-[22px] text-[#a4aec4]">

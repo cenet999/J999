@@ -50,7 +50,9 @@ export default function NoticeScreen() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <View className="flex-1 bg-[#0f1420]">
-        <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, paddingBottom: 110 }}>
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{ paddingHorizontal: 8, paddingTop: 16, paddingBottom: 110 }}>
           <View className="mb-4 flex-row items-center justify-between">
             <View className="flex-row items-center gap-3">
               <Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}>
@@ -64,7 +66,7 @@ export default function NoticeScreen() {
               </Pressable>
               <View>
                 <Text className="text-[22px] font-black text-white">平台公告</Text>
-                <Text className="mt-1 text-[12px] text-[#97a1b8]">查看最新活动信息与平台通知</Text>
+                <Text className="mt-1 text-[12px] text-[#97a1b8]">公告与活动通知</Text>
               </View>
             </View>
 

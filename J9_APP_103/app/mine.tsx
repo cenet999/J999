@@ -1,12 +1,14 @@
 import { useAuthModal } from '@/components/auth/auth-modal-provider';
 import {
   Pg51ChromeIconBadge,
-  Pg51LucideIconBadge,
   Pg51MineMenuIcon,
+  Pg51QuickActionIcon,
   type Pg51MineMenuIconName,
+  type QuickActionIconName,
 } from '@/components/pg51-clone/original-icons';
 import { Pg51InnerPage, Pg51SectionCard } from '@/components/pg51-clone/page-ui';
 import { Icon } from '@/components/ui/icon';
+import { Skeleton, SkeletonCircle } from '@/components/ui/skeleton';
 import { Text } from '@/components/ui/text';
 import { Toast } from '@/components/ui/toast';
 import { type MemberInfo, getMemberInfo } from '@/lib/api/auth';
@@ -16,19 +18,7 @@ import { apiOk, clearToken, toAbsoluteUrl } from '@/lib/api/request';
 import { playerWithdraw } from '@/lib/api/transaction';
 import * as Clipboard from 'expo-clipboard';
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import {
-  ArrowDownToLine,
-  ArrowUpFromLine,
-  Bell,
-  ChevronRight,
-  Eye,
-  EyeOff,
-  LogOut,
-  Recycle,
-  Star,
-  Wallet,
-  type LucideIcon,
-} from 'lucide-react-native';
+import { ChevronRight, Eye, EyeOff, LogOut, Star, Wallet } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, TextInput, View } from 'react-native';
 import Animated, {
@@ -64,12 +54,6 @@ const SECURITY_MENU: MenuItemData[] = [
     path: '/invite-friends',
   },
   {
-    title: '返水中心',
-    iconName: 'rebate',
-    hint: '查看可领返水和到账记录',
-    path: '/rebate',
-  },
-  {
     title: '修改密码',
     iconName: 'password',
     hint: '修改登录密码，更安全',
@@ -84,12 +68,6 @@ const SECURITY_MENU: MenuItemData[] = [
 ];
 
 const OTHER_MENU: MenuItemData[] = [
-  {
-    title: '消息通知',
-    iconName: 'messages',
-    hint: '系统公告、客服回复',
-    path: '/messages',
-  },
   {
     title: '帮助中心',
     iconName: 'help',
@@ -169,17 +147,17 @@ function getMemberAvatar(memberInfo: MineMemberInfo | null) {
   return toAbsoluteUrl(pickText(memberInfo?.Avatar, memberInfo?.avatar));
 }
 
-function QuickActionIcon({
-  icon,
-  spinning = false,
-  toggled = false,
-  launching = false,
-}: {
-  icon: LucideIcon;
+type MineAssetQuickIconName = Exclude<QuickActionIconName, 'service'>;
+
+const PG51_MINE_QUICK_ICON_SIZE = 26;
+
+function QuickActionIcon(props: {
+  name: MineAssetQuickIconName;
   spinning?: boolean;
   toggled?: boolean;
   launching?: boolean;
 }) {
+  const { spinning = false, toggled = false, launching = false, name } = props;
   const rotation = useSharedValue(0);
   const translateY = useSharedValue(0);
   const scale = useSharedValue(1);
@@ -253,39 +231,51 @@ function QuickActionIcon({
 
   return (
     <Animated.View style={animatedStyle}>
-      <Icon as={icon} size={13} color="#F7EFFF" />
+      <Pg51QuickActionIcon name={name} size={PG51_MINE_QUICK_ICON_SIZE} />
     </Animated.View>
   );
 }
 
-function QuickActionButton({
-  icon,
-  label,
-  onPress,
-  loading = false,
-  toggled = false,
-  launching = false,
-}: {
-  icon: LucideIcon;
-  label: string;
+function QuickActionButton(props: {
+  pg51QuickName: MineAssetQuickIconName;
+  accessibilityLabel: string;
   onPress?: () => void;
   loading?: boolean;
   toggled?: boolean;
   launching?: boolean;
 }) {
+  const {
+    accessibilityLabel,
+    onPress,
+    loading = false,
+    toggled = false,
+    launching = false,
+    pg51QuickName,
+  } = props;
+
+  const inner = (
+    <QuickActionIcon
+      name={pg51QuickName}
+      spinning={loading}
+      toggled={toggled}
+      launching={launching}
+    />
+  );
+
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
       onPress={onPress}
       disabled={!onPress || loading || launching}
-      className="flex-row items-center gap-1 rounded-full px-3 py-2"
+      className="items-center justify-center rounded-full p-1.5"
       style={{
         backgroundColor: '#FFFFFF14',
         borderWidth: 1,
         borderColor: '#FFFFFF24',
         opacity: onPress ? (loading || launching ? 0.9 : 1) : 0.8,
       }}>
-      <QuickActionIcon icon={icon} spinning={loading} toggled={toggled} launching={launching} />
-      <Text className="text-[11px] font-bold text-[#F7EFFF]">{label}</Text>
+      {inner}
     </Pressable>
   );
 }
@@ -303,8 +293,12 @@ function ProfileOverviewCard({
   rechargeLaunching,
   onToggleBalance,
   onLogin,
+  onOpenSettings,
   onRecharge,
   onRecycle,
+  onRebate,
+  unreadCount,
+  onOpenMessages,
   recycleLoading,
   onWithdrawToggle,
   onWithdrawAmountChange,
@@ -324,8 +318,12 @@ function ProfileOverviewCard({
   rechargeLaunching: boolean;
   onToggleBalance: () => void;
   onLogin: () => void;
+  onOpenSettings: () => void;
   onRecharge: () => void;
   onRecycle: () => void;
+  onRebate: () => void;
+  unreadCount: number;
+  onOpenMessages: () => void;
   recycleLoading: boolean;
   onWithdrawToggle: () => void;
   onWithdrawAmountChange: (value: number) => void;
@@ -340,7 +338,8 @@ function ProfileOverviewCard({
   const points = pickNumber(memberInfo?.ActivityPoint, memberInfo?.activityPoint);
   const balance = pickNumber(memberInfo?.CreditAmount, memberInfo?.creditAmount);
   const showRealData = isAuthenticated && !!memberInfo;
-  const balanceText = showRealData ? formatCny(balance) : loading ? '加载中...' : '登录后查看';
+  const profileSkeleton = isAuthenticated && loading && !memberInfo;
+  const balanceText = showRealData ? formatCny(balance) : '登录后查看';
   const handleCopyUid = async () => {
     if (!memberId) return;
     await Clipboard.setStringAsync(memberId);
@@ -363,66 +362,116 @@ function ProfileOverviewCard({
         borderColor: '#5A3891',
       }}>
       <View className="px-4 pb-3 pt-4">
-        <View className="flex-row items-center justify-between gap-3">
-          <View className="flex-row items-center gap-3">
-            {avatarUri ? (
-              <Image
-                source={{ uri: avatarUri }}
-                resizeMode="cover"
-                style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: '#FFFFFF22' }}
-              />
-            ) : (
-              <View
-                className="items-center justify-center rounded-full"
-                style={{ width: 52, height: 52, backgroundColor: '#FFFFFF22' }}>
-                <Text className="text-[18px] font-black text-white">
-                  {displayName.slice(0, 1) || 'J'}
-                </Text>
+        <View className="flex-row items-start justify-between gap-3">
+          {profileSkeleton ? (
+            <View className="min-w-0 flex-1 flex-row items-center gap-3">
+              <SkeletonCircle size={52} />
+              <View className="min-w-0 flex-1 gap-2">
+                <Skeleton width={148} height={18} radius={9} />
+                <View className="flex-row flex-wrap gap-2">
+                  <Skeleton width={72} height={22} radius={11} />
+                  <Skeleton width={88} height={22} radius={11} />
+                </View>
+                <Skeleton width={178} height={14} radius={7} />
               </View>
-            )}
-
-            <View className="flex-1">
-              <View className="flex-row flex-wrap items-center gap-1.5">
-                <Text className="text-[16px] font-black text-white">{displayName}</Text>
-                {showRealData ? (
-                  <View
-                    className="flex-row items-center gap-1 rounded-full px-2 py-1"
-                    style={{
-                      backgroundColor: '#FFD84D22',
-                      borderWidth: 1,
-                      borderColor: '#FFD84D44',
-                    }}>
-                    <Icon as={Star} size={11} color="#FFD84D" />
-                    <Text className="text-[10px] font-bold text-[#FFD84D]">VIP {vipLevel}</Text>
-                  </View>
-                ) : null}
-                {showRealData ? (
-                  <View
-                    className="flex-row items-center gap-1 rounded-full px-2 py-1"
-                    style={{ backgroundColor: '#FFFFFF14' }}>
-                    <Icon as={Star} size={10} color="#FFD84D" />
-                    <Text className="text-[10px] font-bold text-[#F2DDB7]">积分 {points}</Text>
-                  </View>
-                ) : null}
-              </View>
-
-              {memberId ? (
-                <Pressable
-                  onPress={() => {
-                    void handleCopyUid();
-                  }}
-                  hitSlop={8}
-                  className="mt-1 self-start rounded-full px-2 py-1"
-                  style={{ backgroundColor: '#FFFFFF14' }}>
-                  <Text className="text-[11px] text-[#E8DDF8B8]">{`UID: ${memberId}`}</Text>
-                </Pressable>
-              ) : (
-                <Text className="mt-1 text-[11px] text-[#E8DDF8B8]">
-                  {isAuthenticated ? '资料加载中...' : '登录后显示 UID'}
-                </Text>
-              )}
             </View>
-          </View>
+          ) : (
+            <View className="min-w-0 flex-1 flex-row items-center gap-3">
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="头像，进入系统设置"
+                hitSlop={6}
+                onPress={() => {
+                  if (!isAuthenticated) {
+                    onLogin();
+                    return;
+                  }
+                  onOpenSettings();
+                }}
+                className="rounded-full">
+                {avatarUri ? (
+                  <Image
+                    source={{ uri: avatarUri }}
+                    resizeMode="cover"
+                    style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: '#FFFFFF22' }}
+                  />
+                ) : (
+                  <View
+                    className="items-center justify-center rounded-full"
+                    style={{ width: 52, height: 52, backgroundColor: '#FFFFFF22' }}>
+                    <Text className="text-[18px] font-black text-white">
+                      {displayName.slice(0, 1) || 'J'}
+                    </Text>
+                  </View>
+                )}
+              </Pressable>
+
+              <View className="min-w-0 flex-1">
+                <Text className="text-[16px] font-black text-white">{displayName}</Text>
+
+                {showRealData ? (
+                  <View className="mt-1.5 flex-row flex-wrap items-center gap-1.5">
+                    <View
+                      className="flex-row items-center gap-1 rounded-full px-2 py-1"
+                      style={{
+                        backgroundColor: '#FFD84D22',
+                        borderWidth: 1,
+                        borderColor: '#FFD84D44',
+                      }}>
+                      <Icon as={Star} size={11} color="#FFD84D" />
+                      <Text className="text-[10px] font-bold text-[#FFD84D]">VIP {vipLevel}</Text>
+                    </View>
+                    <View
+                      className="flex-row items-center gap-1 rounded-full px-2 py-1"
+                      style={{ backgroundColor: '#FFFFFF14' }}>
+                      <Icon as={Star} size={10} color="#FFD84D" />
+                      <Text className="text-[10px] font-bold text-[#F2DDB7]">积分 {points}</Text>
+                    </View>
+                  </View>
+                ) : null}
+
+                {memberId ? (
+                  <Pressable
+                    onPress={() => {
+                      void handleCopyUid();
+                    }}
+                    hitSlop={8}
+                    accessibilityLabel={`UID ${memberId}，点击复制`}
+                    className="mt-1 max-w-full self-start rounded-full px-2 py-1"
+                    style={{ backgroundColor: '#FFFFFF14' }}>
+                    <Text
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                      className="text-[11px] text-[#E8DDF8B8]">
+                      {`UID: ${memberId}`}
+                    </Text>
+                  </Pressable>
+                ) : (
+                  <Text className="mt-1 text-[11px] text-[#E8DDF8B8]">登录后显示 UID</Text>
+                )}
+              </View>
+            </View>
+          )}
+
+          <Pressable
+            onPress={onOpenMessages}
+            hitSlop={10}
+            accessibilityLabel="客服，消息通知"
+            className="relative w-[46px] items-center justify-center">
+            <View className="size-[42px] items-center justify-center rounded-full bg-[#414559]">
+              <Pg51QuickActionIcon name="service" size={27} />
+            </View>
+            <Text className="mt-1.5 text-[10px] leading-[12px] text-[#d8dcea]">客服</Text>
+            {unreadCount > 0 ? (
+              <View
+                className="absolute -right-0.5 -top-0.5 min-w-[16px] items-center justify-center rounded-full bg-[#FF5FA2] px-1"
+                style={{ height: 16 }}>
+                <Text className="text-[9px] font-bold text-white">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </Text>
+              </View>
+            ) : null}
+          </Pressable>
         </View>
       </View>
 
@@ -430,50 +479,66 @@ function ProfileOverviewCard({
 
       <View className="gap-3 px-4 pb-4 pt-3">
         <View className="flex-row items-end justify-between gap-3">
-          <View className="flex-1">
-            <View className="flex-row items-center gap-1.5">
-              <Icon as={Wallet} size={14} color="#E8DDF8B8" />
-              <Text className="text-[11px] font-semibold text-[#E8DDF8B8]">总资产</Text>
-              {showRealData ? (
-                <Pressable onPress={onToggleBalance} hitSlop={8}>
-                  <Icon as={balanceVisible ? Eye : EyeOff} size={14} color="#E8DDF8B8" />
-                </Pressable>
-              ) : null}
-            </View>
-
-            <Text className="mt-2 text-[20px] font-black text-white">
-              {showRealData && !balanceVisible ? '******' : balanceText}
-            </Text>
-          </View>
-
-          {showRealData ? (
-            <View className="flex-row flex-wrap justify-end gap-2">
-              <QuickActionButton
-                icon={ArrowDownToLine}
-                label="充值"
-                onPress={onRecharge}
-                launching={rechargeLaunching}
-              />
-              <QuickActionButton
-                icon={ArrowUpFromLine}
-                label="提现"
-                onPress={onWithdrawToggle}
-                toggled={withdrawExpanded}
-              />
-              <QuickActionButton
-                icon={Recycle}
-                label={recycleLoading ? '回收中' : '回收'}
-                onPress={onRecycle}
-                loading={recycleLoading}
-              />
-            </View>
+          {profileSkeleton ? (
+            <>
+              <View className="flex-1">
+                <View className="flex-row items-center gap-1.5">
+                  <Skeleton width={14} height={14} radius={4} />
+                  <Skeleton width={56} height={12} radius={6} />
+                </View>
+                <Skeleton className="mt-2" width={132} height={24} radius={8} />
+              </View>
+              <Skeleton width={92} height={38} radius={19} />
+            </>
           ) : (
-            <Pressable
-              onPress={onLogin}
-              className="rounded-full px-4 py-2.5"
-              style={{ backgroundColor: '#FFFFFF14', borderWidth: 1, borderColor: '#FFFFFF24' }}>
-              <Text className="text-[12px] font-bold text-white">登录账户</Text>
-            </Pressable>
+            <>
+              <View className="flex-1">
+                <View className="flex-row items-center gap-1.5">
+                  <Icon as={Wallet} size={14} color="#E8DDF8B8" />
+                  <Text className="text-[11px] font-semibold text-[#E8DDF8B8]">总资产</Text>
+                  {showRealData ? (
+                    <Pressable onPress={onToggleBalance} hitSlop={8}>
+                      <Icon as={balanceVisible ? Eye : EyeOff} size={14} color="#E8DDF8B8" />
+                    </Pressable>
+                  ) : null}
+                </View>
+
+                <Text className="mt-2 text-[20px] font-black text-white">
+                  {showRealData && !balanceVisible ? '******' : balanceText}
+                </Text>
+              </View>
+
+              {showRealData ? (
+                <View className="flex-row flex-wrap justify-end gap-2">
+                  <QuickActionButton
+                    pg51QuickName="deposit"
+                    accessibilityLabel="充值"
+                    onPress={onRecharge}
+                    launching={rechargeLaunching}
+                  />
+                  <QuickActionButton
+                    pg51QuickName="withdraw"
+                    accessibilityLabel="提现"
+                    onPress={onWithdrawToggle}
+                    toggled={withdrawExpanded}
+                  />
+                  <QuickActionButton
+                    pg51QuickName="recycle"
+                    accessibilityLabel={recycleLoading ? '回收中' : '回收'}
+                    onPress={onRecycle}
+                    loading={recycleLoading}
+                  />
+                  <QuickActionButton pg51QuickName="rebate" accessibilityLabel="返水" onPress={onRebate} />
+                </View>
+              ) : (
+                <Pressable
+                  onPress={onLogin}
+                  className="rounded-full px-4 py-2.5"
+                  style={{ backgroundColor: '#FFFFFF14', borderWidth: 1, borderColor: '#FFFFFF24' }}>
+                  <Text className="text-[12px] font-bold text-white">登录账户</Text>
+                </Pressable>
+              )}
+            </>
           )}
         </View>
       </View>
@@ -616,9 +681,9 @@ function WithdrawChip({
 
 function MenuIconBadge({ item }: { item: MenuItemData }) {
   return (
-    <Pg51ChromeIconBadge size={52} radius={16}>
+    <Pg51ChromeIconBadge size={46} radius={14}>
       <View style={{ paddingTop: 1 }}>
-        <Pg51MineMenuIcon name={item.iconName} size={33} color="#AEB6C8" />
+        <Pg51MineMenuIcon name={item.iconName} size={28} color="#AEB6C8" />
       </View>
     </Pg51ChromeIconBadge>
   );
@@ -629,17 +694,17 @@ function MenuSection({
   items,
   onPress,
 }: {
-  title: string;
+  title?: string;
   items: MenuItemData[];
   onPress: (item: MenuItemData) => void;
 }) {
   return (
-    <Pg51SectionCard title={title} description="">
+    <Pg51SectionCard title={title} description="" dense>
       {items.map((item) => (
         <Pressable
           key={item.title}
           onPress={() => onPress(item)}
-          className="flex-row items-center gap-3 rounded-[20px] px-4 py-3.5"
+          className="flex-row items-center gap-2 rounded-[18px] px-3 py-2"
           style={{
             backgroundColor: '#212838',
             borderWidth: 1,
@@ -648,16 +713,16 @@ function MenuSection({
           <MenuIconBadge item={item} />
           <View className="flex-1">
             <View className="flex-row items-center gap-2">
-              <Text className="text-[14px] font-semibold text-white">{item.title}</Text>
+              <Text className="text-[13px] font-semibold text-white">{item.title}</Text>
               {item.badge ? (
                 <View className="rounded-full bg-[#FF5FA2] px-2 py-0.5">
                   <Text className="text-[10px] font-bold text-white">{item.badge}</Text>
                 </View>
               ) : null}
             </View>
-            <Text className="mt-1 text-[11px] text-[#9da7bd]">{item.hint}</Text>
+            <Text className="mt-0.5 text-[10px] leading-[14px] text-[#9da7bd]">{item.hint}</Text>
           </View>
-          <Icon as={ChevronRight} size={18} color="#98a3ba" />
+          <Icon as={ChevronRight} size={16} color="#98a3ba" />
         </Pressable>
       ))}
     </Pg51SectionCard>
@@ -923,34 +988,10 @@ export default function MineScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       <Pg51InnerPage
         title="我的"
-        subtitle="账户资产、资金操作与常用服务统一汇总。"
+        subtitle="账户资产与常用服务"
         tag={isAuthenticated ? '已登录' : '未登录'}
         tone="blue"
         hideHero>
-        <View className="rounded-[28px] border border-[#4f3a80] bg-[#171d2a] px-4 py-4">
-          <View className="flex-row items-center justify-between gap-3">
-            <View className="flex-1">
-              <Text className="text-[20px] font-black text-white">账户概览</Text>
-              <Text className="mt-1 text-[12px] leading-[19px] text-[#97a1b8]">
-                核心账户信息与常用操作已集中展示。
-              </Text>
-            </View>
-
-            <Pressable onPress={() => router.push('/messages')}>
-              <Pg51LucideIconBadge icon={Bell} size={44} iconSize={18} radius={18} />
-              {unreadCount > 0 ? (
-                <View
-                  className="absolute right-0 top-0 min-w-[18px] items-center justify-center rounded-full bg-[#FF5FA2] px-1"
-                  style={{ height: 18 }}>
-                  <Text className="text-[10px] font-bold text-white">
-                    {unreadCount > 99 ? '99+' : unreadCount}
-                  </Text>
-                </View>
-              ) : null}
-            </Pressable>
-          </View>
-        </View>
-
         <ProfileOverviewCard
           isAuthenticated={isAuthenticated}
           memberInfo={memberInfo}
@@ -964,10 +1005,14 @@ export default function MineScreen() {
           rechargeLaunching={rechargeLaunching}
           onToggleBalance={() => setBalanceVisible((value) => !value)}
           onLogin={() => openAuthModal('login')}
+          onOpenSettings={() => router.push('/bind-info')}
           onRecharge={handleRecharge}
           onRecycle={() => {
             void handleRecycle();
           }}
+          onRebate={() => router.push('/rebate')}
+          unreadCount={unreadCount}
+          onOpenMessages={() => router.push('/messages')}
           recycleLoading={recycleLoading}
           onWithdrawToggle={() => setWithdrawExpanded((value) => !value)}
           onWithdrawAmountChange={setWithdrawAmount}
@@ -979,31 +1024,20 @@ export default function MineScreen() {
           onWithdrawSubmit={handleSubmitWithdraw}
         />
 
-        <MenuSection
-          title="系统菜单"
-          items={SECURITY_MENU}
-          onPress={(item) => router.push(item.path as any)}
-        />
+        <MenuSection items={SECURITY_MENU} onPress={(item) => router.push(item.path as any)} />
 
         <MenuSection
-          title="其他"
-          items={OTHER_MENU.map((item) =>
-            item.title === '消息通知' && unreadCount > 0
-              ? { ...item, badge: unreadCount > 99 ? '99+' : String(unreadCount) }
-              : item
-          )}
+          items={OTHER_MENU}
           onPress={(item) => router.push(item.path as any)}
         />
 
         {isAuthenticated ? (
-          <Pg51SectionCard title="账户操作" description="">
-            <Pressable
-              onPress={handleLogout}
-              className="flex-row items-center justify-center gap-2 rounded-[20px] bg-[#3a1f29] px-4 py-3.5">
-              <Icon as={LogOut} size={18} color="#ff9ab3" />
-              <Text className="text-[14px] font-bold text-[#ff9ab3]">退出登录</Text>
-            </Pressable>
-          </Pg51SectionCard>
+          <Pressable
+            onPress={handleLogout}
+            className="flex-row items-center justify-center gap-2 rounded-[20px] bg-[#3a1f29] px-4 py-3.5">
+            <Icon as={LogOut} size={18} color="#ff9ab3" />
+            <Text className="text-[14px] font-bold text-[#ff9ab3]">退出登录</Text>
+          </Pressable>
         ) : null}
       </Pg51InnerPage>
     </>

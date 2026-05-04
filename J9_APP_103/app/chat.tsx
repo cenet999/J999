@@ -177,7 +177,7 @@ export default function ChatScreen() {
         <KeyboardAvoidingView
           className="flex-1"
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <View className="flex-1 px-4 pb-5 pt-5">
+          <View className="flex-1 px-2 pb-5 pt-5">
             <View className="flex-row items-center justify-between gap-3">
               <Pressable
                 onPress={() => (router.canGoBack() ? router.back() : router.replace('/mine'))}

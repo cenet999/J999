@@ -8,9 +8,10 @@ import {
   startMsGame,
   startXhGame,
 } from '@/lib/api/game';
+import { toAbsoluteUrl } from '@/lib/api/request';
 import { router, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Linking, Platform, View } from 'react-native';
+import { ActivityIndicator, Image, Linking, Platform, View } from 'react-native';
 
 const START_LAUNCH_DELAY_MS = 120;
 const SLOW_HINT_MS = 4000;
@@ -39,16 +40,33 @@ async function openGameUrl(url: string) {
   await Linking.openURL(url);
 }
 
+function markAutoLaunchConsumed() {
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.set('autoLaunch', 'false');
+    window.history.replaceState(
+      window.history.state,
+      '',
+      `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`
+    );
+    return;
+  }
+
+  router.setParams({ autoLaunch: 'false' });
+}
+
 export default function GameLaunchScreen() {
   const localRouter = useRouter();
   const params = useLocalSearchParams<{
     gameId?: string | string[];
     title?: string | string[];
     dGamePlatform?: string | string[];
+    gameIcon?: string | string[];
+    autoLaunch?: string | string[];
   }>();
-  const [status, setStatus] = useState<'preparing' | 'slow' | 'failed'>('preparing');
+  const [status, setStatus] = useState<'idle' | 'preparing' | 'slow' | 'failed'>('idle');
   const [stage, setStage] = useState<'recycling' | 'requesting' | 'opening'>('requesting');
-  const [retryKey, setRetryKey] = useState(0);
+  const [launchAttempt, setLaunchAttempt] = useState(0);
   const [countdown, setCountdown] = useState(LAUNCH_COUNTDOWN_SECONDS);
 
   const gameId = useMemo(() => {
@@ -66,6 +84,18 @@ export default function GameLaunchScreen() {
     return raw?.trim() || '';
   }, [params.dGamePlatform]);
 
+  const gameIconUri = useMemo(() => {
+    const raw = Array.isArray(params.gameIcon) ? params.gameIcon[0] : params.gameIcon;
+    const trimmed = raw?.trim() || '';
+    if (!trimmed) return '';
+    return toAbsoluteUrl(trimmed);
+  }, [params.gameIcon]);
+
+  const autoLaunch = useMemo(() => {
+    const raw = Array.isArray(params.autoLaunch) ? params.autoLaunch[0] : params.autoLaunch;
+    return raw?.trim().toLowerCase() === 'true';
+  }, [params.autoLaunch]);
+
   const launchGameByPlatform = async (playerId: string, targetGameId: string) => {
     const normalizedPlatform = dGamePlatform.toUpperCase();
     if (normalizedPlatform.includes('XH') || normalizedPlatform.includes('星汇')) {
@@ -77,6 +107,7 @@ export default function GameLaunchScreen() {
   const openResolvedUrl = async (url: string) => {
     try {
       setStage('opening');
+      markAutoLaunchConsumed();
       await openGameUrl(url);
       if (Platform.OS !== 'web') {
         setTimeout(() => {
@@ -95,6 +126,14 @@ export default function GameLaunchScreen() {
 
   useEffect(() => {
     let active = true;
+    const shouldLaunch = autoLaunch || launchAttempt > 0;
+
+    if (!shouldLaunch) {
+      setStatus('idle');
+      setStage('requesting');
+      setCountdown(LAUNCH_COUNTDOWN_SECONDS);
+      return;
+    }
 
     if (!gameId) {
       setStatus('failed');
@@ -244,47 +283,69 @@ export default function GameLaunchScreen() {
       clearTimeout(launchTimer);
       clearTimeout(slowTimer);
     };
-  }, [dGamePlatform, gameId, retryKey]);
+  }, [autoLaunch, dGamePlatform, gameId, launchAttempt]);
 
   return (
-    <View className="flex-1 items-center justify-center bg-[#0f1420] px-6">
+    <View className="flex-1 items-center justify-center bg-[#0f1420] px-2">
       <View className="w-full max-w-[420px] rounded-[28px] border border-[#313a4f] bg-[#171d2a] px-6 py-8">
-        <View className="mb-5 size-16 items-center justify-center self-center rounded-full bg-[#232b3d]">
-          <ActivityIndicator size="large" color="#7B5CFF" />
+        <View className="mb-5 self-center">
+          {gameIconUri ? (
+            <View className="relative size-[104px] overflow-hidden rounded-[22px] border border-[#313a4f] bg-[#232b3d]">
+              <Image
+                accessibilityLabel={`${title} 图标`}
+                source={{ uri: gameIconUri }}
+                style={{ width: '100%', height: '100%' }}
+                resizeMode="cover"
+              />
+              {status === 'idle' ? null : (
+                <View className="absolute inset-0 items-center justify-center rounded-[22px] bg-black/45">
+                  <ActivityIndicator size="large" color="#7B5CFF" />
+                </View>
+              )}
+            </View>
+          ) : (
+            <View className="size-16 items-center justify-center rounded-full bg-[#232b3d]">
+              {status === 'idle' ? null : <ActivityIndicator size="large" color="#7B5CFF" />}
+            </View>
+          )}
         </View>
 
         <Text className="text-center text-[22px] font-extrabold text-white">
-          正在进入 {title}
-          {status !== 'failed' ? `（${countdown}s）` : ''}
+          {status === 'idle' ? title : `正在进入 ${title}`}
+          {status !== 'idle' && status !== 'failed' ? `（${countdown}s）` : ''}
         </Text>
 
         <View
           className="mt-6 rounded-[20px] px-4 py-4"
           style={{ backgroundColor: status === 'failed' ? '#3a1e28' : '#212838' }}>
           <Text className="text-center text-[14px] font-bold text-white">
-            {status === 'failed'
+            {status === 'idle'
+              ? '游戏已准备就绪'
+              : status === 'failed'
               ? '游戏地址打开失败'
               : stage === 'recycling'
                 ? '正在从游戏平台回收余额'
                 : stage === 'requesting'
-                  ? '正在验证安全链接并获取游戏入口'
+                  ? '正在获取游戏入口'
                   : '正在打开外部游戏地址'}
           </Text>
           <Text
             className="mt-2 text-center text-[13px] font-medium leading-[20px]"
             style={{ color: status === 'failed' ? '#ff9fbb' : '#9ea8c0' }}>
-            {status === 'slow'
+            {status === 'idle'
+              ? '点击下方按钮获取游戏入口。'
+              : status === 'slow'
               ? stage === 'recycling'
                 ? '主账户余额为 0，正在尝试把各游戏平台余额收回。'
                 : stage === 'requesting'
-                  ? '链接认证中，请稍候。'
+                  ? '稍慢一点，请稍候。'
                   : '外部页面打开较慢，请耐心等待。'
               : status === 'failed'
                 ? '请重试一次，或返回上一页继续操作。'
                 : stage === 'recycling'
                   ? '检测到可用余额为 0，先执行回收再进入游戏。'
                   : stage === 'requesting'
-                    ? '正在通过加密认证安全获取游戏入口，请稍候。'
+                    ? '请稍候。'
                     : '游戏地址已获取，正在为您打开外部页面。'}
           </Text>
         </View>
@@ -292,11 +353,13 @@ export default function GameLaunchScreen() {
         <View className="mt-6 gap-3">
           <Button
             onPress={() => {
-              setRetryKey((current) => current + 1);
+              setLaunchAttempt((current) => current + 1);
             }}
             className="h-12 rounded-2xl"
             style={{ backgroundColor: '#7B5CFF' }}>
-            <Text className="text-[15px] font-bold text-white">重新打开</Text>
+            <Text className="text-[15px] font-bold text-white">
+              {status === 'idle' ? '开始游戏' : '重新打开'}
+            </Text>
           </Button>
 
           <Button

@@ -91,7 +91,7 @@ export default function TaskPointsCalendarScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       <View className="flex-1 bg-[#0f1420]">
         <ScrollView
-          contentContainerStyle={{ padding: 16, paddingBottom: 110 }}
+          contentContainerStyle={{ paddingHorizontal: 8, paddingTop: 16, paddingBottom: 110 }}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#9b5cff" />
           }>
@@ -107,7 +107,7 @@ export default function TaskPointsCalendarScreen() {
             </Pressable>
             <View>
               <Text className="text-[22px] font-black text-white">任务积分日历</Text>
-              <Text className="mt-1 text-[12px] text-[#97a1b8]">按天查看每日任务拿了多少积分</Text>
+              <Text className="mt-1 text-[12px] text-[#97a1b8]">按月查看每日任务积分</Text>
             </View>
           </View>
 

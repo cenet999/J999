@@ -1,4 +1,3 @@
-import { Pg51LucideIconBadge } from '@/components/pg51-clone/original-icons';
 import { Pg51InnerPageTopBar } from '@/components/pg51-clone/inner-page-top-bar';
 import { Pg51InnerPage, Pg51SectionCard } from '@/components/pg51-clone/page-ui';
 import { Icon } from '@/components/ui/icon';
@@ -10,14 +9,7 @@ import { toAbsoluteUrl } from '@/lib/api/request';
 import * as ImagePicker from 'expo-image-picker';
 import { Stack, useRouter } from 'expo-router';
 import { ActivityIndicator, Image, Pressable, TouchableOpacity, View } from 'react-native';
-import {
-  Camera,
-  Link,
-  MessageCircle,
-  Phone,
-  ShieldCheck,
-  UserCheck,
-} from 'lucide-react-native';
+import { Camera, Link, MessageCircle, Phone, UserCheck } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 
@@ -42,6 +34,14 @@ export default function BindInfoScreen() {
   const [initializing, setInitializing] = useState(true);
   const [loading, setLoading] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  const leaveSettings = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/mine');
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -133,7 +133,7 @@ export default function BindInfoScreen() {
       if (result.success) {
         setInitialForm(form);
         Toast.show({ type: 'success', text1: '资料已经更新好了' });
-        router.back();
+        leaveSettings();
       } else {
         Toast.show({ type: 'error', text1: result.message || '更新失败，请稍后再试' });
       }
@@ -157,62 +157,56 @@ export default function BindInfoScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       <Pg51InnerPage
         title="系统设置"
-        subtitle="统一维护手机号、Telegram、提现地址与安全信息。"
+        subtitle="维护手机、TG 与提现地址"
         tag="资料维护"
         tone="purple"
         hideHero>
         <Pg51InnerPageTopBar
-          onBack={() => router.back()}
+          onBack={leaveSettings}
           icon={UserCheck}
           iconColor="#9b5cff"
           title="系统设置"
-          subtitle="统一维护手机号、Telegram、提现地址与安全信息。"
+          subtitle="维护手机、TG 与提现地址"
           tone="purple"
         />
 
-        <View className="items-center rounded-[28px] border border-[#39435a] bg-[#171d2a] p-5">
-          <Pressable
-            onPress={handlePickAvatar}
-            disabled={uploadingAvatar}
-            className="items-center justify-center overflow-hidden rounded-full"
-            style={{
-              width: 84,
-              height: 84,
-              backgroundColor: form.avatar ? 'transparent' : '#241d39',
-              borderWidth: 2,
-              borderColor: '#4f3a80',
-            }}>
-            {uploadingAvatar ? (
-              <ActivityIndicator size="large" color="#7B5CFF" />
-            ) : form.avatar ? (
-              <Image
-                source={{ uri: toAbsoluteUrl(form.avatar) }}
-                style={{ width: 80, height: 80 }}
-                resizeMode="cover"
-              />
-            ) : (
-              <Icon as={UserCheck} size={36} color="#9b5cff" />
-            )}
-          </Pressable>
+        <Pg51SectionCard>
+          <View className="items-center gap-3">
+            <Pressable
+              onPress={handlePickAvatar}
+              disabled={uploadingAvatar}
+              className="items-center justify-center overflow-hidden rounded-full"
+              style={{
+                width: 84,
+                height: 84,
+                backgroundColor: form.avatar ? 'transparent' : '#241d39',
+                borderWidth: 2,
+                borderColor: '#4f3a80',
+              }}>
+              {uploadingAvatar ? (
+                <ActivityIndicator size="large" color="#7B5CFF" />
+              ) : form.avatar ? (
+                <Image
+                  source={{ uri: toAbsoluteUrl(form.avatar) }}
+                  style={{ width: 80, height: 80 }}
+                  resizeMode="cover"
+                />
+              ) : (
+                <Icon as={UserCheck} size={36} color="#9b5cff" />
+              )}
+            </Pressable>
 
-          <Pressable
-            onPress={handlePickAvatar}
-            className="mt-3 flex-row items-center gap-2 rounded-full bg-[#212838] px-4 py-2">
-            <Icon as={Camera} size={14} color="#9b5cff" />
-            <Text className="text-[12px] font-bold text-white">
-              {form.avatar ? '更换头像' : '上传头像'}
-            </Text>
-          </Pressable>
-
-          <View className="mt-4 flex-row items-center gap-3 rounded-[20px] bg-[#2d2618] px-4 py-3">
-            <Pg51LucideIconBadge icon={ShieldCheck} />
-            <Text className="flex-1 text-[11px] leading-[18px] text-[#d3c299]">
-              以上资料将用于安全验证、联系通知与提现服务，请准确填写。
-            </Text>
+            <Pressable
+              onPress={handlePickAvatar}
+              disabled={uploadingAvatar}
+              className="flex-row items-center gap-2 rounded-full bg-[#212838] px-4 py-2">
+              <Icon as={Camera} size={14} color="#9b5cff" />
+              <Text className="text-[12px] font-bold text-white">
+                {form.avatar ? '更换头像' : '上传头像'}
+              </Text>
+            </Pressable>
           </View>
-        </View>
 
-        <Pg51SectionCard title="资料设置" description="信息更新后，请提交保存。">
           <FormField label="手机号" icon={Phone}>
             <Input
               placeholder="请输入手机号"
@@ -252,7 +246,7 @@ export default function BindInfoScreen() {
             <View className="flex-1">
               <Text className="text-[13px] font-bold text-white">修改提现密码</Text>
               <Text className="mt-1 text-[11px] text-[#97a1b8]">
-                已迁移到「修改密码」页面，需先校验登录密码。
+                请前往「修改密码」完成设置，开始前需验证登录密码。
               </Text>
             </View>
             <Text className="text-[18px] text-[#9b5cff]">›</Text>

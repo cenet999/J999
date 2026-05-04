@@ -44,7 +44,7 @@ const NOTICE_ROW_HEIGHT = 18;
 const NOTICE_SCROLL_INTERVAL = 5000;
 const NOTICE_SCROLL_DURATION = 320;
 const WEB_DOWNLOAD_BANNER_IMAGE = '/images/download-app-banner.png';
-const WEB_DOWNLOAD_BANNER_LINK = '/downloads/1.apk.zip';
+const WEB_DOWNLOAD_PAGE_LINK = '/download';
 
 type HomeNotice = {
   id: string;
@@ -551,7 +551,7 @@ export function Pg51CloneHomeScreen() {
             onRegisterPress={() => openAuthModal('register')}
           />
 
-          <View className="px-3.5 pb-1.5">
+          <View className="px-2 pb-1.5">
             <NoticeBar
               loading={noticeLoading}
               notice={latestNotice}
@@ -657,7 +657,7 @@ export function Pg51CloneHomeScreen() {
 function WebDownloadBanner() {
   const handlePress = React.useCallback(() => {
     if (Platform.OS !== 'web') return;
-    window.location.assign(WEB_DOWNLOAD_BANNER_LINK);
+    window.location.assign(WEB_DOWNLOAD_PAGE_LINK);
   }, []);
 
   if (Platform.OS !== 'web') return null;

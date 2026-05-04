@@ -53,7 +53,7 @@ export default function ActivityScreen() {
           className="flex-1"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{
-            paddingHorizontal: 16,
+            paddingHorizontal: 8,
             paddingTop: insets.top + 20,
             paddingBottom: 110,
           }}>
@@ -62,7 +62,7 @@ export default function ActivityScreen() {
               <View className="flex-1">
                 <Text className="text-[20px] font-black text-white">活动中心</Text>
                 <Text className="mt-1 text-[12px] leading-[19px] text-[#97a1b8]">
-                  平台最新活动与会员福利将在此统一展示。
+                  最新活动与会员福利
                 </Text>
               </View>
 
@@ -89,11 +89,11 @@ export default function ActivityScreen() {
                     {imageUrl ? (
                       <Image
                         source={{ uri: imageUrl }}
-                        style={{ width: '100%', height: 172 }}
+                        style={{ width: '100%', height: 108 }}
                         resizeMode="cover"
                       />
                     ) : (
-                      <View className="h-[172px] items-center justify-center bg-[#2d3447]">
+                      <View className="h-[108px] items-center justify-center bg-[#2d3447]">
                         <Text className="text-[14px] text-[#a4aec4]">暂无活动配图</Text>
                       </View>
                     )}
@@ -153,7 +153,7 @@ function ActivitySkeleton() {
           key={index}
           className="mb-4 overflow-hidden rounded-[26px] border border-[#39435a] bg-[#171d2a]">
           <View className="relative">
-            <Skeleton width="100%" height={172} radius={0} />
+            <Skeleton width="100%" height={108} radius={0} />
 
             <View className="absolute inset-y-0 left-0 right-0 justify-center px-4">
               <Skeleton width="70%" height={38} radius={18} />

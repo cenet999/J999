@@ -22,7 +22,7 @@ export default function RegisterScreen() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <View className="flex-1 items-center justify-center bg-[#0f1420] px-5">
+      <View className="flex-1 items-center justify-center bg-[#0f1420] px-2">
         <View className="w-full max-w-[420px] rounded-[32px] border border-[#313a4f] bg-[#171d2a] p-5">
           <Text className="text-[28px] font-black text-white">开户注册</Text>
           <Text className="mt-2 text-[14px] leading-[22px] text-[#9ea8c0]">

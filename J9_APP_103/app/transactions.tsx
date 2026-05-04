@@ -330,35 +330,6 @@ function getDateKey(dateStr: string) {
   return beijingYmd(ms);
 }
 
-function formatDateGroup(dateStr: string) {
-  const ms = parseTransactionInstantMs(dateStr);
-  if (ms == null) return dateStr || '未知日期';
-
-  const todayKey = beijingYmd(Date.now());
-  const targetKey = beijingYmd(ms);
-  const p = beijingDateTimeParts(ms);
-  const month = p.mm;
-  const day = p.dd;
-  const year = p.yyyy;
-
-  if (targetKey === todayKey) return `今天  ${month}月${day}日`;
-
-  const parseYmd = (s: string) => {
-    const [y, m, d] = s.split('-').map(Number);
-    return { y, m, d };
-  };
-  const a = parseYmd(todayKey);
-  const b = parseYmd(targetKey);
-  const diff = Math.round(
-    (Date.UTC(a.y, a.m - 1, a.d) - Date.UTC(b.y, b.m - 1, b.d)) / (1000 * 60 * 60 * 24)
-  );
-  if (diff === 1) return `昨天  ${month}月${day}日`;
-
-  const thisYear = beijingDateTimeParts(Date.now()).yyyy;
-  if (year !== thisYear) return `${year}年${month}月${day}日`;
-  return `${month}月${day}日`;
-}
-
 function getAmountMeta(record: TransactionRecord, typeValue: number, statusValue: number) {
   const obj = record as unknown as Record<string, unknown>;
   const currency = pickText(obj.currencyCode ?? obj.CurrencyCode) || 'CNY';
@@ -547,7 +518,7 @@ async function markSyncCooldownNow() {
 
 export default function TransactionsScreen() {
   const router = useRouter();
-  const [activeTypeFilter, setActiveTypeFilter] = useState('all');
+  const [activeTypeFilter, setActiveTypeFilter] = useState('game');
   const [activeStatusFilter, setActiveStatusFilter] = useState('all');
   const [records, setRecords] = useState<TransactionRecord[]>([]);
   const [monthSummary, setMonthSummary] = useState<TransactionMonthSummary>({
@@ -699,10 +670,7 @@ export default function TransactionsScreen() {
   }, [activeTypeFilter, activeStatusFilter]);
 
   const groupedRecords = useMemo(() => {
-    const groups: Record<
-      string,
-      { dateKey: string; label: string; items: TransactionRecord[] }
-    > = {};
+    const groups: Record<string, { dateKey: string; items: TransactionRecord[] }> = {};
 
     for (const record of records) {
       const obj = record as unknown as Record<string, unknown>;
@@ -714,7 +682,6 @@ export default function TransactionsScreen() {
       if (!groups[key]) {
         groups[key] = {
           dateKey: key,
-          label: formatDateGroup(time),
           items: [],
         };
       }
@@ -732,7 +699,7 @@ export default function TransactionsScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       <Pg51InnerPage
         title="交易明细"
-        subtitle="查看充值、提现及账户资金流水。"
+        subtitle="充值、提现与资金流水"
         tag="资金流水"
         tone="blue"
         hideHero>
@@ -741,50 +708,50 @@ export default function TransactionsScreen() {
           icon={Receipt}
           iconColor="#4ea3ff"
           title="交易明细"
-          subtitle="查看充值、提现和资金流水"
+          subtitle="充值、提现与资金流水"
           tone="blue"
         />
 
         <Pg51SectionCard
           title="筛选与概览"
-          description="按交易类型与状态筛选，便于快速查看相关记录。">
-          <View className="gap-3">
-            <FilterBlock
-              title="交易类型"
-              tabs={TYPE_FILTER_TABS}
-              activeKey={activeTypeFilter}
-              onChange={setActiveTypeFilter}
-            />
-            <FilterBlock
-              title="交易状态"
-              tabs={STATUS_FILTER_TABS}
-              activeKey={activeStatusFilter}
-              onChange={setActiveStatusFilter}
-            />
-          </View>
+          description="按类型与状态筛选流水">
+          <View className="gap-2">
+            <View className="gap-3">
+              <FilterBlock
+                title="交易类型"
+                tabs={TYPE_FILTER_TABS}
+                activeKey={activeTypeFilter}
+                onChange={setActiveTypeFilter}
+              />
+              <FilterBlock
+                title="交易状态"
+                tabs={STATUS_FILTER_TABS}
+                activeKey={activeStatusFilter}
+                onChange={setActiveStatusFilter}
+              />
+            </View>
 
-          <View className="flex-row gap-3">
-            <SummaryCard
-              title="本月充值"
-              value={`+${formatMoney(monthSummary.income)}`}
-              hint="只算成功充值"
-              icon={TrendingUp}
-              color="#35D07F"
-              bg="#1b3128"
-            />
-            <SummaryCard
-              title="本月提现"
-              value={`-${formatMoney(monthSummary.expense)}`}
-              hint="只算成功提现"
-              icon={TrendingDown}
-              color="#FF8A34"
-              bg="#35261d"
-            />
+            <View className="flex-row gap-2">
+              <SummaryCard
+                title="本月充值"
+                value={`+${formatMoney(monthSummary.income)}`}
+                icon={TrendingUp}
+                color="#35D07F"
+                bg="#1b3128"
+              />
+              <SummaryCard
+                title="本月提现"
+                value={`-${formatMoney(monthSummary.expense)}`}
+                icon={TrendingDown}
+                color="#FF8A34"
+                bg="#35261d"
+              />
+            </View>
           </View>
         </Pg51SectionCard>
 
         <Pg51SectionCard
-          title={`交易记录（${records.length}笔）`}
+          title="交易记录"
           right={
             <View className="flex-row flex-wrap justify-end gap-2">
               <QuickActionButton
@@ -820,9 +787,6 @@ export default function TransactionsScreen() {
             <View className="gap-3">
               {groupedRecords.map((group) => (
                 <View key={group.dateKey} className="gap-2.5">
-                  <Text className="px-1 pt-2 text-[12px] font-bold text-[#97a1b8]">
-                    {group.label}
-                  </Text>
                   {group.items.map((record, index) => {
                     const obj = record as unknown as Record<string, unknown>;
                     const key = pickText(obj.id ?? obj.Id) || `${group.dateKey}-${index}`;
@@ -897,28 +861,25 @@ function FilterBlock({
 function SummaryCard({
   title,
   value,
-  hint,
   icon,
   color,
   bg,
 }: {
   title: string;
   value: string;
-  hint: string;
   icon: LucideIcon;
   color: string;
   bg: string;
 }) {
   return (
-    <View className="flex-1 rounded-[22px] px-4 py-4" style={{ backgroundColor: bg }}>
-      <View className="flex-row items-center gap-2">
-        <Icon as={icon} size={15} color={color} />
-        <Text className="text-[12px] font-semibold text-[#dbe3f4]">{title}</Text>
+    <View className="flex-1 rounded-[18px] px-3 py-2.5" style={{ backgroundColor: bg }}>
+      <View className="flex-row items-center gap-1.5">
+        <Icon as={icon} size={14} color={color} />
+        <Text className="text-[11px] font-semibold text-[#dbe3f4]">{title}</Text>
       </View>
-      <Text className="mt-3 text-[20px] font-black" style={{ color }}>
+      <Text className="mt-1 text-[17px] font-black leading-tight" style={{ color }}>
         {value}
       </Text>
-      <Text className="mt-1 text-[11px] text-[#97a1b8]">{hint}</Text>
     </View>
   );
 }
@@ -986,7 +947,11 @@ function TransactionCard({ record }: { record: TransactionRecord }) {
   const currency = pickText(obj.currencyCode ?? obj.CurrencyCode) || 'CNY';
   const serialNumber = pickText(obj.serialNumber ?? obj.SerialNumber);
   const gameRound = pickText(obj.gameRound ?? obj.GameRound);
-  const apiCode = pickText(obj.apiCode ?? obj.ApiCode);
+  const apiCodeTrim = pickText(obj.apiCode ?? obj.ApiCode).trim();
+  const isGameBetType = typeValue === 2;
+  const showApiAsPrimaryTitle = isGameBetType && Boolean(apiCodeTrim);
+  const primaryTypeLabel = showApiAsPrimaryTitle ? apiCodeTrim : typeMeta.label;
+  const showApiCodeBadge = Boolean(apiCodeTrim) && !showApiAsPrimaryTitle;
   const transactionTime = pickTransactionTimeText(
     obj.transactionTime ?? obj.TransactionTime ?? obj.createdTime ?? obj.CreatedTime
   );
@@ -1001,9 +966,15 @@ function TransactionCard({ record }: { record: TransactionRecord }) {
         <Pg51LucideIconBadge icon={typeMeta.icon} size={44} iconSize={20} radius={16} />
 
         <View className="flex-1 gap-1">
-          <View className="flex-row flex-wrap items-center gap-2">
-            <Text className="text-[15px] font-black text-white">{typeMeta.label}</Text>
-            {apiCode ? <Text className="text-[15px] font-black text-white"> {apiCode}</Text> : null}
+          <View className="flex-row flex-wrap items-center gap-0.5">
+            <Text className="text-[15px] font-black text-white">{primaryTypeLabel}</Text>
+            {showApiCodeBadge ? (
+              <View
+                className="rounded-full bg-[#2a3144] px-2 py-0.5"
+                accessibilityLabel={`渠道 ${apiCodeTrim}`}>
+                <Text className="text-[10px] font-bold text-[#dbe3f4]">{apiCodeTrim}</Text>
+              </View>
+            ) : null}
             <View
               className="flex-row items-center gap-1 rounded-full px-2 py-0.5"
               style={{ backgroundColor: statusMeta.bg }}>

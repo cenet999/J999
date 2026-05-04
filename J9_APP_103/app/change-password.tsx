@@ -22,7 +22,7 @@ export default function ChangePasswordScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       <Pg51InnerPage
         title="修改密码"
-        subtitle="登录密码与提现密码均在此维护，修改时需校验原始登录密码。"
+        subtitle="修改登录与提现密码"
         tag="账户安全"
         tone="purple"
         hideHero>
@@ -31,14 +31,14 @@ export default function ChangePasswordScreen() {
           icon={ShieldCheck}
           iconColor="#ff7e93"
           title="修改密码"
-          subtitle="登录密码与提现密码均在此维护。"
+          subtitle="修改登录与提现密码"
           tone="red"
         />
 
         <View className="items-center gap-3 rounded-[28px] border border-[#39435a] bg-[#171d2a] p-5">
           <Pg51LucideIconBadge icon={ShieldCheck} size={72} iconSize={34} radius={36} />
           <Text className="text-[14px] font-semibold text-[#b7c0d6]">
-            敏感操作均需校验当前登录密码，请妥善保管账号安全。
+            修改敏感信息需验证当前登录密码。
           </Text>
         </View>
 
@@ -97,7 +97,7 @@ function LoginPasswordSection({ onChanged }: { onChanged: () => void | Promise<v
   };
 
   return (
-    <Pg51SectionCard title="修改登录密码" description="密码至少 8 位，需同时包含字母和数字。">
+    <Pg51SectionCard title="修改登录密码" description="≥8 位，含字母与数字">
       <PasswordInput
         label="原登录密码"
         value={oldPassword}
@@ -195,11 +195,11 @@ function WithdrawPasswordSection() {
   return (
     <Pg51SectionCard
       title="修改提现密码"
-      description="提现密码至少 6 位，修改时需校验当前登录密码。">
+      description="≥6 位，修改需验证登录密码">
       <View className="flex-row items-center gap-3 rounded-[20px] bg-[#2d2618] px-4 py-3">
         <Pg51LucideIconBadge icon={Wallet} />
         <Text className="flex-1 text-[11px] leading-[18px] text-[#d3c299]">
-          提现密码用于资金出账校验，建议与登录密码不同，避免泄露。
+          用于出账校验，建议勿与登录密码相同。
         </Text>
       </View>
 

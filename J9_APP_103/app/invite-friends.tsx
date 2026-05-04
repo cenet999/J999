@@ -155,7 +155,7 @@ export default function InviteFriendsScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       <Pg51InnerPage
         title="邀请好友"
-        subtitle="邀请码、奖励统计、排行榜与邀请记录统一展示。"
+        subtitle="邀请码与奖励一览"
         tag="邀请返利"
         tone="purple"
         hideHero>
@@ -164,7 +164,7 @@ export default function InviteFriendsScreen() {
           icon={Users}
           iconColor="#9b5cff"
           title="邀请好友"
-          subtitle="邀请码、奖励统计、排行榜与邀请记录统一展示。"
+          subtitle="邀请码与奖励一览"
           tone="purple"
         />
 
@@ -176,7 +176,7 @@ export default function InviteFriendsScreen() {
           <>
             <Pg51SectionCard
               title="我的邀请码"
-              description="好友通过邀请码或邀请链接注册后，将计入您的邀请记录。">
+              description="邀请码或链接注册即计入">
               <View className="flex-row items-center justify-between rounded-[22px] border border-[#4f3a80] bg-[#221b35] px-4 py-4">
                 <View>
                   <Text className="text-[11px] font-semibold text-[#9fa8be]">邀请码</Text>
@@ -201,7 +201,7 @@ export default function InviteFriendsScreen() {
 
             <Pg51SectionCard
               title="奖励统计"
-              description="累计任务奖励，就是邀请活动已经发给你的总金额。">
+              description="邀请活动已发放的累计奖励">
               <View className="flex-row gap-3">
                 <Pg51StatCard
                   icon={Users}
@@ -228,7 +228,7 @@ export default function InviteFriendsScreen() {
 
             <Pg51SectionCard
               title="邀请排行榜"
-              description="按直属邀请人数进行排名展示。">
+              description="按直属邀请人数排名">
               <View className="rounded-[20px] bg-[#2d2618] px-4 py-3">
                 <Text className="text-[12px] font-semibold text-[#d3c299]">
                   我的排名：
@@ -282,7 +282,7 @@ export default function InviteFriendsScreen() {
 
             <Pg51SectionCard
               title="邀请记录"
-              description="展示最近的好友注册记录，账号做了简单隐藏。">
+              description="最近注册好友（账号脱敏）">
               {data.records.length === 0 ? (
                 <EmptyText text="还没有朋友通过你的邀请注册。" />
               ) : (

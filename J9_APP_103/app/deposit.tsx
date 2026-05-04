@@ -17,7 +17,7 @@ const channelCards = [
   {
     key: 'usdt',
     title: 'USDT-TRC20',
-    description: '提交后将生成专属支付页面，请按页面指引完成转账。',
+    description: '生成支付页，按指引转账',
     badge: '推荐',
     tone: 'gold' as const,
     icon: Coins,
@@ -25,7 +25,7 @@ const channelCards = [
   {
     key: 'manual',
     title: '专属通道',
-    description: '适用于快速进入支付页面的充值方式。',
+    description: '快速跳转支付页面',
     badge: '便捷',
     tone: 'purple' as const,
     icon: ShieldCheck,
@@ -104,7 +104,7 @@ export default function DepositScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       <Pg51InnerPage
         title="存款中心"
-        subtitle="选择金额与充值方式后，即可进入支付流程。"
+        subtitle="选金额与通道即可支付"
         tag="安全到账"
         tone="gold"
         hideHero>
@@ -113,7 +113,7 @@ export default function DepositScreen() {
             <View className="flex-1">
               <Text className="text-[20px] font-black text-white">存款中心</Text>
               <Text className="mt-1 text-[12px] leading-[19px] text-[#97a1b8]">
-                选择金额与充值方式后，即可进入支付流程。
+                选金额与通道即可支付
               </Text>
             </View>
 

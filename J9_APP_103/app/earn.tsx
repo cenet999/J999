@@ -10,21 +10,16 @@ import {
   claimDailyTask,
   getCheckInStatus,
   getDailyTasks,
-  getTimeLimitedEvents,
   type CheckInStatus,
   type DailyTask,
-  type TimeLimitedEvent,
 } from '@/lib/api/event';
-import { getEventDisplayNumbers } from '@/lib/event-progress';
-import { apiOk, toAbsoluteUrl } from '@/lib/api/request';
+import { apiOk } from '@/lib/api/request';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import {
   CalendarDays,
   Check,
-  ChevronRight,
   Circle,
   Clock,
-  Flame,
   Gamepad2,
   Gift,
   UserPlus,
@@ -32,7 +27,7 @@ import {
 } from 'lucide-react-native';
 import type { LucideIcon } from 'lucide-react-native';
 import { useCallback, useState } from 'react';
-import { Image, Platform, Pressable, View } from 'react-native';
+import { Platform, Pressable, ScrollView, View } from 'react-native';
 
 const TASK_MILESTONES = [
   { target: 20, reward: 2 },
@@ -130,13 +125,12 @@ export default function EarnScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       <Pg51InnerPage
         title="福利中心"
-        subtitle="签到、任务与限时活动统一汇总，会员权益一目了然。"
+        subtitle="签到任务与会员福利"
         tag="会员福利"
         tone="gold"
         hideHero>
         <CheckInCard refreshSeed={refreshSeed} onRefresh={refreshAll} />
         <DailyTasksCard refreshSeed={refreshSeed} onRefresh={refreshAll} />
-        <TimeLimitedEventsCard refreshSeed={refreshSeed} />
       </Pg51InnerPage>
     </>
   );
@@ -405,7 +399,7 @@ function DailyTasksCard({
   return (
     <Pg51SectionCard
       title="每日任务"
-      description="完成指定任务后，可领取对应奖励与积分。"
+      description="完成任务领取奖励与积分"
       right={
         <View className="rounded-full border border-[#5a47a0] bg-[#241d36] px-3 py-1.5">
           <Text className="text-[11px] font-bold text-[#bca8ff]">
@@ -543,136 +537,47 @@ function MilestoneCard({
         />
       </View>
 
-      <View className="mt-4 flex-row justify-between">
-        {TASK_MILESTONES.map((item) => {
-          const isAppOnly = APP_ONLY_CHEST_TARGETS.has(item.target);
-          const reached = totalActivityPoint >= item.target;
-          const claimed = claimedChests.includes(item.target);
-          const canClaim = reached && !claimed;
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        className="mt-4"
+        contentContainerStyle={{ paddingRight: 4 }}>
+        <View className="flex-row items-start gap-2">
+          {TASK_MILESTONES.map((item) => {
+            const isAppOnly = APP_ONLY_CHEST_TARGETS.has(item.target);
+            const reached = totalActivityPoint >= item.target;
+            const claimed = claimedChests.includes(item.target);
+            const canClaim = reached && !claimed;
 
-          return (
-            <Pressable
-              key={item.target}
-              className="w-[52px] items-center"
-              disabled={!canClaim || actingChest !== null}
-              onPress={() => onClaimChest(item.target)}>
-              <View
-                className="size-10 items-center justify-center rounded-full"
-                style={{
-                  backgroundColor: claimed ? '#2fd17c' : canClaim ? '#ff8a34' : '#2d2940',
-                  borderWidth: 1,
-                  borderColor: claimed ? '#62e2a0' : canClaim ? '#ffc07b' : isAppOnly ? '#8f6a35' : '#574f73',
-                }}>
-                {claimed ? (
-                  <Icon as={Check} size={16} className="text-white" />
-                ) : canClaim ? (
-                  <Text className="text-[11px] font-bold text-white">
-                    {actingChest === item.target ? '...' : '领'}
-                  </Text>
-                ) : (
-                  <Text className="text-[11px] font-bold text-[#b3a9d1]">{item.target}</Text>
-                )}
-              </View>
-              <Text className="mt-2 text-[10px] font-semibold text-[#d1c6e9]">¥{item.reward}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
-    </View>
-  );
-}
-
-function TimeLimitedEventsCard({ refreshSeed }: { refreshSeed: number }) {
-  const [events, setEvents] = useState<TimeLimitedEvent[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    const result = await getTimeLimitedEvents();
-
-    if (apiOk(result) && Array.isArray(result.data)) {
-      setEvents(result.data);
-    } else {
-      setEvents([]);
-    }
-
-    setLoading(false);
-  }, []);
-
-  useFocusEffect(
-    useCallback(() => {
-      loadData();
-    }, [loadData, refreshSeed])
-  );
-
-  return (
-    <Pg51SectionCard
-      title="限时活动"
-      description="展示当前开放中的限时活动与参与进度。"
-      right={
-        <View className="flex-row items-center gap-1 rounded-full bg-[#212838] px-3 py-1.5">
-          <Text className="text-[11px] font-bold text-[#9b5cff]">实时活动</Text>
-          <Icon as={ChevronRight} size={14} color="#9b5cff" />
+            return (
+              <Pressable
+                key={item.target}
+                className="w-[52px] shrink-0 items-center"
+                disabled={!canClaim || actingChest !== null}
+                onPress={() => onClaimChest(item.target)}>
+                <View
+                  className="size-10 items-center justify-center rounded-full"
+                  style={{
+                    backgroundColor: claimed ? '#2fd17c' : canClaim ? '#ff8a34' : '#2d2940',
+                    borderWidth: 1,
+                    borderColor: claimed ? '#62e2a0' : canClaim ? '#ffc07b' : isAppOnly ? '#8f6a35' : '#574f73',
+                  }}>
+                  {claimed ? (
+                    <Icon as={Check} size={16} className="text-white" />
+                  ) : canClaim ? (
+                    <Text className="text-[11px] font-bold text-white">
+                      {actingChest === item.target ? '...' : '领'}
+                    </Text>
+                  ) : (
+                    <Text className="text-[11px] font-bold text-[#b3a9d1]">{item.target}</Text>
+                  )}
+                </View>
+                <Text className="mt-2 text-[10px] font-semibold text-[#d1c6e9]">¥{item.reward}</Text>
+              </Pressable>
+            );
+          })}
         </View>
-      }>
-      {loading ? (
-        <TimeLimitedEventsSkeleton />
-      ) : events.length ? (
-        events.map((item, index) => <LimitedEventCard key={`${item.name}-${index}`} item={item} />)
-      ) : (
-        <View className="rounded-[22px] border border-[#313b52] bg-[#212838] px-4 py-6">
-          <Text className="text-center text-[13px] text-[#98a3ba]">暂无进行中的活动</Text>
-        </View>
-      )}
-    </Pg51SectionCard>
-  );
-}
-
-function LimitedEventCard({ item }: { item: TimeLimitedEvent }) {
-  const displayProgress = getEventDisplayNumbers(item);
-  const imageUrl = toAbsoluteUrl(item.image);
-
-  return (
-    <View className="rounded-[22px] border border-[#313b52] bg-[#212838] p-3.5">
-      <View className="flex-row items-start gap-3">
-        <View className="overflow-hidden rounded-[16px] bg-[#2b3246]">
-          {imageUrl ? (
-            <Image
-              source={{ uri: imageUrl }}
-              style={{ width: 62, height: 62 }}
-              resizeMode="cover"
-            />
-          ) : (
-            <View className="h-[62px] w-[62px] items-center justify-center bg-[#2b3246]">
-              <Icon as={Flame} size={18} className="text-[#ff9a3c]" />
-            </View>
-          )}
-        </View>
-
-        <View className="flex-1">
-          <View className="flex-row items-start justify-between gap-2">
-            <View className="flex-1">
-              <Text className="text-[15px] font-bold text-white">{item.name}</Text>
-              <Text className="mt-1 text-[12px] leading-[19px] text-[#9aa5bd]">{item.desc}</Text>
-            </View>
-
-            <View className="flex-row items-center gap-1 rounded-full bg-[#3b2a24] px-2.5 py-1">
-              <Icon as={Flame} size={12} className="text-[#ff9a3c]" />
-              <Text className="text-[10px] font-bold text-[#ffb35c]">{item.timeLeft}</Text>
-            </View>
-          </View>
-
-          <View className="mt-3 flex-row items-center justify-between">
-            <View className="flex-row items-center gap-1.5">
-              <Icon as={CalendarDays} size={13} className="text-[#7c5dff]" />
-              <Text className="text-[11px] text-[#98a3ba]">{displayProgress.heatText}</Text>
-            </View>
-            <Text className="text-[12px] font-bold text-[#d9e1f1]">
-              {displayProgress.text}
-            </Text>
-          </View>
-        </View>
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -731,35 +636,6 @@ function DailyTasksSkeleton() {
           ))}
         </View>
       </View>
-    </View>
-  );
-}
-
-function TimeLimitedEventsSkeleton() {
-  return (
-    <View className="gap-3">
-      {Array.from({ length: 2 }).map((_, index) => (
-        <View
-          key={index}
-          className="rounded-[22px] border border-[#313b52] bg-[#212838] p-3.5">
-          <View className="flex-row items-start gap-3">
-            <Skeleton width={62} height={62} radius={16} />
-            <View className="flex-1 gap-2">
-              <View className="flex-row items-start justify-between gap-2">
-                <View className="flex-1 gap-2">
-                  <Skeleton width={140} height={15} radius={6} />
-                  <Skeleton width={200} height={12} radius={6} />
-                </View>
-                <Skeleton width={56} height={22} radius={999} />
-              </View>
-              <View className="mt-2 flex-row items-center justify-between">
-                <Skeleton width={90} height={11} radius={6} />
-                <Skeleton width={60} height={12} radius={6} />
-              </View>
-            </View>
-          </View>
-        </View>
-      ))}
     </View>
   );
 }

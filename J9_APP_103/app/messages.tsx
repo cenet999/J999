@@ -130,17 +130,19 @@ export default function MessagesScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       <Pg51InnerPage
         title="消息通知"
-        subtitle="系统公告、客服回复与留言记录统一汇总。"
+        subtitle="系统通知与客服消息"
         tag={unreadCount > 0 ? `${unreadCount}条未读` : '已读完'}
         tone="blue"
         hideHero>
         <Pg51InnerPageTopBar
           onBack={() => router.back()}
-          icon={Bell}
-          iconColor="#4ea3ff"
+          icon={Headset}
+          iconColor="#4ade80"
           title="消息通知"
-          subtitle="系统公告、客服回复与留言记录统一汇总。"
+          subtitle="系统通知与客服消息"
           tone="blue"
+          onTrailingIconPress={() => router.push('/chat')}
+          trailingAccessibilityLabel="联系客服"
         />
 
         {unreadCount > 0 ? (
@@ -154,32 +156,9 @@ export default function MessagesScreen() {
           </View>
         ) : null}
 
-        <View className="flex-row gap-3">
-          <StatCard label="未读消息" count={unreadCount} color="#ff7e93" bg="#3a1f29" icon={Bell} />
-          <StatCard
-            label="系统公告"
-            count={messages.filter((item) => item.senderRole === MessageSenderRole.System).length}
-            color="#9b5cff"
-            bg="#241d39"
-            icon={Megaphone}
-          />
-          <StatCard
-            label="客服回复"
-            count={
-              messages.filter(
-                (item) =>
-                  item.senderRole === MessageSenderRole.Agent && item.status === MessageStatus.未读
-              ).length
-            }
-            color="#4ade80"
-            bg="#172b26"
-            icon={Headset}
-          />
-        </View>
-
         <Pg51SectionCard
           title="消息列表"
-          description="可按消息类型筛选查看对应内容。"
+          description="支持按类型筛选"
           right={
             <Pressable
               onPress={() => router.push('/chat')}
@@ -255,30 +234,6 @@ export default function MessagesScreen() {
         </Pg51SectionCard>
       </Pg51InnerPage>
     </>
-  );
-}
-
-function StatCard({
-  label,
-  count,
-  color,
-  bg,
-  icon,
-}: {
-  label: string;
-  count: number;
-  color: string;
-  bg: string;
-  icon: any;
-}) {
-  return (
-    <View className="flex-1 items-center rounded-[22px] bg-[#171d2a] px-3 py-4">
-      <Pg51LucideIconBadge icon={icon} iconSize={17} />
-      <Text className="mt-3 text-[22px] font-black" style={{ color }}>
-        {count}
-      </Text>
-      <Text className="mt-1 text-center text-[11px] text-[#8f9ab2]">{label}</Text>
-    </View>
   );
 }
 

@@ -16,7 +16,7 @@ export default function AboutScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       <Pg51InnerPage
         title="关于我们"
-        subtitle="了解 J9 Club 的平台定位、服务优势与基础信息。"
+        subtitle="平台简介与服务说明"
         tag="平台信息"
         tone="purple"
         hideHero>
@@ -25,7 +25,7 @@ export default function AboutScreen() {
           icon={Globe}
           iconColor="#c9b3ff"
           title="关于我们"
-          subtitle="了解 J9 Club 的平台定位、服务优势与基础信息。"
+          subtitle="平台简介与服务说明"
           tone="purple"
         />
 
@@ -43,7 +43,7 @@ export default function AboutScreen() {
           <View className="items-center gap-1">
             <Text className="text-xl font-extrabold text-white">J9 Club</Text>
             <Text className="text-[13px] font-semibold text-[#9fa8be]">
-              稳定、安全、专业的数字娱乐平台
+              稳定安全的数字娱乐平台
             </Text>
           </View>
 
@@ -52,14 +52,14 @@ export default function AboutScreen() {
           </View>
         </View>
 
-        <Pg51SectionCard title="平台介绍" description="专注提升账户、资金与服务体验。">
+        <Pg51SectionCard title="平台介绍" description="账户、资金与服务体验">
           <Text className="text-[12px] leading-[21px] text-[#b7c0d6]">
             J9 Club 围绕账户管理、资金服务、会员权益与消息触达等核心场景持续优化，
             致力于为用户提供更稳定、更高效、更一致的平台体验。
           </Text>
         </Pg51SectionCard>
 
-        <Pg51SectionCard title="核心优势" description="以稳定服务与一致体验为核心。">
+        <Pg51SectionCard title="核心优势" description="稳定服务与一致体验">
           <FeatureItem icon={Shield} title="安全保障" desc="账户与资金相关操作均配备必要的安全保护机制。" />
           <FeatureItem icon={Award} title="高效服务" desc="常用功能集中展示，核心操作路径更清晰顺畅。" />
           <FeatureItem
@@ -70,7 +70,7 @@ export default function AboutScreen() {
           <FeatureItem icon={Heart} title="持续优化" desc="围绕会员体验持续完善服务细节与平台内容。" />
         </Pg51SectionCard>
 
-        <Pg51SectionCard title="相关条款" description="平台规则与服务说明以正式公告为准。">
+        <Pg51SectionCard title="相关条款" description="规则以正式公告为准">
           <LegalItem label="用户协议" />
           <LegalItem label="隐私政策" />
           <LegalItem label="责任声明" />

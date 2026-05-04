@@ -6,8 +6,9 @@ import {
 } from '@/components/pg51-clone/original-icons';
 import type { Pg51Category, Pg51CategoryId } from '@/components/pg51-clone/types';
 import { Text } from '@/components/ui/text';
+import { getMessages, MessageSenderRole, MessageStatus } from '@/lib/api/message';
 import { useTenantTitle } from '@/lib/api/tenant';
-import { usePathname, useRouter } from 'expo-router';
+import { useFocusEffect, usePathname, useRouter } from 'expo-router';
 import * as React from 'react';
 import type { ReactNode } from 'react';
 import {
@@ -272,9 +273,45 @@ export function Pg51HeaderInner({
   const { requireAuth } = useAuthModal();
   const insets = useSafeAreaInsets();
   const tenantTitle = useTenantTitle();
+  const [hasUnreadServiceMessage, setHasUnreadServiceMessage] = React.useState(false);
   // 保留“前 2 字紫 + 其余白”的视觉风格：如“九游俱乐部”-> “九游” + “俱乐部”
   const titlePrefix = tenantTitle.slice(0, 2);
   const titleSuffix = tenantTitle.slice(2);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      if (!isAuthenticated) {
+        setHasUnreadServiceMessage(false);
+        return;
+      }
+
+      let cancelled = false;
+
+      (async () => {
+        try {
+          const result = await getMessages();
+          if (cancelled || !result.success || !result.data) return;
+
+          setHasUnreadServiceMessage(
+            result.data.some(
+              (message) =>
+                message.status === MessageStatus.未读 &&
+                message.senderRole !== MessageSenderRole.Customer &&
+                message.senderRole !== MessageSenderRole.System
+            )
+          );
+        } catch {
+          if (!cancelled) {
+            setHasUnreadServiceMessage(false);
+          }
+        }
+      })();
+
+      return () => {
+        cancelled = true;
+      };
+    }, [isAuthenticated])
+  );
 
   return (
     <View className="px-3.5" style={{ paddingTop: includeSafeAreaTop ? insets.top : 0 }}>
@@ -342,6 +379,19 @@ export function Pg51HeaderInner({
                     name={item.id as 'deposit' | 'withdraw' | 'service'}
                     size={27}
                   />
+                  {item.id === 'service' && hasUnreadServiceMessage ? (
+                    <View
+                      className="absolute rounded-full bg-[#FF2F4F]"
+                      style={{
+                        top: 3,
+                        right: 4,
+                        width: 9,
+                        height: 9,
+                        borderWidth: 1.5,
+                        borderColor: '#414559',
+                      }}
+                    />
+                  ) : null}
                 </View>
                 <Text className="mt-1.5 text-[10px] leading-[12px] text-[#d8dcea]">
                   {item.label}
@@ -364,7 +414,7 @@ export function Pg51QuickSection() {
   const chips = ['PG', 'PA', 'CQ9', 'DB'];
 
   return (
-    <View className="px-3.5 pb-3">
+    <View className="px-2 pb-3">
       <View className="flex-row items-center gap-2">
         {chips.map((chip, index) => (
           <Pressable
@@ -423,7 +473,7 @@ export function Pg51BottomNav() {
   const activeTab = getActiveBottomTab(pathname);
 
   return (
-    <View className="bg-transparent px-3 pb-1.5">
+    <View className="bg-transparent px-2 pb-1.5">
       <View className="h-[70px] rounded-[22px] bg-[#383c4f] px-2.5 pb-1.5 pt-1 shadow-2xl shadow-black/40">
         <View className="h-full flex-row items-end justify-between">
           {pg51BottomItems.map((item) => {
@@ -442,9 +492,7 @@ export function Pg51BottomNav() {
                 }}
                 className="relative flex-1 items-center">
                 {active ? (
-                  <View className="absolute bottom-0">
-                    <View className="h-[56px] w-[70px] rounded-[18px] bg-[#6f1dff]" />
-                  </View>
+                  <View className="absolute bottom-0 left-1 right-1 h-[56px] rounded-[18px] bg-[#6f1dff]" />
                 ) : null}
 
                 {item.badge ? (

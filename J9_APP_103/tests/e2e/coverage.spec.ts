@@ -63,7 +63,7 @@ test('登录后福利相关页面可以完整加载', async ({ page }) => {
   await page.goto('/earn');
   await expect(page.getByText('每日签到')).toBeVisible();
   await expect(page.getByText('积分宝箱')).toBeVisible();
-  await expect(page.getByText('连胜挑战赛')).toBeVisible();
+  await expect(page.getByText('每日任务')).toBeVisible();
 
   await page.goto('/tasks');
   await expect(page.getByText('每日任务').first()).toBeVisible();

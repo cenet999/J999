@@ -78,7 +78,7 @@ export default function HelpCenterScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       <Pg51InnerPage
         title="帮助中心"
-        subtitle="常见问题与操作说明已统一整理，方便快速查阅。"
+        subtitle="常见问题速查"
         tag="使用说明"
         tone="blue"
         hideHero>
@@ -87,7 +87,7 @@ export default function HelpCenterScreen() {
           icon={MessageCircleQuestion}
           iconColor="#4ea3ff"
           title="帮助中心"
-          subtitle="常见问题与操作说明已统一整理，方便快速查阅。"
+          subtitle="常见问题速查"
           tone="blue"
         />
 
@@ -158,7 +158,7 @@ export default function HelpCenterScreen() {
           );
         })}
 
-        <Pg51SectionCard title="联系我们" description="如仍需协助，可通过以下方式联系客服。">
+        <Pg51SectionCard title="联系我们" description="仍可联系在线客服">
           <ContactItem
             icon={Headphones}
             color="#9b5cff"

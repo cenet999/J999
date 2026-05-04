@@ -1,7 +1,7 @@
 import { Text } from '@/components/ui/text';
 import { Toast } from '@/components/ui/toast';
 import type { Pg51GameItem } from '@/components/pg51-clone/types';
-import { cn } from '@/lib/utils';
+import { cn, extractImageSourceUri } from '@/lib/utils';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image, Pressable, View } from 'react-native';
@@ -42,12 +42,15 @@ export function Pg51GameCard({ item, singleColumn = false }: Pg51GameCardProps) 
 
     try {
       isNavigatingToGameLaunch = true;
+      const gameIcon = extractImageSourceUri(item.image);
       router.push({
         pathname: '/game-launch',
         params: {
           title: item.title,
           gameId: item.gameId,
           dGamePlatform: item.dGamePlatform,
+          autoLaunch: 'true',
+          ...(gameIcon ? { gameIcon } : {}),
         },
       });
     } finally {

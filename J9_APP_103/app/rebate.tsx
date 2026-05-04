@@ -131,7 +131,7 @@ export default function RebateScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       <Pg51InnerPage
         title="返水中心"
-        subtitle="查看当前可结算返水，并提交结算申请。"
+        subtitle="返水查询与结算"
         tag="实时结算"
         tone="blue"
         hideHero>
@@ -140,7 +140,7 @@ export default function RebateScreen() {
           icon={Percent}
           iconColor="#4ea3ff"
           title="返水中心"
-          subtitle="查看当前可结算返水，并提交结算申请。"
+          subtitle="返水查询与结算"
           tone="blue"
         />
 
@@ -150,14 +150,14 @@ export default function RebateScreen() {
           <>
             <Pg51SectionCard
               title="当前可领返水"
-              description="系统将按当前结算规则计算可领取金额。">
+              description="按规则计算可领金额">
               <View className="rounded-[22px] border border-[#2f5479] bg-[#172535] px-4 py-4">
                 <View className="flex-row items-center gap-3">
                   <Pg51LucideIconBadge icon={Percent} size={44} iconSize={20} />
                   <View className="flex-1">
                     <Text className="text-[14px] font-bold text-white">返水结算</Text>
                     <Text className="mt-1 text-[11px] leading-[18px] text-[#9fa8be]">
-                      结算成功后，相关记录将同步更新。
+                      成功后记录将同步更新。
                     </Text>
                   </View>
                 </View>
@@ -190,7 +190,7 @@ export default function RebateScreen() {
               </View>
             </Pg51SectionCard>
 
-            <Pg51SectionCard title="最近返水记录" description="展示近期返水结算记录。">
+            <Pg51SectionCard title="最近返水记录" description="近期结算记录">
               {records.length === 0 ? (
                 <Text className="text-center text-[13px] text-[#9fa8be]">
                   近 7 天暂无返水记录。

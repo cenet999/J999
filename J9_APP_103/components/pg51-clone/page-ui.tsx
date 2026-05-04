@@ -75,7 +75,7 @@ export function Pg51InnerPage({
         className="flex-1"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
-          paddingHorizontal: 16,
+          paddingHorizontal: 8,
           paddingTop: insets.top + 20,
           paddingBottom: 124,
         }}>
@@ -85,7 +85,11 @@ export function Pg51InnerPage({
             <View className="flex-row items-start justify-between gap-3">
               <View className="flex-1">
                 <Text className="text-[30px] font-black text-white">{title}</Text>
-                <Text className="mt-2 text-[13px] leading-[21px] text-[#aab4ca]">{subtitle}</Text>
+                <Text
+                  className="mt-2 text-[13px] leading-[21px] text-[#aab4ca]"
+                  numberOfLines={1}>
+                  {subtitle}
+                </Text>
               </View>
 
               {tag ? (
@@ -114,29 +118,39 @@ export function Pg51SectionCard({
   description,
   right,
   children,
+  dense = false,
 }: {
   title?: string;
   description?: string;
   right?: ReactNode;
   children: ReactNode;
+  /** 更紧凑的内边距与条目间距（用于「我的」菜单等） */
+  dense?: boolean;
 }) {
   const hasHeader = Boolean(title || description || right);
+  const padClass = dense ? 'px-3 py-3' : 'p-4';
+  const stackGap = dense ? 'gap-2' : 'gap-3';
+  const headerStackMt = dense ? 'mt-3' : 'mt-4';
 
   return (
-    <View className="rounded-[28px] border border-[#39435a] bg-[#171d2a] p-4">
+    <View className={`rounded-[28px] border border-[#39435a] bg-[#171d2a] ${padClass}`}>
       {hasHeader ? (
         <View className="flex-row items-start justify-between gap-3">
           <View className="flex-1">
             {title ? <Text className="text-[18px] font-black text-white">{title}</Text> : null}
             {description ? (
-              <Text className="mt-1 text-[12px] leading-[20px] text-[#97a1b8]">{description}</Text>
+              <Text
+                className="mt-1 text-[12px] leading-[20px] text-[#97a1b8]"
+                numberOfLines={1}>
+                {description}
+              </Text>
             ) : null}
           </View>
           {right}
         </View>
       ) : null}
 
-      <View className={`${hasHeader ? 'mt-4' : ''} gap-3`}>{children}</View>
+      <View className={`${hasHeader ? headerStackMt : ''} ${stackGap}`}>{children}</View>
     </View>
   );
 }

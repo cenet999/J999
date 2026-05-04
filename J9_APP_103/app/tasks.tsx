@@ -101,7 +101,7 @@ export default function TasksScreen() {
       <View className="flex-1 bg-[#0f1420]">
         <ScrollView
           className="flex-1"
-          contentContainerStyle={{ padding: 16, paddingBottom: 110 }}
+          contentContainerStyle={{ paddingHorizontal: 8, paddingTop: 16, paddingBottom: 110 }}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#9b5cff" />
           }>
@@ -117,7 +117,7 @@ export default function TasksScreen() {
             </Pressable>
             <View>
               <Text className="text-[22px] font-black text-white">每日任务</Text>
-              <Text className="mt-1 text-[12px] text-[#97a1b8]">完成任务，领取活跃积分与宝箱奖励</Text>
+              <Text className="mt-1 text-[12px] text-[#97a1b8]">任务积分与宝箱奖励</Text>
             </View>
           </View>
 
