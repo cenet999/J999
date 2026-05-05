@@ -14,7 +14,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, TextInput, View } from 'react-native';
 
 const CUSTOM_AMOUNT = 'custom';
-const FALLBACK_AMOUNT_OPTIONS = ['500', '1000', '2000', '5000', '10000', CUSTOM_AMOUNT];
 
 type DepositChannel = {
   key: string;
@@ -109,18 +108,21 @@ export default function DepositScreen() {
   const [channels, setChannels] = useState<DepositChannel[]>([]);
   const [channelsLoading, setChannelsLoading] = useState(true);
   const [channelsError, setChannelsError] = useState('');
-  const [selectedAmount, setSelectedAmount] = useState<string>(FALLBACK_AMOUNT_OPTIONS[0]);
+  const [selectedAmount, setSelectedAmount] = useState('');
   const [customAmount, setCustomAmount] = useState('');
   const [selectedChannel, setSelectedChannel] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const selectedChannelInfo = channels.find((item) => item.key === selectedChannel) ?? channels[0];
-  const amountOptions = useMemo(
-    () => selectedChannelInfo?.amountOptions ?? FALLBACK_AMOUNT_OPTIONS,
-    [selectedChannelInfo]
-  );
+  const selectedChannelInfo = channels.find((item) => item.key === selectedChannel);
+  const amountOptions = useMemo(() => selectedChannelInfo?.amountOptions ?? [], [selectedChannelInfo]);
   const isCustomSelected = selectedAmount === CUSTOM_AMOUNT;
   const effectiveAmount = isCustomSelected ? customAmount.trim() : selectedAmount;
+
+  const handleChannelSelect = (channelKey: string) => {
+    setSelectedChannel(channelKey);
+    setSelectedAmount('');
+    setCustomAmount('');
+  };
 
   const loadChannels = async () => {
     setChannelsLoading(true);
@@ -159,14 +161,13 @@ export default function DepositScreen() {
     }
 
     if (!channels.some((item) => item.key === selectedChannel)) {
-      setSelectedChannel(channels[0].key);
+      setSelectedChannel('');
     }
   }, [channels, selectedChannel]);
 
   useEffect(() => {
-    const firstPreset = amountOptions.find((item) => item !== CUSTOM_AMOUNT) ?? CUSTOM_AMOUNT;
-    if (!amountOptions.includes(selectedAmount)) {
-      setSelectedAmount(firstPreset);
+    if (selectedAmount && !amountOptions.includes(selectedAmount)) {
+      setSelectedAmount('');
       setCustomAmount('');
     }
   }, [amountOptions, selectedAmount]);
@@ -176,17 +177,21 @@ export default function DepositScreen() {
   };
 
   const handleRecharge = async () => {
-    const amount = Number(effectiveAmount);
-    const selectedAmountIsPreset =
-      selectedAmount !== CUSTOM_AMOUNT &&
-      (selectedChannelInfo?.amountOptions ?? []).includes(selectedAmount);
-    if (!Number.isFinite(amount) || amount <= 0) {
-      Toast.show({ type: 'error', text1: '金额无效', text2: '请选择正确的充值金额。' });
+    if (!selectedChannelInfo) {
+      Toast.show({ type: 'error', text1: '请选择通道', text2: '请先选择可用的充值方式。' });
       return;
     }
 
-    if (!selectedChannelInfo) {
-      Toast.show({ type: 'error', text1: '暂无通道', text2: '请稍后重试或联系在线客服。' });
+    if (!selectedAmount) {
+      Toast.show({ type: 'error', text1: '请选择金额', text2: '请先选择充值金额。' });
+      return;
+    }
+
+    const amount = Number(effectiveAmount);
+    const selectedAmountIsPreset =
+      selectedAmount !== CUSTOM_AMOUNT && selectedChannelInfo.amountOptions.includes(selectedAmount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      Toast.show({ type: 'error', text1: '金额无效', text2: '请选择正确的充值金额。' });
       return;
     }
 
@@ -293,7 +298,7 @@ export default function DepositScreen() {
                       badge={item.badge}
                       icon={item.icon}
                       active={selectedChannel === item.key}
-                      onPress={() => setSelectedChannel(item.key)}
+                      onPress={() => handleChannelSelect(item.key)}
                     />
                   ))
                 ) : (
@@ -314,44 +319,52 @@ export default function DepositScreen() {
 
             <View className="gap-2">
               <Text className="text-[13px] font-semibold text-[#9fa8be]">选择金额</Text>
-              <View className="flex-row gap-3">
-                <View className="flex-1 gap-3">
-                  {amountOptions
-                    .filter((_, index) => index % 3 === 0)
-                    .map((item) => (
-                      <AmountOption
-                        key={item}
-                        amount={item}
-                        active={selectedAmount === item}
-                        onPress={() => setSelectedAmount(item)}
-                      />
-                    ))}
+              {amountOptions.length > 0 ? (
+                <View className="flex-row gap-3">
+                  <View className="flex-1 gap-3">
+                    {amountOptions
+                      .filter((_, index) => index % 3 === 0)
+                      .map((item) => (
+                        <AmountOption
+                          key={item}
+                          amount={item}
+                          active={selectedAmount === item}
+                          onPress={() => setSelectedAmount(item)}
+                        />
+                      ))}
+                  </View>
+                  <View className="flex-1 gap-3">
+                    {amountOptions
+                      .filter((_, index) => index % 3 === 1)
+                      .map((item) => (
+                        <AmountOption
+                          key={item}
+                          amount={item}
+                          active={selectedAmount === item}
+                          onPress={() => setSelectedAmount(item)}
+                        />
+                      ))}
+                  </View>
+                  <View className="flex-1 gap-3">
+                    {amountOptions
+                      .filter((_, index) => index % 3 === 2)
+                      .map((item) => (
+                        <AmountOption
+                          key={item}
+                          amount={item}
+                          active={selectedAmount === item}
+                          onPress={() => setSelectedAmount(item)}
+                        />
+                      ))}
+                  </View>
                 </View>
-                <View className="flex-1 gap-3">
-                  {amountOptions
-                    .filter((_, index) => index % 3 === 1)
-                    .map((item) => (
-                      <AmountOption
-                        key={item}
-                        amount={item}
-                        active={selectedAmount === item}
-                        onPress={() => setSelectedAmount(item)}
-                      />
-                    ))}
+              ) : (
+                <View className="rounded-[18px] border border-[#39435a] bg-[#212838] px-4 py-4">
+                  <Text className="text-center text-[12px] text-[#9fa8be]">
+                    {channelsLoading ? '正在加载支付通道...' : '请先选择充值方式'}
+                  </Text>
                 </View>
-                <View className="flex-1 gap-3">
-                  {amountOptions
-                    .filter((_, index) => index % 3 === 2)
-                    .map((item) => (
-                      <AmountOption
-                        key={item}
-                        amount={item}
-                        active={selectedAmount === item}
-                        onPress={() => setSelectedAmount(item)}
-                      />
-                    ))}
-                </View>
-              </View>
+              )}
 
               {isCustomSelected ? (
                 <View className="mt-1 gap-2">
@@ -375,9 +388,11 @@ export default function DepositScreen() {
 
             <Pressable
               onPress={handleRecharge}
-              disabled={submitting || channelsLoading || !selectedChannelInfo}
+              disabled={submitting || channelsLoading || !selectedChannelInfo || !selectedAmount}
               className="rounded-[22px] bg-[#6f1dff] px-4 py-4 active:opacity-90"
-              style={{ opacity: submitting || channelsLoading || !selectedChannelInfo ? 0.75 : 1 }}>
+              style={{
+                opacity: submitting || channelsLoading || !selectedChannelInfo || !selectedAmount ? 0.75 : 1,
+              }}>
               {submitting ? (
                 <ActivityIndicator color="#ffffff" />
               ) : (

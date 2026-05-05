@@ -106,7 +106,7 @@
                 a.DefaultValue.Contains(e.SearchText) || 
                 a.CreatedUserName.Contains(e.SearchText) || 
                 a.ModifiedUserName.Contains(e.SearchText))
-            .OrderByDescending(a => a.Id);
+            .OrderBy(a => a.Sort);
     }
 
     async Task OnEdit(DPayApi item)
