@@ -119,8 +119,9 @@ export default function DepositScreen() {
   const effectiveAmount = isCustomSelected ? customAmount.trim() : selectedAmount;
 
   const handleChannelSelect = (channelKey: string) => {
+    const channel = channels.find((item) => item.key === channelKey);
     setSelectedChannel(channelKey);
-    setSelectedAmount('');
+    setSelectedAmount(channel?.amountOptions[0] ?? '');
     setCustomAmount('');
   };
 

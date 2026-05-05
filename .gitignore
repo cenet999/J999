@@ -16,6 +16,7 @@ autopull.log
 # 后端配置（包含敏感信息，勿提交）
 J9_Admin/appsettings.json
 J9_Admin/appsettings.Production.json
+J9_Admin/Services/PayApi/PayPOPOApi.http
 J9_Admin/wwwroot/uploads/20260423094830.jpg
 J9_Admin/keys/key-ca4dbc39-53bc-4722-b239-99a0662fa61c.xml
 J9_APP_103/.env
