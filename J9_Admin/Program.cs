@@ -158,6 +158,7 @@ try
     builder.Services.AddScoped<J9_Admin.API.MessageService>();
     builder.Services.AddScoped<J9_Admin.API.TaskProgressService>();
     builder.Services.AddScoped<J9_Admin.Services.PayApi.Pay0Api>();
+    builder.Services.AddScoped<J9_Admin.Services.PayApi.PayPOPOApi>();
     // 注册SessionAgent服务
     builder.Services.AddScoped<J9_Admin.Utils.SessionAgent>();
 

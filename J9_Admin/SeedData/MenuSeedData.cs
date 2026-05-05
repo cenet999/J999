@@ -561,6 +561,19 @@ namespace J9_Admin.SeedData
                                 Type = SysMenuType.按钮,
                                 Icon = "fas fa-reply"
                             },
+                            // POPO支付 - 青蛙系统四方支付
+                            new SysMenu
+                            {
+                                Label = "CreatePayPOPOOrder", Path = "CreatePayPOPOOrder", Sort = 313,
+                                Type = SysMenuType.按钮,
+                                Icon = "fas fa-money-bill"
+                            },
+                            new SysMenu
+                            {
+                                Label = "PayPOPOCallback", Path = "PayPOPOCallback", Sort = 314,
+                                Type = SysMenuType.按钮,
+                                Icon = "fas fa-reply"
+                            },
                         }
                     },
 

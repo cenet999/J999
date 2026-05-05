@@ -3,42 +3,173 @@ import { Pg51InnerPage, Pg51SectionCard } from '@/components/pg51-clone/page-ui'
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { Toast } from '@/components/ui/toast';
-import { createRechargeOrderAndOpenPayUrl } from '@/lib/api/transaction';
+import {
+  createRechargeOrderAndOpenPayUrl,
+  getPayApiList,
+  type PayApiChannel,
+} from '@/lib/api/transaction';
 import { Stack } from 'expo-router';
-import { Check, Coins, ShieldCheck } from 'lucide-react-native';
-import { useState } from 'react';
-import { ActivityIndicator, Linking, Pressable, TextInput, View } from 'react-native';
-
-const manualRechargeUrl = 'https://item.taobao.com/item.htm?id=902865679763&skuId=6222234890286';
+import { Check, Coins, CreditCard, RefreshCcw } from 'lucide-react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Pressable, TextInput, View } from 'react-native';
 
 const CUSTOM_AMOUNT = 'custom';
-const amountOptions = ['500', '1000', '2000', '5000', '10000', CUSTOM_AMOUNT];
-const channelCards = [
-  {
-    key: 'usdt',
-    title: 'USDT-TRC20',
-    description: '生成支付页，按指引转账',
-    badge: '推荐',
-    tone: 'gold' as const,
-    icon: Coins,
-  },
-  {
-    key: 'manual',
-    title: '专属通道',
-    description: '快速跳转支付页面',
-    badge: '便捷',
-    tone: 'purple' as const,
-    icon: ShieldCheck,
-  },
-];
+const FALLBACK_AMOUNT_OPTIONS = ['500', '1000', '2000', '5000', '10000', CUSTOM_AMOUNT];
+
+type DepositChannel = {
+  key: string;
+  payApiId: string;
+  ip: string;
+  title: string;
+  description: string;
+  badge: string;
+  icon: typeof Coins;
+  minAmount: number;
+  maxAmount: number;
+  isUserInput: boolean;
+  sort: number;
+  amountOptions: string[];
+};
+
+function toRecord(value: unknown): Record<string, unknown> {
+  return value != null && typeof value === 'object' ? (value as Record<string, unknown>) : {};
+}
+
+function pickString(obj: Record<string, unknown>, camel: string, pascal: string) {
+  const value = obj[camel] ?? obj[pascal];
+  return typeof value === 'string' ? value.trim() : value == null ? '' : String(value).trim();
+}
+
+function pickNumber(obj: Record<string, unknown>, camel: string, pascal: string, fallback: number) {
+  const value = Number(obj[camel] ?? obj[pascal] ?? fallback);
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function parseAmountOptions(
+  defaultValue: string,
+  minAmount: number,
+  maxAmount: number,
+  isUserInput: boolean
+) {
+  const values = defaultValue
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .map((item) => Number(item))
+    .filter((item) => Number.isFinite(item) && item >= minAmount && item <= maxAmount)
+    .map((item) => String(item));
+
+  const unique = Array.from(new Set(values.length > 0 ? values : [String(minAmount)]));
+  return isUserInput ? [...unique, CUSTOM_AMOUNT] : unique;
+}
+
+function buildDepositChannels(items: PayApiChannel[] | undefined): DepositChannel[] {
+  if (!Array.isArray(items)) return [];
+
+  return items
+    .map((item, index) => {
+      const obj = toRecord(item);
+      const ip = pickString(obj, 'ip', 'IP').toUpperCase();
+      const isEnabled = Boolean(obj.isEnabled ?? obj.IsEnabled ?? true);
+      const isUserInput = Boolean(obj.isUserInput ?? obj.IsUserInput ?? true);
+      const minAmount = pickNumber(obj, 'minAmount', 'MinAmount', 2);
+      const maxAmount = pickNumber(obj, 'maxAmount', 'MaxAmount', 999999);
+      const sort = pickNumber(obj, 'sort', 'Sort', index);
+      const successRate = pickNumber(obj, 'successRate', 'SuccessRate', 0);
+      const payMethodName = pickString(obj, 'payMethodName', 'PayMethodName');
+      const payMethod = pickString(obj, 'payMethod', 'PayMethod');
+      const defaultValue = pickString(obj, 'defaultValue', 'DefaultValue');
+      const id = pickString(obj, 'id', 'Id') || `${ip}-${index}`;
+
+      if (!isEnabled || (ip !== 'USDT' && ip !== 'POPO')) return null;
+
+      return {
+        key: id,
+        payApiId: id,
+        ip,
+        title: payMethodName || (ip === 'POPO' ? 'POPO' : 'USDT'),
+        description:
+          ip === 'POPO'
+            ? `${payMethod || '在线支付'} · ¥${minAmount}-${maxAmount}`
+            : `TRC20 转账 · ¥${minAmount}-${maxAmount}`,
+        badge: successRate >= 100 ? '稳定' : successRate > 0 ? `${successRate}%` : ip,
+        icon: ip === 'POPO' ? CreditCard : Coins,
+        minAmount,
+        maxAmount,
+        isUserInput,
+        sort,
+        amountOptions: parseAmountOptions(defaultValue, minAmount, maxAmount, isUserInput),
+      } satisfies DepositChannel;
+    })
+    .filter((item): item is DepositChannel => item != null)
+    .sort((a, b) => a.sort - b.sort || a.title.localeCompare(b.title));
+}
+
 export default function DepositScreen() {
-  const [selectedAmount, setSelectedAmount] = useState<string>(amountOptions[0]);
+  const [channels, setChannels] = useState<DepositChannel[]>([]);
+  const [channelsLoading, setChannelsLoading] = useState(true);
+  const [channelsError, setChannelsError] = useState('');
+  const [selectedAmount, setSelectedAmount] = useState<string>(FALLBACK_AMOUNT_OPTIONS[0]);
   const [customAmount, setCustomAmount] = useState('');
-  const [selectedChannel, setSelectedChannel] = useState(channelCards[0].key);
+  const [selectedChannel, setSelectedChannel] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  const selectedChannelInfo = channels.find((item) => item.key === selectedChannel) ?? channels[0];
+  const amountOptions = useMemo(
+    () => selectedChannelInfo?.amountOptions ?? FALLBACK_AMOUNT_OPTIONS,
+    [selectedChannelInfo]
+  );
   const isCustomSelected = selectedAmount === CUSTOM_AMOUNT;
   const effectiveAmount = isCustomSelected ? customAmount.trim() : selectedAmount;
+
+  const loadChannels = async () => {
+    setChannelsLoading(true);
+    setChannelsError('');
+
+    try {
+      const result = await getPayApiList();
+      if (!result.success || !Array.isArray(result.data)) {
+        setChannels([]);
+        setChannelsError(result.message || '支付通道加载失败');
+        return;
+      }
+
+      const nextChannels = buildDepositChannels(result.data);
+      setChannels(nextChannels);
+      if (nextChannels.length === 0) {
+        setChannelsError('暂无可用支付通道');
+      }
+    } catch (error) {
+      console.error('加载支付通道失败:', error);
+      setChannels([]);
+      setChannelsError('支付通道加载失败');
+    } finally {
+      setChannelsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadChannels();
+  }, []);
+
+  useEffect(() => {
+    if (channels.length === 0) {
+      setSelectedChannel('');
+      return;
+    }
+
+    if (!channels.some((item) => item.key === selectedChannel)) {
+      setSelectedChannel(channels[0].key);
+    }
+  }, [channels, selectedChannel]);
+
+  useEffect(() => {
+    const firstPreset = amountOptions.find((item) => item !== CUSTOM_AMOUNT) ?? CUSTOM_AMOUNT;
+    if (!amountOptions.includes(selectedAmount)) {
+      setSelectedAmount(firstPreset);
+      setCustomAmount('');
+    }
+  }, [amountOptions, selectedAmount]);
 
   const handleCustomAmountChange = (text: string) => {
     setCustomAmount(text.replace(/[^0-9]/g, ''));
@@ -46,34 +177,54 @@ export default function DepositScreen() {
 
   const handleRecharge = async () => {
     const amount = Number(effectiveAmount);
+    const selectedAmountIsPreset =
+      selectedAmount !== CUSTOM_AMOUNT &&
+      (selectedChannelInfo?.amountOptions ?? []).includes(selectedAmount);
     if (!Number.isFinite(amount) || amount <= 0) {
       Toast.show({ type: 'error', text1: '金额无效', text2: '请选择正确的充值金额。' });
       return;
     }
 
-    if (amount < 2) {
-      Toast.show({ type: 'error', text1: '金额过低', text2: '充值金额不能低于 2 元。' });
+    if (!selectedChannelInfo) {
+      Toast.show({ type: 'error', text1: '暂无通道', text2: '请稍后重试或联系在线客服。' });
       return;
     }
 
-    if (selectedChannel === 'manual') {
-      try {
-        await Linking.openURL(manualRechargeUrl);
-      } catch (error) {
-        console.error('打开链接失败:', error);
-        Toast.show({
-          type: 'error',
-          text1: '打开失败',
-          text2: '支付页面暂时无法打开，请稍后重试。',
-        });
-      }
+    if (!selectedChannelInfo.isUserInput && !selectedAmountIsPreset) {
+      Toast.show({
+        type: 'error',
+        text1: '金额不可用',
+        text2: '当前通道仅支持选择固定金额。',
+      });
+      return;
+    }
+
+    if (amount < selectedChannelInfo.minAmount) {
+      Toast.show({
+        type: 'error',
+        text1: '金额过低',
+        text2: `当前通道最低充值 ${selectedChannelInfo.minAmount} 元。`,
+      });
+      return;
+    }
+
+    if (amount > selectedChannelInfo.maxAmount) {
+      Toast.show({
+        type: 'error',
+        text1: '金额过高',
+        text2: `当前通道最高充值 ${selectedChannelInfo.maxAmount} 元。`,
+      });
       return;
     }
 
     setSubmitting(true);
 
     try {
-      const { ok, message } = await createRechargeOrderAndOpenPayUrl(amount);
+      const { ok, message } = await createRechargeOrderAndOpenPayUrl(
+        amount,
+        selectedChannelInfo.payApiId,
+        selectedChannelInfo.ip
+      );
       if (!ok) {
         Toast.show({
           type: 'error',
@@ -124,16 +275,82 @@ export default function DepositScreen() {
         <Pg51SectionCard>
           <View className="gap-4">
             <View className="gap-2">
+              <Text className="text-[13px] font-semibold text-[#9fa8be]">充值方式</Text>
+              <View className="gap-3">
+                {channelsLoading ? (
+                  <View className="rounded-[22px] border border-[#39435a] bg-[#212838] px-4 py-5">
+                    <ActivityIndicator color="#f6c453" />
+                    <Text className="mt-2 text-center text-[12px] text-[#9fa8be]">
+                      正在加载支付通道...
+                    </Text>
+                  </View>
+                ) : channels.length > 0 ? (
+                  channels.map((item) => (
+                    <ChannelOption
+                      key={item.key}
+                      title={item.title}
+                      description={item.description}
+                      badge={item.badge}
+                      icon={item.icon}
+                      active={selectedChannel === item.key}
+                      onPress={() => setSelectedChannel(item.key)}
+                    />
+                  ))
+                ) : (
+                  <Pressable
+                    onPress={loadChannels}
+                    className="rounded-[22px] border border-[#5d4965] bg-[#212838] px-4 py-5 active:opacity-90">
+                    <View className="items-center gap-2">
+                      <Icon as={RefreshCcw} size={18} className="text-[#f6c453]" />
+                      <Text className="text-center text-[13px] font-bold text-white">
+                        {channelsError || '支付通道加载失败'}
+                      </Text>
+                      <Text className="text-center text-[11px] text-[#9fa8be]">点击重试</Text>
+                    </View>
+                  </Pressable>
+                )}
+              </View>
+            </View>
+
+            <View className="gap-2">
               <Text className="text-[13px] font-semibold text-[#9fa8be]">选择金额</Text>
-              <View className="flex-row flex-wrap gap-3">
-                {amountOptions.map((item) => (
-                  <AmountOption
-                    key={item}
-                    amount={item}
-                    active={selectedAmount === item}
-                    onPress={() => setSelectedAmount(item)}
-                  />
-                ))}
+              <View className="flex-row gap-3">
+                <View className="flex-1 gap-3">
+                  {amountOptions
+                    .filter((_, index) => index % 3 === 0)
+                    .map((item) => (
+                      <AmountOption
+                        key={item}
+                        amount={item}
+                        active={selectedAmount === item}
+                        onPress={() => setSelectedAmount(item)}
+                      />
+                    ))}
+                </View>
+                <View className="flex-1 gap-3">
+                  {amountOptions
+                    .filter((_, index) => index % 3 === 1)
+                    .map((item) => (
+                      <AmountOption
+                        key={item}
+                        amount={item}
+                        active={selectedAmount === item}
+                        onPress={() => setSelectedAmount(item)}
+                      />
+                    ))}
+                </View>
+                <View className="flex-1 gap-3">
+                  {amountOptions
+                    .filter((_, index) => index % 3 === 2)
+                    .map((item) => (
+                      <AmountOption
+                        key={item}
+                        amount={item}
+                        active={selectedAmount === item}
+                        onPress={() => setSelectedAmount(item)}
+                      />
+                    ))}
+                </View>
               </View>
 
               {isCustomSelected ? (
@@ -156,28 +373,11 @@ export default function DepositScreen() {
               ) : null}
             </View>
 
-            <View className="gap-2">
-              <Text className="text-[13px] font-semibold text-[#9fa8be]">充值方式</Text>
-              <View className="gap-3">
-                {channelCards.map((item) => (
-                  <ChannelOption
-                    key={item.key}
-                    title={item.title}
-                    description={item.description}
-                    badge={item.badge}
-                    icon={item.icon}
-                    active={selectedChannel === item.key}
-                    onPress={() => setSelectedChannel(item.key)}
-                  />
-                ))}
-              </View>
-            </View>
-
             <Pressable
               onPress={handleRecharge}
-              disabled={submitting}
+              disabled={submitting || channelsLoading || !selectedChannelInfo}
               className="rounded-[22px] bg-[#6f1dff] px-4 py-4 active:opacity-90"
-              style={{ opacity: submitting ? 0.75 : 1 }}>
+              style={{ opacity: submitting || channelsLoading || !selectedChannelInfo ? 0.75 : 1 }}>
               {submitting ? (
                 <ActivityIndicator color="#ffffff" />
               ) : (
@@ -188,7 +388,7 @@ export default function DepositScreen() {
               <Text className="mt-1 text-center text-[11px] text-[#d9cbff]">
                 {submitting
                   ? '正在跳转支付页面，请稍等...'
-                  : `当前方式：${channelCards.find((item) => item.key === selectedChannel)?.title}`}
+                  : `当前方式：${selectedChannelInfo?.title ?? '暂无可用通道'}`}
               </Text>
             </Pressable>
           </View>
@@ -212,18 +412,14 @@ function AmountOption({
   return (
     <Pressable
       onPress={onPress}
-      className="min-w-[31%] flex-1 rounded-[20px] border px-3 py-4 active:opacity-90"
+      className="items-center justify-center rounded-[16px] py-3.5 active:opacity-90"
       style={{
-        borderColor: active ? '#b79249' : '#39435a',
         backgroundColor: active ? '#2d2618' : '#212838',
+        borderWidth: 1,
+        borderColor: active ? '#b79249' : '#39435a',
       }}>
-      <Text className="text-center text-[18px] font-black text-white">
+      <Text className="text-center text-[16px] font-black text-white">
         {isCustom ? '自定义' : `¥${amount}`}
-      </Text>
-      <Text
-        className="mt-1 text-center text-[11px] font-medium"
-        style={{ color: active ? '#f6c453' : '#8f9ab2' }}>
-        {active ? '已选择' : isCustom ? '自定义金额' : '可选金额'}
       </Text>
     </Pressable>
   );
@@ -247,32 +443,35 @@ function ChannelOption({
   return (
     <Pressable
       onPress={onPress}
-      className="rounded-[22px] border px-4 py-4 active:opacity-90"
+      className="flex-row items-center gap-2 rounded-[18px] px-3 py-2 active:opacity-90"
       style={{
-        borderColor: active ? '#6f1dff' : '#39435a',
         backgroundColor: active ? '#241c38' : '#212838',
+        borderWidth: 1,
+        borderColor: active ? '#6f1dff' : '#2B3448',
       }}>
-      <View className="flex-row items-center gap-3">
-        <Pg51LucideIconBadge icon={icon} active={active} size={44} iconSize={20} />
+      <Pg51LucideIconBadge icon={icon} active={active} size={46} iconSize={20} radius={14} />
 
-        <View className="flex-1">
-          <View className="flex-row items-center gap-2">
-            <Text className="text-[15px] font-bold text-white">{title}</Text>
-            <View className="rounded-full bg-[#2d2618] px-2 py-1">
-              <Text className="text-[10px] font-bold text-[#f6c453]">{badge}</Text>
-            </View>
+      <View className="min-w-0 flex-1">
+        <View className="flex-row items-center gap-2">
+          <Text className="text-[13px] font-semibold text-white">{title}</Text>
+          <View
+            className="rounded-full px-2 py-0.5"
+            style={{ backgroundColor: active ? '#2d2618' : '#FFFFFF14' }}>
+            <Text className="text-[10px] font-bold text-[#f6c453]">
+              {badge}
+            </Text>
           </View>
-          <Text className="mt-1 text-[12px] leading-[19px] text-[#9fa8be]">{description}</Text>
         </View>
+        <Text className="mt-0.5 text-[10px] leading-[14px] text-[#9da7bd]">{description}</Text>
+      </View>
 
-        <View
-          className="size-6 items-center justify-center rounded-full border"
-          style={{
-            borderColor: active ? '#9b5cff' : '#586179',
-            backgroundColor: active ? '#6f1dff' : 'transparent',
-          }}>
-          {active ? <Icon as={Check} size={14} className="text-white" /> : null}
-        </View>
+      <View
+        className="size-6 items-center justify-center rounded-full border"
+        style={{
+          borderColor: active ? '#9b5cff' : '#586179',
+          backgroundColor: active ? '#6f1dff' : 'transparent',
+        }}>
+        {active ? <Icon as={Check} size={14} className="text-white" /> : null}
       </View>
     </Pressable>
   );

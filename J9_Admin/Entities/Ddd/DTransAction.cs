@@ -135,6 +135,16 @@ public partial class DTransAction
     /// </summary>
     public long? RelatedTransActionId { get; set; } = 0;
 
+    /// <summary>
+    /// 支付通道ID
+    /// </summary>
+    public long? PayApiId { get; set; } = 0;
+
+    /// <summary>
+    /// 支付通道
+    /// </summary>
+    [Navigate(nameof(PayApiId))]
+    public DPayApi PayApi { get; set; }
 }
 
 public enum TransactionType

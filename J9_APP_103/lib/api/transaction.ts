@@ -223,12 +223,49 @@ export async function syncBetHistoryToDatabase(): Promise<ApiResult<TransactionS
 /**
  * 会员自助充值：创建充值订单
  * @param amount 充值金额（人民币）
+ * @param payApiId 支付通道ID
  * @returns 订单ID
  */
 export async function createRechargeOrder(
-  amount: number
+  amount: number,
+  payApiId: string | number
 ): Promise<ApiResult<{ TransactionId?: number; transactionId?: number }>> {
-  return api.post(`/api/trans/@CreateMemberRechargeOrder?amount=${amount}`);
+  return api.post(
+    `/api/trans/@CreateMemberRechargeOrder?amount=${amount}&payApiId=${encodeURIComponent(String(payApiId))}`
+  );
+}
+
+export type PayApiIp = 'USDT' | 'POPO' | string;
+
+export interface PayApiChannel {
+  id?: string | number;
+  Id?: string | number;
+  ip?: PayApiIp;
+  IP?: PayApiIp;
+  payMethodName?: string;
+  PayMethodName?: string;
+  channelCode?: string;
+  ChannelCode?: string;
+  payMethod?: string;
+  PayMethod?: string;
+  isUserInput?: boolean;
+  IsUserInput?: boolean;
+  defaultValue?: string;
+  DefaultValue?: string;
+  minAmount?: number | string;
+  MinAmount?: number | string;
+  maxAmount?: number | string;
+  MaxAmount?: number | string;
+  isEnabled?: boolean;
+  IsEnabled?: boolean;
+  sort?: number | string;
+  Sort?: number | string;
+  successRate?: number | string;
+  SuccessRate?: number | string;
+}
+
+export async function getPayApiList(): Promise<ApiResult<PayApiChannel[]>> {
+  return api.get<PayApiChannel[]>('/api/trans/@GetPayApiList');
 }
 
 /**
@@ -241,13 +278,24 @@ export async function getPay0Url(orderId: number): Promise<ApiResult<string>> {
 }
 
 /**
- * 创建充值订单后，立即请求 CreatePay0Order 拿到跳转链接并打开（Web 新标签页 / 原生外链）
+ * 获取 POPO 支付链接（对应后端 CreatePayPOPOOrder）
+ * @param orderId 充值订单ID
+ * @returns 支付链接（在 data 中，一般为字符串）
+ */
+export async function getPayPOPOUrl(orderId: number): Promise<ApiResult<string>> {
+  return api.get(`/api/trans/@CreatePayPOPOOrder?orderId=${orderId}`);
+}
+
+/**
+ * 创建充值订单后，按通道请求支付链接并打开（Web 新标签页 / 原生外链）
  * @returns ok 为 false 时 message 为错误说明
  */
 export async function createRechargeOrderAndOpenPayUrl(
-  amount: number
+  amount: number,
+  payApiId: string | number,
+  payIp: PayApiIp = 'USDT'
 ): Promise<{ ok: boolean; message?: string }> {
-  const orderRes = await createRechargeOrder(amount);
+  const orderRes = await createRechargeOrder(amount, payApiId);
   if (!orderRes.success || !orderRes.data) {
     return { ok: false, message: orderRes.message || '创建订单失败' };
   }
@@ -256,7 +304,11 @@ export async function createRechargeOrderAndOpenPayUrl(
     return { ok: false, message: '创建订单失败：未返回订单号' };
   }
 
-  const payRes = await getPay0Url(transactionId);
+  const normalizedPayIp = String(payIp).trim().toUpperCase();
+  const payRes =
+    normalizedPayIp === 'POPO'
+      ? await getPayPOPOUrl(transactionId)
+      : await getPay0Url(transactionId);
   if (!payRes.success) {
     return { ok: false, message: payRes.message || '获取支付链接失败' };
   }

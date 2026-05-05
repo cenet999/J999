@@ -101,15 +101,7 @@ public enum PayMethod
 
 public enum ServerIP
 {
-    Pay1,
-    
-    Pay2,
-    
-    Pay_Usdt,
+    USDT = 0,
 
-    Pay3,
-
-    Pay4_KoiUid,
-    
-    
+    POPO = 1,
 }

@@ -22,6 +22,7 @@ public class TransActionService : BaseService
     private readonly SessionAgent _sessionAgent;
     private readonly TGMessageApi _TGMessageApi;
     private readonly Pay0Api _pay0Api;
+    private readonly PayPOPOApi _payPOPOApi;
     private readonly GameBetHistorySyncService _gameBetHistorySyncService;
     /// <summary>
     /// 交易服务构造
@@ -34,10 +35,12 @@ public class TransActionService : BaseService
     /// <param name="sessionAgent">会话代理服务</param>
     /// <param name="TGMessageApi">Telegram消息服务</param>
     /// <param name="pay0Api">TokenPay支付服务</param>
-    public TransActionService(FreeSqlCloud freeSqlCloud, Scheduler scheduler, ILogger<TransActionService> logger, AdminContext adminContext, IConfiguration configuration, SessionAgent sessionAgent, TGMessageApi TGMessageApi, Pay0Api pay0Api, GameBetHistorySyncService gameBetHistorySyncService, IWebHostEnvironment webHostEnvironment)
+    /// <param name="payPOPOApi">青蛙系统四方支付服务</param>
+    public TransActionService(FreeSqlCloud freeSqlCloud, Scheduler scheduler, ILogger<TransActionService> logger, AdminContext adminContext, IConfiguration configuration, SessionAgent sessionAgent, TGMessageApi TGMessageApi, Pay0Api pay0Api, PayPOPOApi payPOPOApi, GameBetHistorySyncService gameBetHistorySyncService, IWebHostEnvironment webHostEnvironment)
         : base(freeSqlCloud, scheduler, logger, adminContext, configuration, webHostEnvironment)
     {
         _pay0Api = pay0Api ?? throw new ArgumentNullException(nameof(pay0Api));
+        _payPOPOApi = payPOPOApi ?? throw new ArgumentNullException(nameof(payPOPOApi));
         _sessionAgent = sessionAgent ?? throw new ArgumentNullException(nameof(sessionAgent));
         _TGMessageApi = TGMessageApi ?? throw new ArgumentNullException(nameof(TGMessageApi));
         _gameBetHistorySyncService = gameBetHistorySyncService ?? throw new ArgumentNullException(nameof(gameBetHistorySyncService));
@@ -100,7 +103,7 @@ public class TransActionService : BaseService
         {
             // Query transaction records by member ID
             var transactionList = await uow.Orm.Select<DTransAction>()
-                .Include(a =>a.DGame)
+                .Include(a => a.DGame)
                 .Where(t => t.DMemberId == currentUserId)
                 .WhereIf(transactionType != null, t => t.TransactionType == transactionType)
                 .WhereIf(transactionStatus != null, t => t.Status == transactionStatus)
@@ -451,9 +454,12 @@ public class TransActionService : BaseService
     /// 创建充值订单
     /// </summary>
     /// <param name="amountRaw">充值金额</param>
+    /// <param name="payApiId">支付通道ID</param>
     /// <returns>订单ID</returns>
     [HttpPost($"@{nameof(CreateMemberRechargeOrder)}")]
-    public async Task<ApiResult> CreateMemberRechargeOrder([FromQuery(Name = "amount")] string? amountRaw)
+    public async Task<ApiResult> CreateMemberRechargeOrder(
+        [FromQuery(Name = "amount")] string? amountRaw,
+        [FromQuery(Name = "payApiId")] long? payApiId)
     {
         var currentUserId = await GetCurrentUserIdAsync();
         if (currentUserId == null) return ApiResult.Error.SetMessage("未登录或登录已过期");
@@ -477,6 +483,43 @@ public class TransActionService : BaseService
         using var uow = _fsql.CreateUnitOfWork();
         try
         {
+            if (payApiId == null || payApiId <= 0)
+            {
+                return ApiResult.Error.SetMessage("请选择支付通道");
+            }
+
+            var payApi = await uow.Orm.Select<DPayApi>()
+                .Where(p => p.Id == payApiId.Value)
+                .ToOneAsync();
+            if (payApi == null || !payApi.IsEnabled)
+            {
+                return ApiResult.Error.SetMessage("支付通道不可用");
+            }
+
+            if (amount < payApi.MinAmount)
+            {
+                return ApiResult.Error.SetMessage($"当前支付通道最低充值 {payApi.MinAmount} 元");
+            }
+
+            if (amount > payApi.MaxAmount)
+            {
+                return ApiResult.Error.SetMessage($"当前支付通道最高充值 {payApi.MaxAmount} 元");
+            }
+
+            if (!payApi.IsUserInput)
+            {
+                var allowedAmounts = (payApi.DefaultValue ?? string.Empty)
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .Select(item => decimal.TryParse(item, NumberStyles.Number, CultureInfo.InvariantCulture, out var value) ? value : (decimal?)null)
+                    .Where(value => value != null)
+                    .Select(value => value!.Value)
+                    .ToHashSet();
+                if (!allowedAmounts.Contains(amount))
+                {
+                    return ApiResult.Error.SetMessage("当前支付通道仅支持选择固定金额");
+                }
+            }
+
             var member = await uow.Orm.Select<DMember>().Include(m => m.DAgent).Where(m => m.Id == currentUserId).ToOneAsync();
             if (member == null) return ApiResult.Error.SetMessage("会员未找到");
             if (member.DAgentId == 0 || member.DAgent == null)
@@ -489,7 +532,7 @@ public class TransActionService : BaseService
                 member.DAgent = defaultAgent;
                 _logger.LogInformation("会员 {MemberId} 未绑定代理，已自动绑定至默认代理 {AgentId}", member.Id, defaultAgent.Id);
             }
-            
+
             var usdtAddress = _configuration["Payment:UsdtAddress"]?.Trim();
             if (string.IsNullOrWhiteSpace(usdtAddress)) return ApiResult.Error.SetMessage("系统未配置 USDT 收款地址，暂无法充值");
 
@@ -521,11 +564,12 @@ public class TransActionService : BaseService
                 Status = TransactionStatus.Pending,
                 Description = giftAmount > 0 ? $"会员自助充值 {amount} 元，赠送 {giftAmount} 元" : $"会员自助充值 {amount} 元",
                 RelatedTransActionId = 0,
+                PayApiId = payApi.Id,
             };
             var result = await uow.GetRepository<DTransAction>().InsertOrUpdateAsync(transAction);
             uow.Commit();
 
-            _logger.LogInformation("会员 {MemberId} 创建充值订单成功，金额：{Amount}，赠送：{Gift}，订单号：{OrderId}", member.Id, amount, giftAmount, result.Id);
+            _logger.LogInformation("会员 {MemberId} 创建充值订单成功，金额：{Amount}，赠送：{Gift}，订单号：{OrderId}，支付通道：{PayApiId}", member.Id, amount, giftAmount, result.Id, payApi.Id);
 
             // 下单成功后，给代理发送 Telegram 通知
             if (!string.IsNullOrWhiteSpace(member.DAgent?.TelegramChatId))
@@ -588,6 +632,28 @@ public class TransActionService : BaseService
             _logger.LogError(ex, "创建TokenPay订单时发生异常，订单号：{OrderId}", orderId);
             return ApiResult.Error.SetMessage($"创建订单失败：{ex.Message}");
         }
+
+        async Task<(ApiResult? error, DTransAction? order)> GetOrderOrErrorAsync(string orderId)
+        {
+            if (!long.TryParse(orderId, out var id))
+            {
+                _logger.LogWarning("订单号格式不正确：{OrderId}", orderId);
+                return (ApiResult.Error.SetMessage("订单号格式不正确"), null);
+            }
+            var order = await _fsql.Select<DTransAction>().Where(m => m.Id == id).ToOneAsync();
+            if (order == null)
+            {
+                _logger.LogWarning("订单不存在，订单号：{OrderId}", orderId);
+                return (ApiResult.Error.SetMessage("订单不存在"), null);
+            }
+            return (null, order);
+        }
+
+        string GetDefaultReturnUrl()
+        {
+            var origins = _configuration.GetSection("AllowedOrigins").Get<string[]>();
+            return origins != null && origins.Length > 0 ? origins[0] : string.Empty;
+        }
     }
 
     /// <summary>
@@ -611,34 +677,82 @@ public class TransActionService : BaseService
     }
 
     /// <summary>
-    /// 查单或报错
+    /// 创建POPO支付订单
     /// </summary>
-    private async Task<(ApiResult? error, DTransAction? order)> GetOrderOrErrorAsync(string orderId)
+    /// <param name="orderId">订单号</param>
+    [HttpGet($"@{nameof(CreatePayPOPOOrder)}")]
+    public async Task<ApiResult> CreatePayPOPOOrder(string orderId)
     {
-        if (!long.TryParse(orderId, out var id))
+        try
         {
-            _logger.LogWarning("订单号格式不正确：{OrderId}", orderId);
-            return (ApiResult.Error.SetMessage("订单号格式不正确"), null);
+            _logger.LogInformation("开始创建POPO订单，订单号：{OrderId}", orderId);
+
+            // 1. 验证订单是否存在
+            var (error, result) = await GetOrderOrErrorAsync(orderId);
+            if (error != null) return error;
+
+            // 2. 会员调用时校验订单归属
+            var currentUserId = await GetCurrentUserIdAsync();
+            if (currentUserId != null && result.DMemberId != currentUserId)
+            {
+                return ApiResult.Error.SetMessage("无权操作此订单");
+            }
+
+            // 3. 构建返回URL
+            var returnUrl = GetDefaultReturnUrl();
+
+            // 4. 调用POPO创建订单
+            _logger.LogInformation("调用POPO创建订单，订单号：{OrderId}，金额：{Amount}", orderId, result.ActualAmount);
+            return await _payPOPOApi.CreateOrder(HttpContext, orderId, result.ActualAmount, returnUrl);
         }
-        var order = await _fsql.Select<DTransAction>().Where(m => m.Id == id).ToOneAsync();
-        if (order == null)
+        catch (Exception ex)
         {
-            _logger.LogWarning("订单不存在，订单号：{OrderId}", orderId);
-            return (ApiResult.Error.SetMessage("订单不存在"), null);
+            _logger.LogError(ex, "创建POPO订单时发生异常，订单号：{OrderId}", orderId);
+            return ApiResult.Error.SetMessage($"创建订单失败：{ex.Message}");
         }
-        return (null, order);
+
+        async Task<(ApiResult? error, DTransAction? order)> GetOrderOrErrorAsync(string orderId)
+        {
+            if (!long.TryParse(orderId, out var id))
+            {
+                _logger.LogWarning("订单号格式不正确：{OrderId}", orderId);
+                return (ApiResult.Error.SetMessage("订单号格式不正确"), null);
+            }
+            var order = await _fsql.Select<DTransAction>().Where(m => m.Id == id).ToOneAsync();
+            if (order == null)
+            {
+                _logger.LogWarning("订单不存在，订单号：{OrderId}", orderId);
+                return (ApiResult.Error.SetMessage("订单不存在"), null);
+            }
+            return (null, order);
+        }
+
+        string GetDefaultReturnUrl()
+        {
+            var origins = _configuration.GetSection("AllowedOrigins").Get<string[]>();
+            return origins != null && origins.Length > 0 ? origins[0] : string.Empty;
+        }
     }
 
     /// <summary>
-    /// 默认回跳址
+    /// 处理POPO支付回调
     /// </summary>
-    private string GetDefaultReturnUrl()
+    /// <returns>回调处理结果</returns>
+    [HttpPost($"@{nameof(PayPOPOCallback)}")]
+    [AllowAnonymous]
+    public async Task<string> PayPOPOCallback()
     {
-        var origins = _configuration.GetSection("AllowedOrigins").Get<string[]>();
-        return origins != null && origins.Length > 0 ? origins[0] : string.Empty;
+        try
+        {
+            _logger.LogInformation("收到POPO支付回调通知");
+            return await _payPOPOApi.HandlePayCallback(HttpContext);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "处理POPO支付回调时发生异常");
+            return "error";
+        }
     }
-
-
 
     /// <summary>
     /// 获取支付通道
@@ -712,38 +826,34 @@ public class TransActionService : BaseService
             _logger.LogError(ex, "获取玩家动态失败");
             return ApiResult.Error.SetMessage($"获取玩家动态失败: {ex.Message}");
         }
-    }
 
-    /// <summary>
-    /// 手机号脱敏
-    /// </summary>
-    private string MaskPhoneNumber(string? phone)
-    {
-        if (string.IsNullOrEmpty(phone))
-            return "玩家***";
-        if (phone.Length >= 11)
-            return phone.Substring(0, 3) + "****" + phone.Substring(phone.Length - 4);
-        if (phone.Length >= 4)
-            return phone.Substring(0, 1) + "***" + phone.Substring(phone.Length - 1);
-        return phone.Substring(0, 1) + "***";
-    }
-
-    /// <summary>
-    /// 动态文案生成
-    /// </summary>
-    private string GenerateActivityDescription(TransactionType type, string gameName, decimal amount)
-    {
-        return type switch
+        string MaskPhoneNumber(string? phone)
         {
-            TransactionType.Bet when amount > 0 => $"在「{gameName}」赢得 {amount:F2} 元，手气不错！",
-            TransactionType.Bet when amount < 0 => $"在「{gameName}」投注 {Math.Abs(amount):F2} 元，期待下次好运。",
-            TransactionType.Bet => $"在「{gameName}」完成了一局精彩对决。",
-            TransactionType.Recharge => $"成功充值 {amount:F2} 元，余额已更新。",
-            TransactionType.Login => "登录平台，开始新一天的精彩体验。",
-            TransactionType.CheckIn => "完成每日签到，领取签到奖励！",
-            TransactionType.Register => "新玩家加入平台，开启精彩旅程！",
-            _ => $"完成了一笔 {amount:F2} 元的交易。",
-        };
+            if (string.IsNullOrEmpty(phone))
+                return "玩家***";
+            if (phone.Length >= 11)
+                return phone.Substring(0, 3) + "****" + phone.Substring(phone.Length - 4);
+            if (phone.Length >= 4)
+                return phone.Substring(0, 1) + "***" + phone.Substring(phone.Length - 1);
+            return phone.Substring(0, 1) + "***";
+        }
+
+        string GenerateActivityDescription(TransactionType type, string gameName, decimal amount)
+        {
+            return type switch
+            {
+                TransactionType.Bet when amount > 0 => $"在「{gameName}」赢得 {amount:F2} 元，手气不错！",
+                TransactionType.Bet when amount < 0 => $"在「{gameName}」投注 {Math.Abs(amount):F2} 元，期待下次好运。",
+                TransactionType.Bet => $"在「{gameName}」完成了一局精彩对决。",
+                TransactionType.Recharge => $"成功充值 {amount:F2} 元，余额已更新。",
+                TransactionType.Login => "登录平台，开始新一天的精彩体验。",
+                TransactionType.CheckIn => "完成每日签到，领取签到奖励！",
+                TransactionType.Register => "新玩家加入平台，开启精彩旅程！",
+                _ => $"完成了一笔 {amount:F2} 元的交易。",
+            };
+        }
+
     }
+
 
 }
