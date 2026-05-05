@@ -266,6 +266,7 @@ static bool IsPublicAssetPath(PathString path)
 {
     if (path.StartsWithSegments("/uploads", StringComparison.OrdinalIgnoreCase)
         || path.StartsWithSegments("/avatars", StringComparison.OrdinalIgnoreCase)
+        || path.StartsWithSegments("/qq_classic_35_avatars", StringComparison.OrdinalIgnoreCase)
         || path.StartsWithSegments("/game", StringComparison.OrdinalIgnoreCase)
         || path.StartsWithSegments("/css", StringComparison.OrdinalIgnoreCase)
         || path.StartsWithSegments("/_content", StringComparison.OrdinalIgnoreCase)

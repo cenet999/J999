@@ -235,7 +235,8 @@ public class BaseService : ControllerBase
     /// </summary>
     protected string GetRandomDefaultAvatarUrl()
     {
-        var avatarsDir = Path.Combine(_webHostEnvironment.WebRootPath, "avatars");
+        const string defaultAvatarDirectory = "qq_classic_35_avatars";
+        var avatarsDir = Path.Combine(_webHostEnvironment.WebRootPath, defaultAvatarDirectory);
         if (!Directory.Exists(avatarsDir))
         {
             _logger.LogWarning("默认头像目录不存在：{AvatarDir}", avatarsDir);
@@ -255,7 +256,7 @@ public class BaseService : ControllerBase
         }
 
         var fileName = avatarFiles[Random.Shared.Next(avatarFiles.Length)];
-        var avatarPath = $"/avatars/{fileName}";
+        var avatarPath = $"/{defaultAvatarDirectory}/{fileName}";
         var apiDomain = _configuration["APIDomain"]?.Trim().TrimEnd('/');
         return string.IsNullOrWhiteSpace(apiDomain) ? avatarPath : $"{apiDomain}{avatarPath}";
     }
