@@ -702,7 +702,7 @@ public class TransActionService : BaseService
             var returnUrl = GetDefaultReturnUrl();
 
             // 4. 调用POPO创建订单
-            _logger.LogInformation("调用POPO创建订单，订单号：{OrderId}，金额：{Amount}", orderId, result.ActualAmount);
+            _logger.LogInformation($"调用POPO创建订单，订单号：{orderId}，金额：{result.ActualAmount}，返回地址：{returnUrl}");
             return await _payPOPOApi.CreateOrder(HttpContext, orderId, result.ActualAmount, returnUrl);
         }
         catch (Exception ex)
