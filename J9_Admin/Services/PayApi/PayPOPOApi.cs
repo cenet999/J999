@@ -140,6 +140,9 @@ public class PayPOPOApi
             {
                 var createOrderUrl = $"{_payPOPOUrl}/pay/create";
                 _logger.LogInformation("调用POPO接口，URL：{RequestUrl}", createOrderUrl);
+                _logger.LogInformation(
+                    "POPO创建订单请求参数：{OrderParams}",
+                    JsonSerializer.Serialize(orderParams));
 
                 var client = new RestClient(new RestClientOptions(createOrderUrl));
                 var request = new RestRequest("", Method.Post);
