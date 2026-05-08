@@ -98,7 +98,6 @@ try
     // 生产环境 PostgreSQL 不自动改表：AdminBlazor 内置 SysUserLoginLog.Ip 仍是 VARCHAR(50)，
     // AutoSyncStructure 会尝试把已放宽的字段收窄，遇到历史长 IP 数据会导致启动失败。
     var shouldAutoSyncStructure = !(dbType == DataType.PostgreSQL && builder.Environment.IsProduction());
-    shouldAutoSyncStructure = true;
     Log.Information("FreeSql AutoSyncStructure: {AutoSyncStructure}", shouldAutoSyncStructure);
 
     builder.AddAdminBlazor(new AdminBlazorOptions
