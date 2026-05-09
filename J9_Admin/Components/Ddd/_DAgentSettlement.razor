@@ -96,11 +96,24 @@
                         <div class="row g-3">
                             @foreach (var item in agentSummaries)
                             {
-                                <div class="col-2">
+                                <div class="col-3">
                                     <div class="card h-100 border-success shadow-sm">
                                         <div class="card-body p-3">
                                             <div class="small text-muted text-truncate" title="@item.Name">@item.Name</div>
                                             <div class="fs-6 fw-bold text-success">@item.Amount.ToString("0.##")</div>
+                                            <div class="small text-muted mb-2">涉及 @item.InvolvedCount 条，已付款 @item.PaidCount 条</div>
+                                            <div class="d-flex gap-2">
+                                                <select class="form-select form-select-sm" value="@(item.SelectedStatus.HasValue ? ((int)item.SelectedStatus.Value).ToString() : "")" @onchange="e => OnAgentSummaryStatusChanged(item, e)" disabled="@working">
+                                                    <option value="">选择状态</option>
+                                                    @foreach (var status in statusOptions)
+                                                    {
+                                                        <option value="@((int)status)">@FormatStatus(status)</option>
+                                                    }
+                                                </select>
+                                                <button type="button" class="btn btn-sm btn-outline-primary flex-shrink-0" @onclick="() => UpdateAgentStatusAsync(item)" disabled="@(working || !item.SelectedStatus.HasValue || item.EditableCount == 0)">
+                                                    确认
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -127,8 +140,6 @@
                                 <th>爷代理返利</th>
                                 <th>返利总计</th>
                                 <th>状态</th>
-                                <th>修改状态</th>
-                                <th>确认</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -149,33 +160,6 @@
                                     <td>@item.GrandRebateAmount.ToString("0.##")</td>
                                     <td class="text-danger fw-bold">@item.TotalRebateAmount.ToString("0.##")</td>
                                     <td>@FormatStatus(item.Status)</td>
-                                    <td>
-                                        @if (item.Status == AgentSettlementStatus.Paid)
-                                        {
-                                            <span class="text-muted">-</span>
-                                        }
-                                        else
-                                        {
-                                            <select class="form-select form-select-sm" value="@((int)item.SelectedStatus)" @onchange="e => OnRowStatusChanged(item, e)" disabled="@working">
-                                                @foreach (var status in statusOptions)
-                                                {
-                                                    <option value="@((int)status)">@FormatStatus(status)</option>
-                                                }
-                                            </select>
-                                        }
-                                    </td>
-                                    <td>
-                                        @if (item.Status == AgentSettlementStatus.Paid)
-                                        {
-                                            <span class="text-muted">-</span>
-                                        }
-                                        else
-                                        {
-                                            <button type="button" class="btn btn-sm btn-outline-primary" @onclick="() => UpdateRowStatusAsync(item)" disabled="@(working || item.Status == item.SelectedStatus)">
-                                                确认
-                                            </button>
-                                        }
-                                    </td>
                                 </tr>
                             }
                         </tbody>
@@ -214,12 +198,18 @@
     decimal totalRebate;
     int totalBetCount;
 
+    /// <summary>
+    /// 初始化周选项并加载默认结算数据。
+    /// </summary>
     protected override async Task OnInitializedAsync()
     {
         weekOptions = BuildWeekOptions(businessToday);
         await LoadRowsAsync();
     }
 
+    /// <summary>
+    /// 首次渲染后按浏览器日期刷新周选项，避免服务器日期和用户本地日期不一致。
+    /// </summary>
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender)
@@ -241,6 +231,9 @@
         StateHasChanged();
     }
 
+    /// <summary>
+    /// 切换查询周后立即重新加载结算列表。
+    /// </summary>
     async Task OnQueryWeekChanged(ChangeEventArgs e)
     {
         var value = e.Value?.ToString();
@@ -249,6 +242,9 @@
         await LoadRowsAsync();
     }
 
+    /// <summary>
+    /// 根据当前周范围和可见代理范围生成或重算周结算数据。
+    /// </summary>
     async Task GenerateWeekAsync()
     {
         working = true;
@@ -290,6 +286,9 @@
         }
     }
 
+    /// <summary>
+    /// 包装结算数据加载流程，统一处理页面 loading 和错误提示。
+    /// </summary>
     async Task LoadRowsAsync()
     {
         working = true;
@@ -310,6 +309,9 @@
         }
     }
 
+    /// <summary>
+    /// 按当前周、关键词和可见代理范围加载结算明细，并同步重建页面汇总数据。
+    /// </summary>
     async Task LoadRowsCoreAsync()
     {
         rows = [];
@@ -363,8 +365,11 @@
                 SettlementId = x.Id,
                 WeekText = FormatWeekText(x.WeekKey, x.WeekStartDate, x.WeekEndDate, businessToday),
                 MemberName = x.MemberName,
+                SourceAgentId = x.SourceAgentId,
                 SourceAgentName = x.SourceAgentName,
+                ParentAgentId = x.ParentAgentId,
                 ParentAgentName = x.ParentAgentName,
+                GrandAgentId = x.GrandAgentId,
                 GrandAgentName = x.GrandAgentName,
                 TurnoverAmount = x.TurnoverAmount,
                 ValidBetAmount = x.ValidBetAmount,
@@ -373,8 +378,7 @@
                 ParentRebateAmount = x.ParentRebateAmount,
                 GrandRebateAmount = x.GrandRebateAmount,
                 TotalRebateAmount = x.TotalRebateAmount,
-                Status = x.Status,
-                SelectedStatus = x.Status
+                Status = x.Status
             })
             .ToList();
 
@@ -385,6 +389,9 @@
         RebuildAgentSummaries(data);
     }
 
+    /// <summary>
+    /// 计算当前登录账号可查看和操作的代理 ID 集合。
+    /// </summary>
     async Task<HashSet<long>> BuildVisibleAgentIdsAsync()
     {
         var agents = await repo.Orm.Select<DAgent>().ToListAsync();
@@ -394,56 +401,68 @@
             sessionAgent.GetAgentId());
     }
 
-    void OnRowStatusChanged(SettlementViewRow item, ChangeEventArgs e)
+    /// <summary>
+    /// 记录代理汇总卡片中选择的目标结算状态。
+    /// </summary>
+    void OnAgentSummaryStatusChanged(AgentSummaryItem item, ChangeEventArgs e)
     {
         if (int.TryParse(e.Value?.ToString(), out var value) && Enum.IsDefined(typeof(AgentSettlementStatus), value))
             item.SelectedStatus = (AgentSettlementStatus)value;
+        else
+            item.SelectedStatus = null;
     }
 
-    async Task UpdateRowStatusAsync(SettlementViewRow item)
+    /// <summary>
+    /// 批量更新当前代理涉及的未付款结算条目状态。
+    /// </summary>
+    async Task UpdateAgentStatusAsync(AgentSummaryItem item)
     {
+        if (!item.SelectedStatus.HasValue)
+            return;
+
         working = true;
         loadError = "";
         successMessage = "";
 
         try
         {
-            var currentStatus = await repo.Orm.Select<DAgentWeeklySettlement>()
-                .Where(x => x.Id == item.SettlementId)
-                .ToOneAsync(x => x.Status);
+            var targetStatus = item.SelectedStatus.Value;
+            var settlementIds = rows
+                .Where(x => IsAgentInvolved(x, item.AgentId) && x.Status != AgentSettlementStatus.Paid)
+                .Select(x => x.SettlementId)
+                .Distinct()
+                .ToList();
 
-            if (currentStatus == AgentSettlementStatus.Paid)
+            if (settlementIds.Count == 0)
             {
-                item.Status = AgentSettlementStatus.Paid;
-                item.SelectedStatus = AgentSettlementStatus.Paid;
-                loadError = "已付款状态不可再修改。";
+                loadError = $"{item.Name} 当前涉及的条目均为已付款，不可再修改。";
                 return;
             }
 
-            if (item.SelectedStatus == AgentSettlementStatus.Paid)
+            if (targetStatus == AgentSettlementStatus.Paid)
             {
                 var confirmed = await JS.InvokeAsync<bool>(
                     "confirm",
-                    $"确认将 {item.MemberName}（{item.WeekText}）标记为已付款吗？已付款后状态不可再修改。");
+                    $"确认将 {item.Name} 当前涉及的 {settlementIds.Count} 条结算标记为已付款吗？已付款后状态不可再修改。");
 
                 if (!confirmed)
                     return;
             }
 
             var affected = await repo.Orm.Update<DAgentWeeklySettlement>()
-                .Set(x => x.Status, item.SelectedStatus)
-                .Where(x => x.Id == item.SettlementId)
+                .Set(x => x.Status, targetStatus)
+                .Where(x => settlementIds.Contains(x.Id))
                 .Where(x => x.Status != AgentSettlementStatus.Paid)
                 .ExecuteAffrowsAsync();
 
             if (affected <= 0)
             {
-                loadError = "状态更新失败，记录可能已不存在。";
+                loadError = "状态更新失败，记录可能已不存在或已付款。";
                 return;
             }
 
-            item.Status = item.SelectedStatus;
-            successMessage = $"已将 {item.MemberName}（{item.WeekText}）状态更新为 {FormatStatus(item.Status)}。";
+            await LoadRowsCoreAsync();
+            successMessage = $"已将 {item.Name} 当前涉及的 {affected} 条结算状态更新为 {FormatStatus(targetStatus)}。";
         }
         catch (Exception ex)
         {
@@ -455,6 +474,9 @@
         }
     }
 
+    /// <summary>
+    /// 恢复默认筛选条件并重新加载列表。
+    /// </summary>
     void ResetFilters()
     {
         queryWeek = RecentFourWeeksValue;
@@ -462,6 +484,9 @@
         _ = LoadRowsAsync();
     }
 
+    /// <summary>
+    /// 将当前周筛选值转换为需要查询的周起始日期列表。
+    /// </summary>
     List<DateTime> GetSelectedWeekStarts()
     {
         if (string.IsNullOrWhiteSpace(queryWeek) || queryWeek == RecentFourWeeksValue)
@@ -472,6 +497,9 @@
             : [];
     }
 
+    /// <summary>
+    /// 从指定日期所在周开始，向前取最近若干周的周一日期。
+    /// </summary>
     static List<DateTime> GetRecentWeekStarts(int count, DateTime today)
     {
         var current = AgentWeeklySettlementService.NormalizeWeekStart(today);
@@ -482,33 +510,59 @@
         return list;
     }
 
+    /// <summary>
+    /// 按代理汇总返利金额，并统计该代理当前涉及的结算条目状态。
+    /// </summary>
     void RebuildAgentSummaries(List<DAgentWeeklySettlement> data)
     {
-        var map = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase);
+        var map = new Dictionary<long, AgentSummaryItem>();
 
         foreach (var item in data)
         {
-            AddAmount(item.SourceAgentName, item.SourceRebateAmount);
-            AddAmount(item.ParentAgentName, item.ParentRebateAmount);
-            AddAmount(item.GrandAgentName, item.GrandRebateAmount);
+            AddAmount(item.SourceAgentId, item.SourceAgentName, item.SourceRebateAmount);
+            AddAmount(item.ParentAgentId, item.ParentAgentName, item.ParentRebateAmount);
+            AddAmount(item.GrandAgentId, item.GrandAgentName, item.GrandRebateAmount);
         }
 
         agentSummaries = map
-            .Select(x => new AgentSummaryItem { Name = x.Key, Amount = x.Value })
+            .Select(x =>
+            {
+                var summary = x.Value;
+                var involvedRows = rows.Where(row => IsAgentInvolved(row, summary.AgentId)).ToList();
+                summary.InvolvedCount = involvedRows.Count;
+                summary.PaidCount = involvedRows.Count(row => row.Status == AgentSettlementStatus.Paid);
+                summary.EditableCount = involvedRows.Count - summary.PaidCount;
+                return summary;
+            })
             .Where(x => x.Amount > 0)
             .OrderByDescending(x => x.Amount)
             .ThenBy(x => x.Name)
             .ToList();
 
-        void AddAmount(string name, decimal amount)
+        void AddAmount(long agentId, string name, decimal amount)
         {
-            if (string.IsNullOrWhiteSpace(name) || amount <= 0)
+            if (agentId <= 0 || string.IsNullOrWhiteSpace(name) || amount <= 0)
                 return;
 
-            map[name] = map.GetValueOrDefault(name) + amount;
+            if (!map.TryGetValue(agentId, out var summary))
+            {
+                summary = new AgentSummaryItem { AgentId = agentId, Name = name };
+                map[agentId] = summary;
+            }
+
+            summary.Amount += amount;
         }
     }
 
+    /// <summary>
+    /// 判断代理是否参与了指定结算行的任一返利层级。
+    /// </summary>
+    static bool IsAgentInvolved(SettlementViewRow row, long agentId) =>
+        row.SourceAgentId == agentId || row.ParentAgentId == agentId || row.GrandAgentId == agentId;
+
+    /// <summary>
+    /// 构建页面周筛选下拉选项。
+    /// </summary>
     static List<WeekOption> BuildWeekOptions(DateTime today)
     {
         var list = new List<WeekOption>
@@ -531,6 +585,9 @@
         return list;
     }
 
+    /// <summary>
+    /// 格式化周筛选和列表中的周显示文案。
+    /// </summary>
     static string FormatWeekText(string weekKey, DateTime weekStart, DateTime weekEnd) =>
         FormatWeekText(weekKey, weekStart, weekEnd, DateTime.Today);
 
@@ -541,6 +598,9 @@
         return $"{weekKey}（{weekStart:yyyy-MM-dd} 至 {displayEnd:yyyy-MM-dd}）";
     }
 
+    /// <summary>
+    /// 解析 yyyy-Www 格式的周标识，并返回对应周一日期。
+    /// </summary>
     static bool TryParseWeek(string text, out DateTime weekStart)
     {
         weekStart = default;
@@ -565,9 +625,15 @@
         }
     }
 
+    /// <summary>
+    /// 统一处理空代理名的表格显示。
+    /// </summary>
     static string DisplayName(string name) =>
         string.IsNullOrWhiteSpace(name) ? "-" : name;
 
+    /// <summary>
+    /// 将结算状态转换为页面展示文案。
+    /// </summary>
     static string FormatStatus(AgentSettlementStatus status) =>
         status switch
         {
@@ -589,8 +655,11 @@
         public long SettlementId { get; set; }
         public string WeekText { get; set; } = "";
         public string MemberName { get; set; } = "";
+        public long SourceAgentId { get; set; }
         public string SourceAgentName { get; set; } = "";
+        public long ParentAgentId { get; set; }
         public string ParentAgentName { get; set; } = "";
+        public long GrandAgentId { get; set; }
         public string GrandAgentName { get; set; } = "";
         public decimal TurnoverAmount { get; set; }
         public decimal ValidBetAmount { get; set; }
@@ -600,12 +669,16 @@
         public decimal GrandRebateAmount { get; set; }
         public decimal TotalRebateAmount { get; set; }
         public AgentSettlementStatus Status { get; set; }
-        public AgentSettlementStatus SelectedStatus { get; set; }
     }
 
     class AgentSummaryItem
     {
+        public long AgentId { get; set; }
         public string Name { get; set; } = "";
         public decimal Amount { get; set; }
+        public int InvolvedCount { get; set; }
+        public int PaidCount { get; set; }
+        public int EditableCount { get; set; }
+        public AgentSettlementStatus? SelectedStatus { get; set; }
     }
 }
