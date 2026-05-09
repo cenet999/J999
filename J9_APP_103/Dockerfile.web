@@ -27,7 +27,7 @@ FROM nginx:alpine
 
 # 复制构建产物（Expo 导出到 dist）
 COPY --from=builder /app/dist /usr/share/nginx/html
-COPY --from=builder /app/assets/application-8ba10fc6-decc-49c0-a653-27a64f0b8ba8.apk /usr/share/nginx/html/downloads/application-8ba10fc6-decc-49c0-a653-27a64f0b8ba8.apk
+COPY --from=builder /app/assets/application-97eb89ee-73ae-4f16-9180-a773eae0d8a5.apk /usr/share/nginx/html/downloads/application-97eb89ee-73ae-4f16-9180-a773eae0d8a5.apk
 
 # gzip + 静态资源缓存（见 nginx/default.conf）
 COPY nginx/default.conf /etc/nginx/conf.d/default.conf

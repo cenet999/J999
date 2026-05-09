@@ -17,7 +17,7 @@ import {
 } from 'lucide-react-native';
 import { Platform, Pressable, View } from 'react-native';
 
-const ANDROID_APK_URL = '/downloads/application-8ba10fc6-decc-49c0-a653-27a64f0b8ba8.apk';
+const ANDROID_APK_URL = '/downloads/application-97eb89ee-73ae-4f16-9180-a773eae0d8a5.apk';
 
 function openAndroidDownload() {
   if (Platform.OS === 'web' && typeof window !== 'undefined') {
