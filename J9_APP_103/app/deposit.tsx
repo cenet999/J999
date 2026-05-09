@@ -9,9 +9,11 @@ import {
   type PayApiChannel,
 } from '@/lib/api/transaction';
 import { Stack } from 'expo-router';
-import { Check, Coins, CreditCard, RefreshCcw } from 'lucide-react-native';
+import { Check, Coins, RefreshCcw } from 'lucide-react-native';
+import type { ComponentType } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, TextInput, View } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 
 const CUSTOM_AMOUNT = 'custom';
 
@@ -22,13 +24,51 @@ type DepositChannel = {
   title: string;
   description: string;
   badge: string;
-  icon: typeof Coins;
+  icon: ChannelIconComponent;
+  iconColor: string;
+  iconBg: string;
   minAmount: number;
   maxAmount: number;
   isUserInput: boolean;
   sort: number;
   amountOptions: string[];
 };
+
+type ChannelIconProps = {
+  size?: number;
+  color?: string;
+};
+
+type ChannelIconComponent = ComponentType<ChannelIconProps>;
+
+type BrandIconSpec = {
+  viewBox: string;
+  path: string;
+};
+
+const BRAND_ICONS = {
+  alipay: {
+    viewBox: '0 0 24 24',
+    path: 'M19.695 15.07c3.426 1.158 4.203 1.22 4.203 1.22V3.846c0-2.124-1.705-3.845-3.81-3.845H3.914C1.808.001.102 1.722.102 3.846v16.31c0 2.123 1.706 3.845 3.813 3.845h16.173c2.105 0 3.81-1.722 3.81-3.845v-.157s-6.19-2.602-9.315-4.119c-2.096 2.602-4.8 4.181-7.607 4.181-4.75 0-6.361-4.19-4.112-6.949.49-.602 1.324-1.175 2.617-1.497 2.025-.502 5.247.313 8.266 1.317a16.796 16.796 0 0 0 1.341-3.302H5.781v-.952h4.799V6.975H4.77v-.953h5.81V3.591s0-.409.411-.409h2.347v2.84h5.744v.951h-5.744v1.704h4.69a19.453 19.453 0 0 1-1.986 5.06c1.424.52 2.702 1.011 3.654 1.333m-13.81-2.032c-.596.06-1.71.325-2.321.869-1.83 1.608-.735 4.55 2.968 4.55 2.151 0 4.301-1.388 5.99-3.61-2.403-1.182-4.438-2.028-6.637-1.809',
+  },
+  tether: {
+    viewBox: '0 0 24 24',
+    path: 'M18.7538 10.5176c0 .6251-2.2379 1.1483-5.2381 1.2812l.0028.0007c-.0848.0064-.5233.0325-1.5012.0325-.7778 0-1.33-.0233-1.5237-.0325-3.0059-.1322-5.2495-.6555-5.2495-1.2819s2.2436-1.149 5.2495-1.2834v2.0442c.1965.0142.7594.0474 1.5372.0474.9334 0 1.4008-.0389 1.4849-.0466V9.2356c2.9994.1337 5.2381.657 5.2381 1.282zm5.19.5466L12.1248 22.389a.1803.1803 0 0 1-.2496 0L.0562 11.0635a.1781.1781 0 0 1-.0382-.2079l4.3762-9.1921a.1767.1767 0 0 1 .1626-.1026h14.8878a.1768.1768 0 0 1 .1612.1032l4.3762 9.1922a.1782.1782 0 0 1-.0382.2079zm-4.478-.4038c0-.8068-2.5515-1.4799-5.9473-1.6369V7.195h4.186V4.4055H6.3076V7.195h4.1852v1.8286c-3.4018.1562-5.9601.83-5.9601 1.6376 0 .8075 2.5583 1.4806 5.9601 1.6376v5.8618h3.025v-5.8639c3.394-.1563 5.948-.8295 5.948-1.6363z',
+  },
+} satisfies Record<string, BrandIconSpec>;
+
+function createBrandIcon(spec: BrandIconSpec): ChannelIconComponent {
+  return function BrandIcon({ size = 20, color = '#9EA5B8' }: ChannelIconProps) {
+    return (
+      <Svg width={size} height={size} viewBox={spec.viewBox}>
+        <Path d={spec.path} fill={color} />
+      </Svg>
+    );
+  };
+}
+
+const AlipayIcon = createBrandIcon(BRAND_ICONS.alipay);
+const UsdtIcon = createBrandIcon(BRAND_ICONS.tether);
 
 function toRecord(value: unknown): Record<string, unknown> {
   return value != null && typeof value === 'object' ? (value as Record<string, unknown>) : {};
@@ -92,7 +132,9 @@ function buildDepositChannels(items: PayApiChannel[] | undefined): DepositChanne
             ? `${payMethod || '在线支付'} · ¥${minAmount}-${maxAmount}`
             : `TRC20 转账 · ¥${minAmount}-${maxAmount}`,
         badge: successRate >= 100 ? '稳定' : successRate > 0 ? `${successRate}%` : ip,
-        icon: ip === 'POPO' ? CreditCard : Coins,
+        icon: ip === 'POPO' ? AlipayIcon : UsdtIcon,
+        iconColor: ip === 'POPO' ? '#39a8ff' : '#35d6a3',
+        iconBg: ip === 'POPO' ? '#173154' : '#123d36',
         minAmount,
         maxAmount,
         isUserInput,
@@ -298,6 +340,8 @@ export default function DepositScreen() {
                       description={item.description}
                       badge={item.badge}
                       icon={item.icon}
+                      iconColor={item.iconColor}
+                      iconBg={item.iconBg}
                       active={selectedChannel === item.key}
                       onPress={() => handleChannelSelect(item.key)}
                     />
@@ -445,14 +489,18 @@ function ChannelOption({
   title,
   description,
   badge,
-  icon,
+  icon: ChannelIcon,
+  iconColor,
+  iconBg,
   active,
   onPress,
 }: {
   title: string;
   description: string;
   badge: string;
-  icon: typeof Coins;
+  icon: ChannelIconComponent;
+  iconColor: string;
+  iconBg: string;
   active: boolean;
   onPress: () => void;
 }) {
@@ -465,7 +513,11 @@ function ChannelOption({
         borderWidth: 1,
         borderColor: active ? '#6f1dff' : '#2B3448',
       }}>
-      <Pg51LucideIconBadge icon={icon} active={active} size={46} iconSize={20} radius={14} />
+      <View
+        className="h-[46px] w-[46px] items-center justify-center rounded-[14px]"
+        style={{ backgroundColor: iconBg }}>
+        <ChannelIcon size={22} color={iconColor} />
+      </View>
 
       <View className="min-w-0 flex-1">
         <View className="flex-row items-center gap-2">

@@ -1,4 +1,3 @@
-import { Pg51ChromeIconBadge } from '@/components/pg51-clone/original-icons';
 import { Pg51InnerPage, Pg51SectionCard } from '@/components/pg51-clone/page-ui';
 import { Icon } from '@/components/ui/icon';
 import { Skeleton, SkeletonCircle } from '@/components/ui/skeleton';
@@ -16,19 +15,11 @@ import {
 import { apiOk } from '@/lib/api/request';
 import { isInstalledAppRuntime } from '@/lib/platform-mode';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
-import {
-  CalendarDays,
-  Check,
-  Circle,
-  Clock,
-  Gamepad2,
-  Gift,
-  UserPlus,
-  Wallet,
-} from 'lucide-react-native';
-import type { LucideIcon } from 'lucide-react-native';
-import { useCallback, useState } from 'react';
+import { Check } from 'lucide-react-native';
+import type { ComponentType, ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 
 const TASK_MILESTONES = [
   { target: 20, reward: 2 },
@@ -40,6 +31,70 @@ const TASK_MILESTONES = [
 ] as const;
 
 const APP_ONLY_CHEST_TARGETS = new Set([45, 68, 102, 153]);
+const CHEST_DOWNLOAD_REDIRECT_DELAY_MS = 2500;
+
+type TaskIconProps = {
+  size?: number;
+  color?: string;
+};
+
+type TaskIconComponent = ComponentType<TaskIconProps>;
+
+type FontAwesomeIconSpec = {
+  width: number;
+  height: number;
+  path: string;
+};
+
+const FONT_AWESOME_ICONS = {
+  rightToBracket: {
+    width: 512,
+    height: 512,
+    path: 'M345 273c9.4-9.4 9.4-24.6 0-33.9L201 95c-6.9-6.9-17.2-8.9-26.2-5.2S160 102.3 160 112l0 80-112 0c-26.5 0-48 21.5-48 48l0 32c0 26.5 21.5 48 48 48l112 0 0 80c0 9.7 5.8 18.5 14.8 22.2s19.3 1.7 26.2-5.2L345 273zm7 143c-17.7 0-32 14.3-32 32s14.3 32 32 32l64 0c53 0 96-43 96-96l0-256c0-53-43-96-96-96l-64 0c-17.7 0-32 14.3-32 32s14.3 32 32 32l64 0c17.7 0 32 14.3 32 32l0 256c0 17.7-14.3 32-32 32l-64 0z',
+  },
+  calendarCheck: {
+    width: 448,
+    height: 512,
+    path: 'M320 0c17.7 0 32 14.3 32 32l0 32 32 0c35.3 0 64 28.7 64 64l0 288c0 35.3-28.7 64-64 64L64 480c-35.3 0-64-28.7-64-64L0 128C0 92.7 28.7 64 64 64l32 0 0-32c0-17.7 14.3-32 32-32s32 14.3 32 32l0 32 128 0 0-32c0-17.7 14.3-32 32-32zm22 161.7c-10.7-7.8-25.7-5.4-33.5 5.3L189.1 331.2 137 279.1c-9.4-9.4-24.6-9.4-33.9 0s-9.4 24.6 0 33.9l72 72c5 5 11.9 7.5 18.8 7s13.4-4.1 17.5-9.8L347.3 195.2c7.8-10.7 5.4-25.7-5.3-33.5z',
+  },
+  gamepad: {
+    width: 640,
+    height: 512,
+    path: 'M448 64c106 0 192 86 192 192S554 448 448 448l-256 0C86 448 0 362 0 256S86 64 192 64l256 0zM192 176c-13.3 0-24 10.7-24 24l0 32-32 0c-13.3 0-24 10.7-24 24s10.7 24 24 24l32 0 0 32c0 13.3 10.7 24 24 24s24-10.7 24-24l0-32 32 0c13.3 0 24-10.7 24-24s-10.7-24-24-24l-32 0 0-32c0-13.3-10.7-24-24-24zm240 96a32 32 0 1 0 0 64 32 32 0 1 0 0-64zm64-96a32 32 0 1 0 0 64 32 32 0 1 0 0-64z',
+  },
+  gift: {
+    width: 512,
+    height: 512,
+    path: 'M321.5 68.8C329.1 55.9 342.9 48 357.8 48l2.2 0c22.1 0 40 17.9 40 40s-17.9 40-40 40l-73.3 0 34.8-59.2zm-131 0l34.8 59.2-73.3 0c-22.1 0-40-17.9-40-40s17.9-40 40-40l2.2 0c14.9 0 28.8 7.9 36.3 20.8zm89.6-24.3l-24.1 41-24.1-41C215.7 16.9 186.1 0 154.2 0L152 0c-48.6 0-88 39.4-88 88 0 14.4 3.5 28 9.6 40L32 128c-17.7 0-32 14.3-32 32l0 32c0 17.7 14.3 32 32 32l448 0c17.7 0 32-14.3 32-32l0-32c0-17.7-14.3-32-32-32l-41.6 0c6.1-12 9.6-25.6 9.6-40 0-48.6-39.4-88-88-88l-2.2 0c-31.9 0-61.5 16.9-77.7 44.4zM480 272l-200 0 0 208 136 0c35.3 0 64-28.7 64-64l0-144zm-248 0l-200 0 0 144c0 35.3 28.7 64 64 64l136 0 0-208z',
+  },
+  userPlus: {
+    width: 640,
+    height: 512,
+    path: 'M285.7 304c98.5 0 178.3 79.8 178.3 178.3 0 16.4-13.3 29.7-29.7 29.7L77.7 512C61.3 512 48 498.7 48 482.3 48 383.8 127.8 304 226.3 304l59.4 0zM528 80c13.3 0 24 10.7 24 24l0 48 48 0c13.3 0 24 10.7 24 24s-10.7 24-24 24l-48 0 0 48c0 13.3-10.7 24-24 24s-24-10.7-24-24l0-48-48 0c-13.3 0-24-10.7-24-24s10.7-24 24-24l48 0 0-48c0-13.3 10.7-24 24-24zM256 248a120 120 0 1 1 0-240 120 120 0 1 1 0 240z',
+  },
+  wallet: {
+    width: 512,
+    height: 512,
+    path: 'M64 32C28.7 32 0 60.7 0 96L0 384c0 35.3 28.7 64 64 64l384 0c35.3 0 64-28.7 64-64l0-192c0-35.3-28.7-64-64-64L72 128c-13.3 0-24-10.7-24-24S58.7 80 72 80l384 0c13.3 0 24-10.7 24-24s-10.7-24-24-24L64 32zM416 256a32 32 0 1 1 0 64 32 32 0 1 1 0-64z',
+  },
+} satisfies Record<string, FontAwesomeIconSpec>;
+
+function createFontAwesomeIcon(spec: FontAwesomeIconSpec): TaskIconComponent {
+  return function FontAwesomeTaskIcon({ size = 18, color = '#9EA5B8' }: TaskIconProps) {
+    return (
+      <Svg width={size} height={size} viewBox={`0 0 ${spec.width} ${spec.height}`}>
+        <Path d={spec.path} fill={color} />
+      </Svg>
+    );
+  };
+}
+
+const LoginIcon = createFontAwesomeIcon(FONT_AWESOME_ICONS.rightToBracket);
+const CalendarCheckIcon = createFontAwesomeIcon(FONT_AWESOME_ICONS.calendarCheck);
+const GamepadIcon = createFontAwesomeIcon(FONT_AWESOME_ICONS.gamepad);
+const GiftIcon = createFontAwesomeIcon(FONT_AWESOME_ICONS.gift);
+const UserPlusIcon = createFontAwesomeIcon(FONT_AWESOME_ICONS.userPlus);
+const WalletIcon = createFontAwesomeIcon(FONT_AWESOME_ICONS.wallet);
 
 function formatMoney(amount: number) {
   return `¥${amount.toFixed(2)}`;
@@ -59,7 +114,7 @@ function normalizeDailyTasks(tasks: DailyTask[]) {
 }
 
 function getTaskPendingVisual(task: DailyTask): {
-  icon: LucideIcon;
+  icon: TaskIconComponent;
   bg: string;
   border: string;
   color: string;
@@ -68,7 +123,7 @@ function getTaskPendingVisual(task: DailyTask): {
 
   if (title.includes('充值')) {
     return {
-      icon: Wallet,
+      icon: WalletIcon,
       bg: '#172535',
       border: '#355375',
       color: '#6db8ff',
@@ -77,7 +132,7 @@ function getTaskPendingVisual(task: DailyTask): {
 
   if (title.includes('游戏')) {
     return {
-      icon: Gamepad2,
+      icon: GamepadIcon,
       bg: '#241d39',
       border: '#514072',
       color: '#b896ff',
@@ -86,16 +141,25 @@ function getTaskPendingVisual(task: DailyTask): {
 
   if (title.includes('邀请')) {
     return {
-      icon: UserPlus,
+      icon: UserPlusIcon,
       bg: '#3a1f29',
       border: '#6a4050',
       color: '#ff9fbb',
     };
   }
 
-  if (title.includes('登录') || title.includes('签到')) {
+  if (title.includes('登录')) {
     return {
-      icon: CalendarDays,
+      icon: LoginIcon,
+      bg: '#383119',
+      border: '#6b5a2e',
+      color: '#ffd36f',
+    };
+  }
+
+  if (title.includes('签到')) {
+    return {
+      icon: CalendarCheckIcon,
       bg: '#383119',
       border: '#6b5a2e',
       color: '#ffd36f',
@@ -103,11 +167,27 @@ function getTaskPendingVisual(task: DailyTask): {
   }
 
   return {
-    icon: Circle,
+    icon: GiftIcon,
     bg: '#2b3246',
     border: '#4c5673',
     color: '#8f9bb8',
   };
+}
+
+function TaskIconBadge({
+  children,
+  backgroundColor = '#353a4d',
+}: {
+  children: ReactNode;
+  backgroundColor?: string;
+}) {
+  return (
+    <View
+      className="h-11 w-11 items-center justify-center rounded-full"
+      style={{ backgroundColor }}>
+      {children}
+    </View>
+  );
 }
 
 export default function EarnScreen() {
@@ -278,6 +358,7 @@ function DailyTasksCard({
   const [loading, setLoading] = useState(true);
   const [actingId, setActingId] = useState('');
   const [actingChest, setActingChest] = useState<number | null>(null);
+  const downloadRedirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -301,6 +382,14 @@ function DailyTasksCard({
       loadData();
     }, [loadData, refreshSeed])
   );
+
+  useEffect(() => {
+    return () => {
+      if (downloadRedirectTimerRef.current) {
+        clearTimeout(downloadRedirectTimerRef.current);
+      }
+    };
+  }, []);
 
   const handleTaskPress = useCallback(
     async (task: DailyTask) => {
@@ -362,7 +451,21 @@ function DailyTasksCard({
   const handleClaimChest = useCallback(
     async (target: number) => {
       if (APP_ONLY_CHEST_TARGETS.has(target) && !isInstalledAppRuntime()) {
-        router.push('/download');
+        Toast.show({
+          type: 'info',
+          text1: '请下载 App 领取',
+          text2: '高积分宝箱仅支持在 App 内领取，即将前往下载页面。',
+          duration: CHEST_DOWNLOAD_REDIRECT_DELAY_MS,
+        });
+
+        if (downloadRedirectTimerRef.current) {
+          clearTimeout(downloadRedirectTimerRef.current);
+        }
+
+        downloadRedirectTimerRef.current = setTimeout(() => {
+          router.push('/download');
+          downloadRedirectTimerRef.current = null;
+        }, CHEST_DOWNLOAD_REDIRECT_DELAY_MS);
         return;
       }
 
@@ -443,6 +546,7 @@ function TaskRow({
   const progressText =
     task.targetValue > 1 ? `${task.currentValue}/${task.targetValue}` : task.description;
   const pendingVisual = getTaskPendingVisual(task);
+  const TaskIcon = pendingVisual.icon;
 
   return (
     <Pressable
@@ -453,15 +557,13 @@ function TaskRow({
         backgroundColor: isDone ? '#1b3026' : '#212838',
         borderColor: isDone ? '#315642' : '#313b52',
       }}>
-      <Pg51ChromeIconBadge size={44} radius={22} active={isClaim}>
+      <TaskIconBadge backgroundColor={isDone ? '#243b31' : '#353a4d'}>
         {isDone ? (
           <Icon as={Check} size={18} className="text-[#53de90]" />
-        ) : isClaim ? (
-          <Icon as={Clock} size={18} className="text-[#ff9a3c]" />
         ) : (
-          <Icon as={pendingVisual.icon} size={18} color={pendingVisual.color} />
+          <TaskIcon size={18} color={isClaim ? '#ff9a3c' : pendingVisual.color} />
         )}
-      </Pg51ChromeIconBadge>
+      </TaskIconBadge>
 
       <View className="min-w-0 flex-1">
         <View className="flex-row flex-wrap items-center gap-1.5">
@@ -510,7 +612,7 @@ function MilestoneCard({
     <View className="rounded-[24px] border border-[#5a4630] bg-[#1c1a1d] px-4 py-4">
       <View className="flex-row items-center justify-between gap-3">
         <View className="flex-row items-center gap-2">
-          <Icon as={Gift} size={18} className="text-[#ffb35c]" />
+          <GiftIcon size={18} color="#ffb35c" />
           <Text className="text-[14px] font-bold text-white">积分宝箱</Text>
         </View>
         <Text className="text-[12px] font-bold text-[#ffb35c]">今日积分：{totalActivityPoint}</Text>
