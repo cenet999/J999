@@ -87,12 +87,13 @@ public class TransActionService : BaseService
     /// <summary>
     /// 获取交易记录
     /// </summary>
-    /// <param name="transactionType">交易类型筛选</param>
+    /// <param name="transactionTypes">交易类型筛选，多个值用英文逗号分隔</param>
+    /// <param name="transactionType">交易类型筛选（兼容旧版单选参数）</param>
     /// <param name="transactionStatus">交易状态筛选</param>
     /// <param name="page">页码</param>
     /// <param name="pageSize">每页条数</param>
     [HttpGet($"@{nameof(GetTransActionList)}")]
-    public async Task<ApiResult> GetTransActionList(TransactionType? transactionType, TransactionStatus? transactionStatus, int page = 1, int pageSize = 500)
+    public async Task<ApiResult> GetTransActionList(string? transactionTypes, TransactionType? transactionType, TransactionStatus? transactionStatus, int page = 1, int pageSize = 500)
     {
         var currentUserId = await GetCurrentUserIdAsync();
         if (currentUserId == null) return ApiResult.Error.SetMessage("未登录或登录已过期");
@@ -101,11 +102,13 @@ public class TransActionService : BaseService
 
         try
         {
+            var parsedTransactionTypes = ParseTransactionTypes(transactionTypes, transactionType);
+
             // Query transaction records by member ID
             var transactionList = await uow.Orm.Select<DTransAction>()
                 .Include(a => a.DGame)
                 .Where(t => t.DMemberId == currentUserId)
-                .WhereIf(transactionType != null, t => t.TransactionType == transactionType)
+                .WhereIf(parsedTransactionTypes.Count > 0, t => parsedTransactionTypes.Contains(t.TransactionType))
                 .WhereIf(transactionStatus != null, t => t.Status == transactionStatus)
                 .Where(t => t.TransactionType != TransactionType.AgentTransferIn && t.TransactionType != TransactionType.AgentTransferOut)
                 .Where(t => t.TransactionTime >= TimeHelper.LocalToUnix(DateTime.Now.AddDays(-7)))
@@ -146,6 +149,34 @@ public class TransActionService : BaseService
             // 查询操作一般不需要回滚，但记录错误日志
             _logger.LogInformation(ex, "查询会员 {UserId} 交易记录失败，错误：{Error}", currentUserId, ex.Message);
             return ApiResult.Error.SetMessage($"Query transaction list failed: {ex.Message}");
+        }
+
+        static List<TransactionType> ParseTransactionTypes(string? transactionTypes, TransactionType? transactionType)
+        {
+            var parsedTypes = new List<TransactionType>();
+            if (!string.IsNullOrWhiteSpace(transactionTypes))
+            {
+                foreach (var item in transactionTypes.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                {
+                    if (int.TryParse(item, out var typeValue) && Enum.IsDefined(typeof(TransactionType), typeValue))
+                    {
+                        parsedTypes.Add((TransactionType)typeValue);
+                        continue;
+                    }
+
+                    if (Enum.TryParse<TransactionType>(item, true, out var namedType))
+                    {
+                        parsedTypes.Add(namedType);
+                    }
+                }
+            }
+
+            if (transactionType != null)
+            {
+                parsedTypes.Add(transactionType.Value);
+            }
+
+            return parsedTypes.Distinct().ToList();
         }
     }
 

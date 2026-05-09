@@ -136,12 +136,17 @@ function formatFullDateBeijing(ms: number): string {
 }
 
 const TYPE_FILTER_TABS = [
-  { key: 'all', label: '全部', type: undefined as number | undefined },
-  { key: 'recharge', label: '充值', type: 4 },
   { key: 'withdraw', label: '提现', type: 3 },
-  { key: 'transfer', label: '转账', type: 1 },
-  { key: 'game', label: '游戏', type: 2 },
+  { key: 'recharge', label: '充值', type: 4 },
+  { key: 'activity', label: '活动', type: 7 },
+  { key: 'rebate', label: '反水', type: 11 },
+  { key: 'check-in', label: '签到', type: 14 },
+  { key: 'transfer-in', label: '上分', type: 0 },
+  { key: 'transfer-out', label: '下分', type: 1 },
+  { key: 'bet', label: '投注', type: 2 },
 ];
+
+const DEFAULT_TYPE_FILTER_KEYS = ['rebate', 'activity', 'recharge', 'bet'];
 
 const STATUS_FILTER_TABS = [
   { key: 'all', label: '全部', status: undefined as number | undefined },
@@ -518,7 +523,7 @@ async function markSyncCooldownNow() {
 
 export default function TransactionsScreen() {
   const router = useRouter();
-  const [activeTypeFilter, setActiveTypeFilter] = useState('game');
+  const [activeTypeFilters, setActiveTypeFilters] = useState(DEFAULT_TYPE_FILTER_KEYS);
   const [activeStatusFilter, setActiveStatusFilter] = useState('all');
   const [records, setRecords] = useState<TransactionRecord[]>([]);
   const [monthSummary, setMonthSummary] = useState<TransactionMonthSummary>({
@@ -532,8 +537,18 @@ export default function TransactionsScreen() {
   const [recycleLoading, setRecycleLoading] = useState(false);
   const [syncLoading, setSyncLoading] = useState(false);
 
-  const selectedType = TYPE_FILTER_TABS.find((item) => item.key === activeTypeFilter);
+  const selectedTypes = TYPE_FILTER_TABS.filter((item) => activeTypeFilters.includes(item.key));
   const selectedStatus = STATUS_FILTER_TABS.find((item) => item.key === activeStatusFilter);
+  const selectedTypeValues = selectedTypes.map((item) => item.type);
+
+  function toggleTypeFilter(key: string) {
+    setActiveTypeFilters((current) => {
+      if (current.includes(key)) {
+        return current.length > 1 ? current.filter((item) => item !== key) : current;
+      }
+      return [...current, key];
+    });
+  }
 
   async function loadFirstPage() {
     setLoading(true);
@@ -541,7 +556,7 @@ export default function TransactionsScreen() {
 
     try {
       const [listResult, summaryResult] = await Promise.all([
-        getTransactionList(1, TRANSACTION_PAGE_SIZE, selectedType?.type, selectedStatus?.status),
+        getTransactionList(1, TRANSACTION_PAGE_SIZE, selectedTypeValues, selectedStatus?.status),
         getTransactionMonthSummary(),
       ]);
 
@@ -573,7 +588,7 @@ export default function TransactionsScreen() {
       const result = await getTransactionList(
         nextPage,
         TRANSACTION_PAGE_SIZE,
-        selectedType?.type,
+        selectedTypeValues,
         selectedStatus?.status
       );
       const list = result.success && result.data ? result.data : [];
@@ -667,7 +682,7 @@ export default function TransactionsScreen() {
 
   useEffect(() => {
     void loadFirstPage();
-  }, [activeTypeFilter, activeStatusFilter]);
+  }, [activeTypeFilters, activeStatusFilter]);
 
   const groupedRecords = useMemo(() => {
     const groups: Record<string, { dateKey: string; items: TransactionRecord[] }> = {};
@@ -720,8 +735,8 @@ export default function TransactionsScreen() {
               <FilterBlock
                 title="交易类型"
                 tabs={TYPE_FILTER_TABS}
-                activeKey={activeTypeFilter}
-                onChange={setActiveTypeFilter}
+                activeKeys={activeTypeFilters}
+                onChange={toggleTypeFilter}
               />
               <FilterBlock
                 title="交易状态"
@@ -825,11 +840,13 @@ function FilterBlock({
   title,
   tabs,
   activeKey,
+  activeKeys,
   onChange,
 }: {
   title: string;
   tabs: Array<{ key: string; label: string }>;
-  activeKey: string;
+  activeKey?: string;
+  activeKeys?: string[];
   onChange: (key: string) => void;
 }) {
   return (
@@ -837,7 +854,7 @@ function FilterBlock({
       <Text className="text-[12px] font-bold text-[#9fa8be]">{title}</Text>
       <View className="flex-row flex-wrap gap-2">
         {tabs.map((tab) => {
-          const active = activeKey === tab.key;
+          const active = activeKeys ? activeKeys.includes(tab.key) : activeKey === tab.key;
 
           return (
             <Pressable

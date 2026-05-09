@@ -188,18 +188,24 @@ export async function getTransactionMonthSummary(): Promise<ApiResult<Transactio
  * 获取用户的交易记录列表
  * @param page 页码，默认1
  * @param pageSize 分页大小，默认500空载不设限
- * @param transactionType 交易类型过滤（可选）
+ * @param transactionTypes 交易类型过滤（可选，支持多选）
  * @param transactionStatus 交易状态过滤（可选，与后端 TransactionStatus 枚举值一致）
  */
 export async function getTransactionList(
   page: number = 1,
   pageSize: number = 100,
-  transactionType?: number,
+  transactionTypes?: number | number[],
   transactionStatus?: number
 ): Promise<ApiResult<TransactionRecord[]>> {
   let url = `/api/trans/@GetTransActionList?page=${page}&pageSize=${pageSize}`;
-  if (transactionType !== undefined && transactionType !== null) {
-    url += `&transactionType=${transactionType}`;
+  const typeList =
+    typeof transactionTypes === 'number'
+      ? [transactionTypes]
+      : Array.isArray(transactionTypes)
+        ? transactionTypes
+        : [];
+  if (typeList.length > 0) {
+    url += `&transactionTypes=${encodeURIComponent(typeList.join(','))}`;
   }
   if (transactionStatus !== undefined && transactionStatus !== null) {
     url += `&transactionStatus=${transactionStatus}`;
