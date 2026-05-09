@@ -81,8 +81,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "80f9bce0-9f40-40a6-8fd2-1aea72292e7c"
+        "projectId": "4cc54b85-7557-492a-9da4-10124c9a135f"
       }
-    }
+    },
+    "owner": "cenet999"
   }
 }
