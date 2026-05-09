@@ -1,5 +1,6 @@
 using FreeScheduler;
 using FreeSql;
+using BootstrapBlazor.Components;
 using J9_Admin.API;
 using J9_Admin.Services;
 using J9_Admin.TelegramBot;
@@ -210,6 +211,12 @@ try
     var fsql = app.Services.GetService<FreeSqlCloud>();
     if (fsql != null)
     {
+        // 删除 SysUserLoginLog 表中的 IPv6 地址记录
+        var deletedLoginLogCount = await fsql.Delete<SysUserLoginLog>()
+            .Where(a => a.Ip != null && a.Ip != "" && a.Ip.Contains(":"))
+            .ExecuteAffrowsAsync();
+        Log.Information("已删除 SysUserLoginLog 表中的 IPv6 地址记录 {Count} 条", deletedLoginLogCount);
+
         J9_Admin.SeedData.MenuSeedData.Initialize(fsql);
         J9_Admin.SeedData.Ddd.GamePlatformSeedData.Initialize(fsql);
         J9_Admin.SeedData.Ddd.TaskSeedData.Initialize(fsql);

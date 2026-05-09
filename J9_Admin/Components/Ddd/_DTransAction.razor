@@ -546,6 +546,11 @@ string.Join(",", agents.Select(a => a.Id))),
         };
         await Task.Yield();
     }
+
+    /// <summary>
+    /// 查询交易流水
+    /// </summary>
+    /// <param name="e">查询事件</param>
     void OnQuery(AdminQueryEventArgs<DTransAction> e)
     {
         var select = e.Select.Include(a => a.DMember).Include(a => a.DAgent);
@@ -567,7 +572,8 @@ string.Join(",", agents.Select(a => a.Id))),
         a.Data.Contains(e.SearchText) ||
         a.Description.Contains(e.SearchText) ||
         a.CreatedUserName.Contains(e.SearchText) ||
-        a.ModifiedUserName.Contains(e.SearchText))
+        a.ModifiedUserName.Contains(e.SearchText) ||
+        a.DMember != null && a.DMember.Username.Contains(e.SearchText))
         .OrderByDescending(a => a.TransactionTime);
     }
 
