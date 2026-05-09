@@ -55,46 +55,39 @@ function markAutoLaunchConsumed() {
   router.setParams({ autoLaunch: 'false' });
 }
 
-export default function GameLaunchScreen() {
-  const localRouter = useRouter();
-  const params = useLocalSearchParams<{
-    gameId?: string | string[];
-    title?: string | string[];
-    dGamePlatform?: string | string[];
-    gameIcon?: string | string[];
-    autoLaunch?: string | string[];
-  }>();
+export type GameLaunchContentProps = {
+  gameId: string;
+  title: string;
+  dGamePlatform?: string;
+  gameIcon?: string;
+  autoLaunch?: boolean;
+  consumeAutoLaunchParam?: boolean;
+  embedded?: boolean;
+  closeLabel?: string;
+  onClose?: () => void;
+};
+
+export function GameLaunchContent({
+  gameId,
+  title,
+  dGamePlatform = '',
+  gameIcon = '',
+  autoLaunch = false,
+  consumeAutoLaunchParam = false,
+  embedded = false,
+  closeLabel = '返回上一页',
+  onClose,
+}: GameLaunchContentProps) {
   const [status, setStatus] = useState<'idle' | 'preparing' | 'slow' | 'failed'>('idle');
   const [stage, setStage] = useState<'recycling' | 'requesting' | 'opening'>('requesting');
   const [launchAttempt, setLaunchAttempt] = useState(0);
   const [countdown, setCountdown] = useState(LAUNCH_COUNTDOWN_SECONDS);
 
-  const gameId = useMemo(() => {
-    const raw = Array.isArray(params.gameId) ? params.gameId[0] : params.gameId;
-    return raw?.trim() || '';
-  }, [params.gameId]);
-
-  const title = useMemo(() => {
-    const raw = Array.isArray(params.title) ? params.title[0] : params.title;
-    return raw || '游戏';
-  }, [params.title]);
-
-  const dGamePlatform = useMemo(() => {
-    const raw = Array.isArray(params.dGamePlatform) ? params.dGamePlatform[0] : params.dGamePlatform;
-    return raw?.trim() || '';
-  }, [params.dGamePlatform]);
-
   const gameIconUri = useMemo(() => {
-    const raw = Array.isArray(params.gameIcon) ? params.gameIcon[0] : params.gameIcon;
-    const trimmed = raw?.trim() || '';
+    const trimmed = gameIcon.trim();
     if (!trimmed) return '';
     return toAbsoluteUrl(trimmed);
-  }, [params.gameIcon]);
-
-  const autoLaunch = useMemo(() => {
-    const raw = Array.isArray(params.autoLaunch) ? params.autoLaunch[0] : params.autoLaunch;
-    return raw?.trim().toLowerCase() === 'true';
-  }, [params.autoLaunch]);
+  }, [gameIcon]);
 
   const launchGameByPlatform = async (playerId: string, targetGameId: string) => {
     const normalizedPlatform = dGamePlatform.toUpperCase();
@@ -107,15 +100,13 @@ export default function GameLaunchScreen() {
   const openResolvedUrl = async (url: string) => {
     try {
       setStage('opening');
-      markAutoLaunchConsumed();
+      if (consumeAutoLaunchParam) {
+        markAutoLaunchConsumed();
+      }
       await openGameUrl(url);
       if (Platform.OS !== 'web') {
         setTimeout(() => {
-          if (localRouter.canGoBack()) {
-            localRouter.back();
-          } else {
-            router.replace('/');
-          }
+          onClose?.();
         }, 150);
       }
     } catch {
@@ -286,7 +277,12 @@ export default function GameLaunchScreen() {
   }, [autoLaunch, dGamePlatform, gameId, launchAttempt]);
 
   return (
-    <View className="flex-1 items-center justify-center bg-[#0f1420] px-2">
+    <View
+      className={
+        embedded
+          ? 'items-center justify-center bg-[#0f1420] px-0'
+          : 'flex-1 items-center justify-center bg-[#0f1420] px-2'
+      }>
       <View className="w-full max-w-[420px] rounded-[28px] border border-[#313a4f] bg-[#171d2a] px-6 py-8">
         <View className="mb-5 self-center">
           {gameIconUri ? (
@@ -322,12 +318,12 @@ export default function GameLaunchScreen() {
             {status === 'idle'
               ? '游戏已准备就绪'
               : status === 'failed'
-              ? '游戏地址打开失败'
-              : stage === 'recycling'
-                ? '正在从游戏平台回收余额'
-                : stage === 'requesting'
-                  ? '正在获取游戏入口'
-                  : '正在打开外部游戏地址'}
+                ? '游戏地址打开失败'
+                : stage === 'recycling'
+                  ? '正在从游戏平台回收余额'
+                  : stage === 'requesting'
+                    ? '正在获取游戏入口'
+                    : '正在打开外部游戏地址'}
           </Text>
           <Text
             className="mt-2 text-center text-[13px] font-medium leading-[20px]"
@@ -335,18 +331,18 @@ export default function GameLaunchScreen() {
             {status === 'idle'
               ? '点击下方按钮获取游戏入口。'
               : status === 'slow'
-              ? stage === 'recycling'
-                ? '主账户余额为 0，正在尝试把各游戏平台余额收回。'
-                : stage === 'requesting'
-                  ? '稍慢一点，请稍候。'
-                  : '外部页面打开较慢，请耐心等待。'
-              : status === 'failed'
-                ? '请重试一次，或返回上一页继续操作。'
-                : stage === 'recycling'
-                  ? '检测到可用余额为 0，先执行回收再进入游戏。'
+                ? stage === 'recycling'
+                  ? '主账户余额为 0，正在尝试把各游戏平台余额收回。'
                   : stage === 'requesting'
-                    ? '请稍候。'
-                    : '游戏地址已获取，正在为您打开外部页面。'}
+                    ? '稍慢一点，请稍候。'
+                    : '外部页面打开较慢，请耐心等待。'
+                : status === 'failed'
+                  ? '请重试一次，或返回上一页继续操作。'
+                  : stage === 'recycling'
+                    ? '检测到可用余额为 0，先执行回收再进入游戏。'
+                    : stage === 'requesting'
+                      ? '请稍候。'
+                      : '游戏地址已获取，正在为您打开外部页面。'}
           </Text>
         </View>
 
@@ -364,19 +360,69 @@ export default function GameLaunchScreen() {
 
           <Button
             variant="outline"
-            onPress={() => {
-              if (localRouter.canGoBack()) {
-                localRouter.back();
-              } else {
-                router.replace('/');
-              }
-            }}
+            onPress={onClose}
             className="h-12 rounded-2xl border-0"
             style={{ backgroundColor: '#232b3d' }}>
-            <Text className="text-[15px] font-bold text-[#d7def0]">返回上一页</Text>
+            <Text className="text-[15px] font-bold text-[#d7def0]">{closeLabel}</Text>
           </Button>
         </View>
       </View>
     </View>
+  );
+}
+
+export default function GameLaunchScreen() {
+  const localRouter = useRouter();
+  const params = useLocalSearchParams<{
+    gameId?: string | string[];
+    title?: string | string[];
+    dGamePlatform?: string | string[];
+    gameIcon?: string | string[];
+    autoLaunch?: string | string[];
+  }>();
+
+  const gameId = useMemo(() => {
+    const raw = Array.isArray(params.gameId) ? params.gameId[0] : params.gameId;
+    return raw?.trim() || '';
+  }, [params.gameId]);
+
+  const title = useMemo(() => {
+    const raw = Array.isArray(params.title) ? params.title[0] : params.title;
+    return raw || '游戏';
+  }, [params.title]);
+
+  const dGamePlatform = useMemo(() => {
+    const raw = Array.isArray(params.dGamePlatform)
+      ? params.dGamePlatform[0]
+      : params.dGamePlatform;
+    return raw?.trim() || '';
+  }, [params.dGamePlatform]);
+
+  const gameIcon = useMemo(() => {
+    const raw = Array.isArray(params.gameIcon) ? params.gameIcon[0] : params.gameIcon;
+    return raw?.trim() || '';
+  }, [params.gameIcon]);
+
+  const autoLaunch = useMemo(() => {
+    const raw = Array.isArray(params.autoLaunch) ? params.autoLaunch[0] : params.autoLaunch;
+    return raw?.trim().toLowerCase() === 'true';
+  }, [params.autoLaunch]);
+
+  return (
+    <GameLaunchContent
+      gameId={gameId}
+      title={title}
+      dGamePlatform={dGamePlatform}
+      gameIcon={gameIcon}
+      autoLaunch={autoLaunch}
+      consumeAutoLaunchParam
+      onClose={() => {
+        if (localRouter.canGoBack()) {
+          localRouter.back();
+        } else {
+          router.replace('/');
+        }
+      }}
+    />
   );
 }

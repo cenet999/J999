@@ -1,14 +1,14 @@
 import { Text } from '@/components/ui/text';
 import { Toast } from '@/components/ui/toast';
 import type { Pg51GameItem } from '@/components/pg51-clone/types';
-import { cn, extractImageSourceUri } from '@/lib/utils';
-import { router } from 'expo-router';
+import { cn } from '@/lib/utils';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image, Pressable, View } from 'react-native';
 
 type Pg51GameCardProps = {
   item: Pg51GameItem;
   singleColumn?: boolean;
+  onLaunch?: (item: Pg51GameItem) => void;
 };
 
 const LIVE_CARD_ASPECT_RATIO = 650 / 218;
@@ -25,7 +25,7 @@ const BADGE_TONE: Record<Pg51GameItem['badgeTone'], string> = {
   green: '#1aa86d',
 };
 
-export function Pg51GameCard({ item, singleColumn = false }: Pg51GameCardProps) {
+export function Pg51GameCard({ item, singleColumn = false, onLaunch }: Pg51GameCardProps) {
   const isLiveCard = singleColumn;
   const singleColumnAspectRatio = item.aspectRatio ?? LIVE_CARD_ASPECT_RATIO;
 
@@ -42,17 +42,7 @@ export function Pg51GameCard({ item, singleColumn = false }: Pg51GameCardProps) 
 
     try {
       isNavigatingToGameLaunch = true;
-      const gameIcon = extractImageSourceUri(item.image);
-      router.push({
-        pathname: '/game-launch',
-        params: {
-          title: item.title,
-          gameId: item.gameId,
-          dGamePlatform: item.dGamePlatform,
-          autoLaunch: 'true',
-          ...(gameIcon ? { gameIcon } : {}),
-        },
-      });
+      onLaunch?.(item);
     } finally {
       setTimeout(() => {
         isNavigatingToGameLaunch = false;
@@ -68,10 +58,7 @@ export function Pg51GameCard({ item, singleColumn = false }: Pg51GameCardProps) 
         isLiveCard ? 'w-full' : 'w-[31%]'
       )}>
       <View
-        className={cn(
-          'relative overflow-hidden rounded-[22px]',
-          isLiveCard ? '' : 'h-[125px]'
-        )}
+        className={cn('relative overflow-hidden rounded-[22px]', isLiveCard ? '' : 'h-[125px]')}
         style={isLiveCard ? { aspectRatio: singleColumnAspectRatio } : undefined}>
         <Image source={item.image} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
 

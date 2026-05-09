@@ -1,4 +1,5 @@
 import { useAuthModal } from '@/components/auth/auth-modal-provider';
+import { GameLaunchContent } from '@/app/game-launch';
 import {
   Pg51HeaderInner,
   Pg51PageShell,
@@ -11,6 +12,7 @@ import { getGameList, type BackendGame } from '@/lib/api/game';
 import { getNotices, type Notice } from '@/lib/api/notice';
 import { apiOk, toAbsoluteUrl } from '@/lib/api/request';
 import { isIosHomeScreenRuntime } from '@/lib/platform-mode';
+import { extractImageSourceUri } from '@/lib/utils';
 import { Text } from '@/components/ui/text';
 import { Toast } from '@/components/ui/toast';
 import * as React from 'react';
@@ -254,6 +256,7 @@ export function Pg51CloneHomeScreen() {
   const [activeNoticeIndex, setActiveNoticeIndex] = React.useState(0);
   const [queuedNoticeIndex, setQueuedNoticeIndex] = React.useState<number | null>(null);
   const [games, setGames] = React.useState<Pg51GameItem[]>([]);
+  const [launchGame, setLaunchGame] = React.useState<Pg51GameItem | null>(null);
   const [apiCodeOptions, setApiCodeOptions] = React.useState<string[]>([]);
   const [selectedApiCode, setSelectedApiCode] = React.useState('');
   const [listPage, setListPage] = React.useState(1);
@@ -536,6 +539,10 @@ export function Pg51CloneHomeScreen() {
     [categoryAnchorY, gameLoading, handleLoadMore, hasMore]
   );
 
+  const handleLaunchGame = React.useCallback((item: Pg51GameItem) => {
+    setLaunchGame(item);
+  }, []);
+
   return (
     <Pg51PageShell>
       <View className="flex-1">
@@ -594,7 +601,12 @@ export function Pg51CloneHomeScreen() {
                   </View>
                 ) : visibleGames.length > 0 ? (
                   visibleGames.map((item) => (
-                    <Pg51GameCard key={item.id} item={item} singleColumn={isSingleColumnCategory} />
+                    <Pg51GameCard
+                      key={item.id}
+                      item={item}
+                      singleColumn={isSingleColumnCategory}
+                      onLaunch={handleLaunchGame}
+                    />
                   ))
                 ) : (
                   <View className="w-full rounded-[22px] bg-[#2b3141] px-4 py-8">
@@ -651,7 +663,37 @@ export function Pg51CloneHomeScreen() {
         notices={notices}
         onClose={() => setNoticeModalVisible(false)}
       />
+
+      <GameLaunchModal game={launchGame} onClose={() => setLaunchGame(null)} />
     </Pg51PageShell>
+  );
+}
+
+function GameLaunchModal({ game, onClose }: { game: Pg51GameItem | null; onClose: () => void }) {
+  const gameIcon = game ? extractImageSourceUri(game.image) : '';
+
+  return (
+    <Modal visible={Boolean(game)} transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable className="flex-1 items-center justify-center bg-black/75 px-4" onPress={onClose}>
+        <Pressable
+          onPress={(event) => event.stopPropagation()}
+          className="w-full max-w-[420px] overflow-hidden rounded-[28px]">
+          {game ? (
+            <GameLaunchContent
+              key={`${game.id}-${game.gameId ?? ''}`}
+              gameId={game.gameId ?? ''}
+              title={game.title}
+              dGamePlatform={game.dGamePlatform}
+              gameIcon={gameIcon}
+              autoLaunch
+              embedded
+              closeLabel="关闭"
+              onClose={onClose}
+            />
+          ) : null}
+        </Pressable>
+      </Pressable>
+    </Modal>
   );
 }
 
