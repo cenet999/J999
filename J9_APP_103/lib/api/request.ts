@@ -14,10 +14,7 @@ function normalizeBaseUrl(url: string) {
 }
 
 export const BASE_URL = normalizeBaseUrl(__DEV__ ? DEV_API : PROD_API);
-export const FRONTEND_CACHE_ENABLED =
-  typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_DISABLE_FRONTEND_CACHE === 'true'
-    ? false
-    : true;
+export const FRONTEND_CACHE_ENABLED = !__DEV__;
 
 const TOKEN_KEY = '@auth_token';
 const REQUEST_TIMEOUT_MS = 60000;
