@@ -102,6 +102,15 @@ function parseAmountOptions(
   return isUserInput ? [...unique, CUSTOM_AMOUNT] : unique;
 }
 
+function formatSuccessBadge(successRate: number, fallback: string) {
+  if (successRate >= 100) return '稳定';
+  if (successRate >= 80) return '推荐';
+  if (successRate >= 60) return '良好';
+  if (successRate >= 40) return '普通';
+  if (successRate > 0) return '繁忙';
+  return fallback;
+}
+
 function buildDepositChannels(items: PayApiChannel[] | undefined): DepositChannel[] {
   if (!Array.isArray(items)) return [];
 
@@ -131,7 +140,7 @@ function buildDepositChannels(items: PayApiChannel[] | undefined): DepositChanne
           ip === 'POPO'
             ? `${payMethod || '在线支付'} · ¥${minAmount}-${maxAmount}`
             : `TRC20 转账 · ¥${minAmount}-${maxAmount}`,
-        badge: successRate >= 100 ? '稳定' : successRate > 0 ? `${successRate}%` : ip,
+        badge: formatSuccessBadge(successRate, ip),
         icon: ip === 'POPO' ? AlipayIcon : UsdtIcon,
         iconColor: ip === 'POPO' ? '#39a8ff' : '#35d6a3',
         iconBg: ip === 'POPO' ? '#173154' : '#123d36',
