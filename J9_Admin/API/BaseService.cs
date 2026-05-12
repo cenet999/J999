@@ -465,6 +465,24 @@ public class RegisterRequest
 }
 
 /// <summary>
+/// 登录请求体
+/// </summary>
+public class LoginRequest
+{
+    /// <summary>
+    /// 会员账号
+    /// </summary>
+    [Required]
+    public string Username { get; set; }
+
+    /// <summary>
+    /// 登录密码
+    /// </summary>
+    [Required]
+    public string Password { get; set; }
+}
+
+/// <summary>
 /// 上传头像请求
 /// </summary>
 public class UploadAvatarRequest

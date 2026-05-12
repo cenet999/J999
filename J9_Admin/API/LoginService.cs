@@ -200,8 +200,21 @@ IP：{TGMessageApi.EscapeHtml(registerIp)}
     /// </summary>
     [HttpPost($"@{nameof(Login)}")]
     [AllowAnonymous]
-    public async Task<ApiResult> Login(string Username, string Password)
+    public async Task<ApiResult> Login([FromBody] LoginRequest request)
     {
+        if (request == null)
+        {
+            return ApiResult.Error.SetMessage("登录参数不能为空");
+        }
+
+        var Username = request.Username?.Trim();
+        var Password = request.Password;
+
+        if (string.IsNullOrWhiteSpace(Username) || string.IsNullOrWhiteSpace(Password))
+        {
+            return ApiResult.Error.SetMessage("请输入账号和密码");
+        }
+
         using var uow = _fsql.CreateUnitOfWork();
 
         try

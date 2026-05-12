@@ -1,9 +1,10 @@
 import { api, ApiResult } from './request';
 
 export async function login(username: string, password: string): Promise<ApiResult<string>> {
-  return await api.post<string>(
-    `/api/login/@Login?Username=${encodeURIComponent(username)}&Password=${encodeURIComponent(password)}`
-  );
+  return await api.post<string>('/api/login/@Login', {
+    Username: username,
+    Password: password,
+  });
 }
 
 export type MemberInfo = {
