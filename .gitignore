@@ -7,6 +7,7 @@
 .cursor/debug-*.log
 .playwright-cli/
 **/.git/
+J9_Admin0512/
 
 # macOS 访达元数据（勿提交）
 .DS_Store
