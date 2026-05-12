@@ -38,14 +38,15 @@ RUN apt-get update && \
 COPY --from=publish /app/publish .
 
 # 创建必要的目录并设置权限
-RUN mkdir -p /app/Logs && \
-    mkdir -p /app/wwwroot/uploads && \
-    mkdir -p /app/wwwroot/game && \
-    mkdir -p /app/wwwroot/avatars && \
-    mkdir -p /app/wwwroot/badge-photos && \
-    mkdir -p /app/keys && \
-    chmod -R 777 /app/Logs && \
-    chmod -R 777 /app/wwwroot
+RUN set -eux; \
+    mkdir -p \
+        /app/Logs \
+        /app/wwwroot/uploads \
+        /app/wwwroot/game \
+        /app/wwwroot/avatars \
+        /app/wwwroot/badge-photos \
+        /app/keys; \
+    chmod -R 777 /app/Logs /app/wwwroot /app/keys
 
 # buyu.db：由 docker-compose 将宿主机 ./buyu.db 绑定到 /app/buyu.db（单文件，勿在镜像内持久化）
 RUN rm -f /app/buyu.db || true
