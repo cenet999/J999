@@ -1,0 +1,132 @@
+@baseUrl = https://ap.xh-api.com
+@account = REPLACE_WITH_ACCOUNT
+@apiKey = REPLACE_WITH_API_KEY
+
+# 常用模拟参数
+@apiCode = AG
+@username = REPLACE_WITH_USERNAME
+@password = REPLACE_WITH_PASSWORD
+@gameType = 3
+@gameCode = REPLACE_WITH_REAL_GAME_CODE
+@amount = 100
+@transferNo = 202605021530000001
+@page = 1
+@perPage = 20
+@pageSize = 100
+@startAt = 1777606231
+@endAt = 1777692631
+
+### 1. 注册用户 /ley/register
+POST {{baseUrl}}/ley/register
+Content-Type: application/json
+
+{
+  "account": "{{account}}",
+  "api_key": "{{apiKey}}",
+  "api_code": "{{apiCode}}",
+  "username": "{{username}}",
+  "password": "{{password}}",
+  "currency": "CNY"
+}
+
+### 2. 游戏登录 /ley/login
+# gameType:
+# 1=真人 2=捕鱼 3=电子 4=彩票 5=体育 6=棋牌 7=电竞
+# gameCode 请先通过 gamelist 接口查真实值后替换
+POST {{baseUrl}}/ley/login
+Content-Type: application/json
+
+{
+  "account": "{{account}}",
+  "api_key": "{{apiKey}}",
+  "api_code": "{{apiCode}}",
+  "username": "{{username}}",
+  "gameType": {{gameType}},
+  "gameCode": "{{gameCode}}",
+  "isMobile": 0,
+  "currency": "CNY"
+}
+
+### 3. 上分 /ley/deposit
+# transferno 必须是正整数十进制字符串
+POST {{baseUrl}}/ley/deposit
+Content-Type: application/json
+
+{
+  "account": "{{account}}",
+  "api_key": "{{apiKey}}",
+  "api_code": "{{apiCode}}",
+  "username": "{{username}}",
+  "amount": {{amount}},
+  "transferno": "{{transferNo}}"
+}
+
+### 4. 下分 /ley/withdrawal
+# 建议换一个新的 transferno，避免与上分单号重复
+POST {{baseUrl}}/ley/withdrawal
+Content-Type: application/json
+
+{
+  "account": "{{account}}",
+  "api_key": "{{apiKey}}",
+  "api_code": "{{apiCode}}",
+  "username": "{{username}}",
+  "amount": {{amount}},
+  "transferno": "202605021530000002"
+}
+
+### 5. 查询余额 /ley/balance
+POST {{baseUrl}}/ley/balance
+Content-Type: application/json
+
+{
+  "account": "{{account}}",
+  "api_key": "{{apiKey}}",
+  "api_code": "{{apiCode}}",
+  "username": "{{username}}"
+}
+
+### 6. 查询注单 /ley/gamerecord
+# method 在代码里固定传 betTime
+# start_at / end_at 为 10 位 Unix 秒时间戳
+# 两者间隔不能超过 24 小时
+POST {{baseUrl}}/ley/gamerecord
+Content-Type: application/json
+
+{
+  "account": "{{account}}",
+  "api_key": "{{apiKey}}",
+  "method": "betTime",
+  "page": {{page}},
+  "pageSize": {{pageSize}},
+  "start_at": {{startAt}},
+  "end_at": {{endAt}},
+  "username": "{{username}}"
+}
+
+### 7. 查询注单（全量，不传 username）
+POST {{baseUrl}}/ley/gamerecord
+Content-Type: application/json
+
+{
+  "account": "{{account}}",
+  "api_key": "{{apiKey}}",
+  "method": "betTime",
+  "page": {{page}},
+  "pageSize": {{pageSize}},
+  "start_at": {{startAt}},
+  "end_at": {{endAt}}
+}
+
+### 8. 获取子游戏列表 /ley/gamelist
+# page / per_page 对应 XHGameApi.cs 里的分页参数
+POST {{baseUrl}}/ley/gamelist
+Content-Type: application/json
+
+{
+  "account": "{{account}}",
+  "api_key": "{{apiKey}}",
+  "api_code": "{{apiCode}}",
+  "page": {{page}},
+  "per_page": {{perPage}}
+}

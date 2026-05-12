@@ -1,0 +1,71 @@
+@page "/Ddd/DMemberChest"
+@using J9_Admin.Entities
+
+<AdminTable2 TItem="DMemberChest" Context="item" PageSize="50" Title="会员宝箱记录" DialogClassName="modal-lg"
+    OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit">
+
+    <TableHeader>
+        <th>会员名称</th>
+        <th>活跃度档位</th>
+        <th>领取的奖励金(元)</th>
+        <th>领取日期</th>
+        <th>创建时间</th>
+    </TableHeader>
+    <TableRow>
+        <td>@GetMemberDisplayName(item.DMember, item.DMemberId)</td>
+        <td>@item.ActivityPointTarget</td>
+        <td>@item.RewardAmount</td>
+        <td>@item.ChestDate.ToString("yyyy-MM-dd")</td>
+        <td>@item.CreatedTime?.ToString("yyyy-MM-dd HH:mm:ss")</td>
+    </TableRow>
+    <EditTemplate>
+        <div class="row">
+            <div class="form-group col-6">
+                <label class="form-label">会员名称</label>
+                <input value="@GetMemberDisplayName(item.DMember, item.DMemberId)" class="form-control" disabled />
+            </div>
+            <div class="form-group col-6">
+                <label class="form-label">活跃度档位</label>
+                <input @bind="item.ActivityPointTarget" type="number" class="form-control" />
+            </div>
+            <div class="form-group col-6">
+                <label class="form-label">领取的奖励金额</label>
+                <input @bind="item.RewardAmount" type="number" step="0.01" class="form-control" />
+            </div>
+            <div class="form-group col-6">
+                <label class="form-label">领取日期</label>
+                <input @bind="item.ChestDate" type="date" class="form-control" />
+            </div>
+        </div>
+    </EditTemplate> 
+</AdminTable2>
+
+@code {
+    [Inject] IAggregateRootRepository<DMemberChest> repo { get; set; }
+
+    async Task InitQuery(AdminQueryInfo e)
+    {
+        e.Filters = new AdminFilterInfo[]
+        {
+            
+        };
+        await Task.Yield();
+    }
+    void OnQuery(AdminQueryEventArgs<DMemberChest> e)
+    {
+        e.Select.Include(x => x.DMember).OrderByDescending(a => a.Id);
+    }
+
+    async Task OnEdit(DMemberChest item)
+    {
+        await Task.Yield();
+    }
+
+    string GetMemberDisplayName(DMember member, long memberId)
+    {
+        if (!string.IsNullOrWhiteSpace(member?.Username))
+            return member.Username;
+
+        return $"会员ID:{memberId}";
+    }
+}

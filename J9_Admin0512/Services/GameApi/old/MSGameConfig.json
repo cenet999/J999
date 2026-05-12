@@ -1,0 +1,700 @@
+{
+    "gameTypes": {
+        "1": "真人",
+        "2": "捕鱼",
+        "3": "电子",
+        "4": "彩票",
+        "5": "体育",
+        "6": "棋牌",
+        "7": "电竞"
+    },
+    "gameProviders": [
+        {
+            "code": "AG",
+            "name": "AG视讯",
+            "games": [
+                {
+                    "gameType": 1,
+                    "gameCode": "0",
+                    "description": "真人"
+                },
+                {
+                    "gameType": 3,
+                    "gameCode": "请参考获取游戏列表gameCode字段",
+                    "description": "电子"
+                }
+            ]
+        },
+        {
+            "code": "BBIN",
+            "name": "BBIN视讯",
+            "games": [
+                {
+                    "gameType": 1,
+                    "gameCode": "0",
+                    "description": "真人"
+                },
+                {
+                    "gameType": 3,
+                    "gameCode": "0",
+                    "description": "电子"
+                },
+                {
+                    "gameType": 4,
+                    "gameCode": "0",
+                    "description": "彩票"
+                },
+                {
+                    "gameType": 5,
+                    "gameCode": "0",
+                    "description": "体育"
+                },
+                {
+                    "gameType": 2,
+                    "gameCode": "0",
+                    "description": "捕鱼大厅"
+                }
+            ]
+        },
+        {
+            "code": "YB",
+            "name": "YB视讯",
+            "games": [
+                {
+                    "gameType": 1,
+                    "gameCode": "0",
+                    "description": "真人"
+                }
+            ]
+        },
+        {
+            "code": "WM",
+            "name": "完美视讯",
+            "games": [
+                {
+                    "gameType": 1,
+                    "gameCode": "0",
+                    "description": "真人"
+                }
+            ]
+        },
+        {
+            "code": "AB",
+            "name": "欧博视讯",
+            "games": [
+                {
+                    "gameType": 1,
+                    "gameCode": "0",
+                    "description": "真人"
+                }
+            ]
+        },
+        {
+            "code": "OB",
+            "name": "OB游戏",
+            "games": [
+                {
+                    "gameType": 1,
+                    "gameCode": "0",
+                    "description": "真人"
+                },
+                {
+                    "gameType": 3,
+                    "gameCode": "请参考获取游戏列表gameCode字段",
+                    "description": "电子"
+                },
+                {
+                    "gameType": 5,
+                    "gameCode": "0",
+                    "description": "体育"
+                },
+                {
+                    "gameType": 6,
+                    "gameCode": "0",
+                    "description": "棋牌"
+                },
+                {
+                    "gameType": 7,
+                    "gameCode": "0",
+                    "description": "电竞"
+                },
+                {
+                    "gameType": 2,
+                    "gameCode": "200",
+                    "description": "欢乐捕鱼王"
+                },
+                {
+                    "gameType": 6,
+                    "gameCode": "200",
+                    "description": "海王捕鱼"
+                }
+            ]
+        },
+        {
+            "code": "XGLIVE",
+            "name": "XG视讯",
+            "games": [
+                {
+                    "gameType": 1,
+                    "gameCode": "0",
+                    "description": "真人"
+                }
+            ]
+        },
+        {
+            "code": "BG",
+            "name": "BG视讯",
+            "games": [
+                {
+                    "gameType": 1,
+                    "gameCode": "0",
+                    "description": "真人"
+                }
+            ]
+        },
+        {
+            "code": "DG",
+            "name": "DG视讯",
+            "games": [
+                {
+                    "gameType": 1,
+                    "gameCode": "0",
+                    "description": "真人"
+                }
+            ]
+        },
+        {
+            "code": "EVO",
+            "name": "EVO视讯",
+            "games": [
+                {
+                    "gameType": 1,
+                    "gameCode": "0",
+                    "description": "真人"
+                }
+            ]
+        },
+        {
+            "code": "SEXY",
+            "name": "SEXY视讯",
+            "games": [
+                {
+                    "gameType": 1,
+                    "gameCode": "0",
+                    "description": "真人"
+                }
+            ]
+        },
+        {
+            "code": "TTG",
+            "name": "TTG电子",
+            "games": [
+                {
+                    "gameType": 3,
+                    "gameCode": "0",
+                    "description": "电子"
+                }
+            ]
+        },
+        {
+            "code": "KA",
+            "name": "KA电子",
+            "status": "维护中",
+            "games": []
+        },
+        {
+            "code": "AT",
+            "name": "AT电子",
+            "games": [
+                {
+                    "gameType": 3,
+                    "gameCode": "请参考获取游戏列表gameCode字段",
+                    "description": "电子"
+                },
+                {
+                    "gameType": 2,
+                    "gameCode": "cmf0001",
+                    "description": "龙珠捕鱼"
+                },
+                {
+                    "gameType": 2,
+                    "gameCode": "cmf0002",
+                    "description": "中国神魔捕鱼"
+                }
+            ]
+        },
+        {
+            "code": "JOKER",
+            "name": "JOKER电子",
+            "status": "维护中",
+            "games": []
+        },
+        {
+            "code": "PG",
+            "name": "PG电子",
+            "games": [
+                {
+                    "gameType": 3,
+                    "gameCode": "0",
+                    "description": "电子"
+                }
+            ]
+        },
+        {
+            "code": "PP",
+            "name": "PP电子",
+            "games": [
+                {
+                    "gameType": 3,
+                    "gameCode": "0",
+                    "description": "电子"
+                }
+            ]
+        },
+        {
+            "code": "ISB",
+            "name": "ISB电子",
+            "games": [
+                {
+                    "gameType": 3,
+                    "gameCode": "0",
+                    "description": "电子"
+                }
+            ]
+        },
+        {
+            "code": "JDB",
+            "name": "JDB电子",
+            "games": [
+                {
+                    "gameType": 3,
+                    "gameCode": "0",
+                    "description": "电子"
+                },
+                {
+                    "gameType": 2,
+                    "gameCode": "7_7001",
+                    "description": "龙王捕鱼"
+                },
+                {
+                    "gameType": 2,
+                    "gameCode": "7_7002",
+                    "description": "龙王捕鱼2"
+                },
+                {
+                    "gameType": 2,
+                    "gameCode": "7_7003",
+                    "description": "财神捕鱼"
+                },
+                {
+                    "gameType": 2,
+                    "gameCode": "7_7004",
+                    "description": "五龙捕鱼"
+                },
+                {
+                    "gameType": 2,
+                    "gameCode": "7_7005",
+                    "description": "捕鱼一路发"
+                },
+                {
+                    "gameType": 2,
+                    "gameCode": "7_7006",
+                    "description": "猎龙高手"
+                },
+                {
+                    "gameType": 2,
+                    "gameCode": "7_7007",
+                    "description": "捕鱼迪斯可"
+                }
+            ]
+        },
+        {
+            "code": "CQ9",
+            "name": "CQ9电子",
+            "games": [
+                {
+                    "gameType": 3,
+                    "gameCode": "0",
+                    "description": "电子"
+                },
+                {
+                    "gameType": 2,
+                    "gameCode": "cq9-AB3",
+                    "description": "皇金渔场"
+                },
+                {
+                    "gameType": 2,
+                    "gameCode": "cq9-AT05",
+                    "description": "欢乐捕鱼"
+                },
+                {
+                    "gameType": 2,
+                    "gameCode": "cq9-AT01",
+                    "description": "一炮捕鱼"
+                }
+            ]
+        },
+        {
+            "code": "PNG",
+            "name": "PNG电子",
+            "games": [
+                {
+                    "gameType": 3,
+                    "gameCode": "0",
+                    "description": "电子"
+                }
+            ]
+        },
+        {
+            "code": "RTG",
+            "name": "RTG电子",
+            "games": [
+                {
+                    "gameType": 3,
+                    "gameCode": "0",
+                    "description": "电子"
+                }
+            ]
+        },
+        {
+            "code": "GSS",
+            "name": "GSS电子",
+            "games": [
+                {
+                    "gameType": 3,
+                    "gameCode": "0",
+                    "description": "电子"
+                }
+            ]
+        },
+        {
+            "code": "PT",
+            "name": "PT电子",
+            "games": [
+                {
+                    "gameType": 3,
+                    "gameCode": "0",
+                    "description": "电子"
+                }
+            ]
+        },
+        {
+            "code": "MG",
+            "name": "MG电子",
+            "games": [
+                {
+                    "gameType": 3,
+                    "gameCode": "0",
+                    "description": "电子"
+                }
+            ]
+        },
+        {
+            "code": "TCG",
+            "name": "天成彩票",
+            "games": [
+                {
+                    "gameType": 4,
+                    "gameCode": "0",
+                    "description": "彩票"
+                }
+            ]
+        },
+        {
+            "code": "VR",
+            "name": "VR彩票",
+            "games": [
+                {
+                    "gameType": 4,
+                    "gameCode": "0",
+                    "description": "彩票"
+                }
+            ]
+        },
+        {
+            "code": "OBCP",
+            "name": "OB彩票",
+            "games": [
+                {
+                    "gameType": 4,
+                    "gameCode": "0",
+                    "description": "彩票"
+                }
+            ]
+        },
+        {
+            "code": "SBO",
+            "name": "SBO体育",
+            "games": [
+                {
+                    "gameType": 5,
+                    "gameCode": "0",
+                    "description": "体育"
+                }
+            ]
+        },
+        {
+            "code": "IBC",
+            "name": "沙巴体育",
+            "games": [
+                {
+                    "gameType": 5,
+                    "gameCode": "0",
+                    "description": "体育"
+                }
+            ]
+        },
+        {
+            "code": "SS",
+            "name": "三晟体育",
+            "games": [
+                {
+                    "gameType": 5,
+                    "gameCode": "0",
+                    "description": "体育"
+                }
+            ]
+        },
+        {
+            "code": "AGTY",
+            "name": "AG体育",
+            "games": [
+                {
+                    "gameType": 5,
+                    "gameCode": "0",
+                    "description": "体育"
+                }
+            ]
+        },
+        {
+            "code": "FB",
+            "name": "FB体育",
+            "games": [
+                {
+                    "gameType": 5,
+                    "gameCode": "0",
+                    "description": "体育"
+                }
+            ]
+        },
+        {
+            "code": "CMD",
+            "name": "CMD体育",
+            "games": [
+                {
+                    "gameType": 5,
+                    "gameCode": "0",
+                    "description": "体育"
+                }
+            ]
+        },
+        {
+            "code": "XJ",
+            "name": "小金体育",
+            "games": [
+                {
+                    "gameType": 5,
+                    "gameCode": "0",
+                    "description": "体育"
+                }
+            ]
+        },
+        {
+            "code": "HG",
+            "name": "皇冠体育",
+            "games": [
+                {
+                    "gameType": 5,
+                    "gameCode": "0",
+                    "description": "体育"
+                }
+            ]
+        },
+        {
+            "code": "NEWBB",
+            "name": "NEWBB体育",
+            "games": [
+                {
+                    "gameType": 5,
+                    "gameCode": "0",
+                    "description": "体育"
+                },
+                {
+                    "gameType": 5,
+                    "gameCode": "134001",
+                    "description": "数位趋势"
+                }
+            ]
+        },
+        {
+            "code": "KY",
+            "name": "开元棋牌",
+            "games": [
+                {
+                    "gameType": 6,
+                    "gameCode": "0",
+                    "description": "棋牌"
+                },
+                {
+                    "gameType": 2,
+                    "gameCode": "510",
+                    "description": "红包捕鱼"
+                },
+                {
+                    "gameType": 2,
+                    "gameCode": "520",
+                    "description": "李逵捕鱼"
+                }
+            ]
+        },
+        {
+            "code": "GMFX",
+            "name": "福星棋牌",
+            "status": "已下架",
+            "games": []
+        },
+        {
+            "code": "GDQ",
+            "name": "高登棋牌",
+            "games": [
+                {
+                    "gameType": 6,
+                    "gameCode": "0",
+                    "description": "棋牌"
+                }
+            ]
+        },
+        {
+            "code": "BL",
+            "name": "博乐棋牌",
+            "games": [
+                {
+                    "gameType": 6,
+                    "gameCode": "请参考获取游戏列表gameCode字段",
+                    "description": "棋牌"
+                }
+            ]
+        },
+        {
+            "code": "TH",
+            "name": "天豪棋牌",
+            "games": [
+                {
+                    "gameType": 6,
+                    "gameCode": "0",
+                    "description": "棋牌"
+                }
+            ]
+        },
+        {
+            "code": "LEG",
+            "name": "乐游棋牌",
+            "games": [
+                {
+                    "gameType": 6,
+                    "gameCode": "0",
+                    "description": "棋牌"
+                },
+                {
+                    "gameType": 2,
+                    "gameCode": "510",
+                    "description": "捕鱼大作战"
+                }
+            ]
+        },
+        {
+            "code": "KX",
+            "name": "凯旋棋牌",
+            "games": [
+                {
+                    "gameType": 6,
+                    "gameCode": "0",
+                    "description": "棋牌"
+                }
+            ]
+        },
+        {
+            "code": "NW",
+            "name": "新世界棋牌",
+            "games": [
+                {
+                    "gameType": 6,
+                    "gameCode": "0",
+                    "description": "棋牌"
+                }
+            ]
+        },
+        {
+            "code": "WALI",
+            "name": "瓦力棋牌",
+            "games": [
+                {
+                    "gameType": 6,
+                    "gameCode": "0",
+                    "description": "棋牌"
+                }
+            ]
+        },
+        {
+            "code": "DTQP",
+            "name": "大唐棋牌",
+            "games": [
+                {
+                    "gameType": 6,
+                    "gameCode": "0",
+                    "description": "棋牌"
+                }
+            ]
+        },
+        {
+            "code": "BBCARD",
+            "name": "BB棋牌",
+            "games": [
+                {
+                    "gameType": 6,
+                    "gameCode": "0",
+                    "description": "棋牌"
+                }
+            ]
+        },
+        {
+            "code": "AP",
+            "name": "AP爱棋牌",
+            "status": "已下架",
+            "games": []
+        },
+        {
+            "code": "IA",
+            "name": "小艾电竞",
+            "games": [
+                {
+                    "gameType": 7,
+                    "gameCode": "0",
+                    "description": "电竞"
+                }
+            ]
+        },
+        {
+            "code": "TFG",
+            "name": "雷火电竞",
+            "games": [
+                {
+                    "gameType": 7,
+                    "gameCode": "0",
+                    "description": "电竞"
+                }
+            ]
+        },
+        {
+            "code": "AVIA",
+            "name": "泛亚电竞",
+            "games": [
+                {
+                    "gameType": 7,
+                    "gameCode": "0",
+                    "description": "电竞"
+                }
+            ]
+        }
+    ]
+}
