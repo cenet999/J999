@@ -289,7 +289,7 @@ IP：{TGMessageApi.EscapeHtml(ip)}
                 _logger.LogInformation("登录成功但代理 Id={AgentId} 未配置 TelegramChatId，跳过 Telegram 通知", agent.Id);
             }
 
-            var token = DesEncrypt.Encrypt(user.Id + "|" + user.LoginTime.ToString("yyyy-MM-dd HH:mm:ss"));
+            var token = DesEncrypt.Encrypt(user.Id + "|" + user.LoginTime.ToString("yyyy-MM-dd HH:mm:ss") + "|");
             return ApiResult.Success.SetData(token);
         }
         catch (Exception ex)
