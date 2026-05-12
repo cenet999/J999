@@ -567,7 +567,7 @@ new() { Code = "XH", DisplayName = "星汇游戏" }
             await MessageService.Success("接口调用中...");
 
             var dmember = await repo.Orm.Select<DMember>().Where(a => a.Id == AdminContext.User.Id).FirstAsync();
-            var token = HttpContextAccessor.HttpContext.Request.Cookies["AdminBlazor_login_main"];
+            var token = HttpContextAccessor.HttpContext?.Request.Cookies[AdminContext.CookieName];
 
             var platformCode = ResolveSyncPlatformCode(item.DGamePlatform?.Name);
             if (string.IsNullOrEmpty(platformCode))

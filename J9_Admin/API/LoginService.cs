@@ -1,5 +1,5 @@
 using System.ComponentModel.DataAnnotations;
-using AdminBlazor.Infrastructure.Encrypt;
+using NovaAdmin.Blazor.Infrastructure.Encrypt;
 using BootstrapBlazor.Components;
 using FreeScheduler;
 using Microsoft.AspNetCore.Authorization;
@@ -295,7 +295,7 @@ IP：{TGMessageApi.EscapeHtml(ip)}
     [HttpGet($"@{nameof(Logout)}")]
     public Task<ApiResult> Logout(string tenantId = "main")
     {
-        HttpContext?.Response.Cookies.Delete("AdminBlazor_login_" + tenantId);
+        HttpContext?.Response.Cookies.Delete(_adminContext.CookieName + "_" + tenantId);
         return Task.FromResult<ApiResult>(ApiResult.Success.SetData(true));
     }
 

@@ -96,12 +96,12 @@ try
     Log.Information("数据库配置节点: {DbProvider}", string.IsNullOrWhiteSpace(activeDbProvider) ? "ConnectionStrings(Default)" : activeDbProvider);
     Log.Information("数据库类型: {DbType}", dbType);
 
-    // 生产环境 PostgreSQL 不自动改表：AdminBlazor 内置 SysUserLoginLog.Ip 仍是 VARCHAR(50)，
+    // 生产环境 PostgreSQL 不自动改表：NovaAdmin.Blazor 内置 SysUserLoginLog.Ip 仍是 VARCHAR(50)，
     // AutoSyncStructure 会尝试把已放宽的字段收窄，遇到历史长 IP 数据会导致启动失败。
     var shouldAutoSyncStructure = !(dbType == DataType.PostgreSQL && builder.Environment.IsProduction());
     Log.Information("FreeSql AutoSyncStructure: {AutoSyncStructure}", shouldAutoSyncStructure);
 
-    builder.AddAdminBlazor(new AdminBlazorOptions
+    builder.AddNovaAdmin(new NovaAdminOptions
     {
         Assemblies = [typeof(Program).Assembly],
         FreeSqlBuilder = a => a
@@ -189,7 +189,7 @@ try
 
     app.UseBootstrapBlazor();
     app.MapRazorComponents<J9_Admin.Components.App>()
-        .AddAdditionalAssemblies(typeof(AdminBlazorOptions).Assembly)
+        .AddAdditionalAssemblies(typeof(NovaAdminOptions).Assembly)
         .AddInteractiveServerRenderMode();
 
     // 版本信息接口（必须在 UseAdminOmniApi 之前注册，否则会被框架覆盖）
@@ -240,7 +240,7 @@ finally
     Log.CloseAndFlush();
 }
 
-// 自定义触发（顶层局部函数，供上方 AddAdminBlazor 的 SchedulerExecuting 委托引用）
+// 自定义触发（顶层局部函数，供上方 AddNovaAdmin 的 SchedulerExecuting 委托引用）
 static void OnSchedulerExecuting(IServiceProvider service, TaskInfo task)
 {
     switch (task.Topic)

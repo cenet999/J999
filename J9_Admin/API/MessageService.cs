@@ -1,5 +1,5 @@
 using System.ComponentModel.DataAnnotations;
-using AdminBlazor.Infrastructure.Encrypt;
+using NovaAdmin.Blazor.Infrastructure.Encrypt;
 using BootstrapBlazor.Components;
 using FreeScheduler;
 using Microsoft.AspNetCore.Authorization;
