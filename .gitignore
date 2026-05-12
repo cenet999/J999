@@ -6,6 +6,7 @@
 .vs/
 .cursor/debug-*.log
 .playwright-cli/
+**/.git/
 
 # macOS 访达元数据（勿提交）
 .DS_Store
