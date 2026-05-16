@@ -11,7 +11,7 @@ namespace J9_Admin.API;
 [Tags("公告系统")]
 public class NoticeService : BaseService
 {
-    public NoticeService(FreeSqlCloud freeSqlCloud, FreeScheduler.Scheduler scheduler, ILogger<NoticeService> logger, AdminContext adminContext, IConfiguration configuration, IWebHostEnvironment webHostEnvironment)
+    public NoticeService(FreeSqlCloud freeSqlCloud, FreeScheduler.Scheduler scheduler, ILogger<NoticeService> logger, NovaAdminContext adminContext, IConfiguration configuration, IWebHostEnvironment webHostEnvironment)
         : base(freeSqlCloud, scheduler, logger, adminContext, configuration, webHostEnvironment)
     {
     }

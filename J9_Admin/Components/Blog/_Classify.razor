@@ -3,7 +3,7 @@
 
 <PageTitle>随笔专栏</PageTitle>
 
-<AdminTable2 TItem="Classify" Context="item" PageSize="50" Title="随笔专栏"
+<NovaAdminTable TItem="Classify" Context="item" PageSize="50" Title="随笔专栏"
     OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit">
 
     <TableHeader>
@@ -42,20 +42,20 @@
             </div>
         </div>
     </EditTemplate> 
-</AdminTable2>
+</NovaAdminTable>
 
 @code {
 
     [Inject] IAggregateRootRepository<Classify> repo { get; set; }
 
-    async Task InitQuery(AdminQueryInfo e)
+    async Task InitQuery(NovaAdminQueryInfo e)
     {
-        e.Filters = new AdminFilterInfo[]
+        e.Filters = new NovaAdminFilterInfo[]
         {
         };
         await Task.Yield();
     }
-    void OnQuery(AdminQueryEventArgs<Classify> e)
+    void OnQuery(NovaAdminQueryEventArgs<Classify> e)
     {
         e.Select.WhereIf(!e.SearchText.IsNull(), a => a.ClassifyName.Contains(e.SearchText) || 
                 a.CreatedUserName.Contains(e.SearchText));

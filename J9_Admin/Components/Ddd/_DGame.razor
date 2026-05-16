@@ -13,7 +13,7 @@
 
 <PageTitle>Game Management</PageTitle>
 
-<AdminTable2 @ref="adminTable" TItem="DGame" Context="item" PageSize="50" Title="Game Management"
+<NovaAdminTable @ref="adminTable" TItem="DGame" Context="item" PageSize="50" Title="Game Management"
     DialogClassName="modal-lg" OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit" TableTd99Width="150"
     OnSaving="OnSaving" IsMultiSelect="true" OnSelectChanged="OnSelectChanged">
 
@@ -201,7 +201,7 @@
 
             <div class="form-group col-2">
                 <label class="form-label">游戏类型</label>
-                <SelectEnum TEnum="GameType" @bind-Value="item.GameType" />
+                <NovaSelectEnum TEnum="GameType" @bind-Value="item.GameType" />
             </div>
             <div class="form-group col-2">
                 <label class="form-label">游戏Code</label>
@@ -213,7 +213,7 @@
             </div>
             <div class="form-group col-4">
                 <label class="form-label">游戏平台ID</label>
-                <SelectEntity TItem="DGamePlatform" TKey="long" @bind-Value="item.DGamePlatformId"
+                <NovaSelectEntity TItem="DGamePlatform" TKey="long" @bind-Value="item.DGamePlatformId"
                     DisplayText="e => e.Name" />
             </div>
             <div class="form-group col-2">
@@ -255,12 +255,12 @@
 
         </div>
     </EditTemplate>
-</AdminTable2>
+</NovaAdminTable>
 
 @code {
     [Inject] NavigationManager Navigation { get; set; }
     [Inject] IHttpContextAccessor HttpContextAccessor { get; set; }
-    [Inject] AdminContext AdminContext { get; set; }
+    [Inject] NovaAdminContext NovaAdminContext { get; set; }
     [Inject] ILogger<DGame> _logger { get; set; }
     [Inject] IJSRuntime JSRuntime { get; set; }
     [Inject] IConfiguration Configuration { get; set; }
@@ -271,8 +271,8 @@
     [Inject] MSGameApi MsGameApi { get; set; }
     [Inject] XHGameApi XhGameApi { get; set; }
 
-    AdminTable2<DGame> adminTable = new AdminTable2<DGame>();
-    List<AdminItem<DGame>> selectedItems = new();
+    NovaAdminTable<DGame> adminTable = new NovaAdminTable<DGame>();
+    List<NovaAdminItem<DGame>> selectedItems = new();
 
     private sealed class SyncPlatformOption
     {
@@ -306,17 +306,17 @@ new() { Code = "XH", DisplayName = "星汇游戏" }
         public Dictionary<string, int> NewByApiCode { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     }
 
-    async Task OnSelectChanged(List<AdminItem<DGame>> items)
+    async Task OnSelectChanged(List<NovaAdminItem<DGame>> items)
     {
         try
         {
             selectedItems = items?
             .Where(a => a.Selected)
-            .ToList() ?? new List<AdminItem<DGame>>();
+            .ToList() ?? new List<NovaAdminItem<DGame>>();
         }
         catch
         {
-            selectedItems = new List<AdminItem<DGame>>();
+            selectedItems = new List<NovaAdminItem<DGame>>();
         }
 
         await Task.Yield();
@@ -341,7 +341,7 @@ new() { Code = "XH", DisplayName = "星汇游戏" }
         .Where(a => selectedIds.Contains(a.Id))
         .ExecuteAffrowsAsync();
 
-        selectedItems = new List<AdminItem<DGame>>();
+        selectedItems = new List<NovaAdminItem<DGame>>();
         await adminTable.Load();
         await MessageService.Success($"已{(isEnabled ? "启用" : "禁用")} {affectedRows} 个游戏");
     }
@@ -566,8 +566,8 @@ new() { Code = "XH", DisplayName = "星汇游戏" }
         {
             await MessageService.Success("接口调用中...");
 
-            var dmember = await repo.Orm.Select<DMember>().Where(a => a.Id == AdminContext.User.Id).FirstAsync();
-            var token = HttpContextAccessor.HttpContext?.Request.Cookies[AdminContext.CookieName];
+            var dmember = await repo.Orm.Select<DMember>().Where(a => a.Id == NovaAdminContext.User.Id).FirstAsync();
+            var token = HttpContextAccessor.HttpContext?.Request.Cookies[NovaAdminContext.CookieName];
 
             var platformCode = ResolveSyncPlatformCode(item.DGamePlatform?.Name);
             if (string.IsNullOrEmpty(platformCode))
@@ -641,7 +641,7 @@ new() { Code = "XH", DisplayName = "星汇游戏" }
     }
 
 
-    async Task InitQuery(AdminQueryInfo e)
+    async Task InitQuery(NovaAdminQueryInfo e)
     {
         var allDGamePlatforms = await repo.Orm.Select<DGamePlatform>().ToListAsync();
         var apiCodesRaw = await repo.Orm.Select<DGame>()
@@ -651,19 +651,19 @@ new() { Code = "XH", DisplayName = "星汇游戏" }
         var apiCodeLabels = string.Join(",", distinctApiCodes);
         var apiCodeValues = string.Join(",", distinctApiCodes);
 
-        e.Filters = new AdminFilterInfo[]
+        e.Filters = new NovaAdminFilterInfo[]
         {
-new AdminFilterInfo("游戏类型", "GameType", "真人,捕鱼,电子,彩票,体育,棋牌,电竞", "1,2,3,4,5,6,7"),
-new AdminFilterInfo("游戏平台", "DGamePlatformId", false, 12,
+new NovaAdminFilterInfo("游戏类型", "GameType", "真人,捕鱼,电子,彩票,体育,棋牌,电竞", "1,2,3,4,5,6,7"),
+new NovaAdminFilterInfo("游戏平台", "DGamePlatformId", false, 12,
 string.Join(",", allDGamePlatforms.Select(a => a.Name)),
 string.Join(",", allDGamePlatforms.Select(a => a.Id))),
-new AdminFilterInfo("是否启用", "IsEnabled", "停用,启用", "0,1"),
-new AdminFilterInfo("测试通过", "IsTestPassed", "待测试,已通过", "0,1"),
-new AdminFilterInfo("接口代码", "ApiCode", false, 12, apiCodeLabels, apiCodeValues),
+new NovaAdminFilterInfo("是否启用", "IsEnabled", "停用,启用", "0,1"),
+new NovaAdminFilterInfo("测试通过", "IsTestPassed", "待测试,已通过", "0,1"),
+new NovaAdminFilterInfo("接口代码", "ApiCode", false, 12, apiCodeLabels, apiCodeValues),
         };
         await Task.Yield();
     }
-    void OnQuery(AdminQueryEventArgs<DGame> e)
+    void OnQuery(NovaAdminQueryEventArgs<DGame> e)
     {
         e.Select
         .Include(a => a.DGamePlatform)
@@ -700,7 +700,7 @@ new AdminFilterInfo("接口代码", "ApiCode", false, 12, apiCodeLabels, apiCode
         await Task.Yield();
     }
 
-    async Task OnSaving(AdminConfirmEventArgs<DGame> e)
+    async Task OnSaving(NovaAdminConfirmEventArgs<DGame> e)
     {
         //检查必须录入
         if (string.IsNullOrWhiteSpace(e.Argument.GameName))

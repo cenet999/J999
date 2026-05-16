@@ -3,7 +3,7 @@
 
 <PageTitle>代理管理</PageTitle>
 
-<AdminTable2 TItem="DAgent" Context="item" PageSize="50" Title="代理管理" DialogClassName="modal-lg"
+<NovaAdminTable TItem="DAgent" Context="item" PageSize="50" Title="代理管理" DialogClassName="modal-lg"
     OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit">
 
     <TableHeader>
@@ -44,7 +44,7 @@
             </div>
             <div class="form-group col-6">
                 <label class="form-label">代理类型</label>
-                <SelectEnum TEnum="AgentType" @bind-Value="item.AgentType" />
+                <NovaSelectEnum TEnum="AgentType" @bind-Value="item.AgentType" />
             </div>
             <div class="form-group col-6">
                 <label class="form-label">代理状态</label>
@@ -114,7 +114,7 @@
             </div>
         </div>
     </EditTemplate> 
-</AdminTable2>
+</NovaAdminTable>
 
 
 @code {
@@ -122,7 +122,7 @@
     [Inject] IAggregateRootRepository<DAgent> repo { get; set; }
     [Inject] IConfiguration Configuration { get; set; }
     [Inject] J9_Admin.Utils.SessionAgent sessionAgent { get; set; }
-    [Inject] AdminContext AdminContext { get; set; }
+    [Inject] NovaAdminContext NovaAdminContext { get; set; }
     Dictionary<long, string> agentNameMap = new();
     HashSet<long> visibleAgentIds = [];
 
@@ -224,7 +224,7 @@
         }
     }
 
-    async Task InitQuery(AdminQueryInfo e)
+    async Task InitQuery(NovaAdminQueryInfo e)
     {
         // 给列表页显示“上级代理名”用，避免每一行再单独查库。
         agentNameMap = (await repo.Orm.Select<DAgent>()
@@ -234,11 +234,11 @@
         visibleAgentIds.Clear();
 
         // admin 账号看全部代理，不做层级限制；忽略大小写。
-        if (string.Equals(AdminContext.User?.Username, "admin", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(NovaAdminContext.User?.Username, "admin", StringComparison.OrdinalIgnoreCase))
         {
-            e.Filters = new AdminFilterInfo[]
+            e.Filters = new NovaAdminFilterInfo[]
             {
-                new AdminFilterInfo("代理类型", "AgentType", "General,Direct,Distribution,Premium,VIP", "0,1,2,3,4"),
+                new NovaAdminFilterInfo("代理类型", "AgentType", "General,Direct,Distribution,Premium,VIP", "0,1,2,3,4"),
             };
             await Task.Yield();
             return;
@@ -268,9 +268,9 @@
             }
         }
 
-        e.Filters = new AdminFilterInfo[]
+        e.Filters = new NovaAdminFilterInfo[]
         {
-            new AdminFilterInfo("代理类型", "AgentType", "General,Direct,Distribution,Premium,VIP", "0,1,2,3,4"),
+            new NovaAdminFilterInfo("代理类型", "AgentType", "General,Direct,Distribution,Premium,VIP", "0,1,2,3,4"),
         };
         await Task.Yield();
     }
@@ -287,7 +287,7 @@
         return $"ID: {parentId}";
     }
 
-    void OnQuery(AdminQueryEventArgs<DAgent> e)
+    void OnQuery(NovaAdminQueryEventArgs<DAgent> e)
     {
         e.Select.WhereIf(e.Filters[0].HasValue, a => a.AgentType == e.Filters[0].Value<AgentType>())
             .WhereIf(visibleAgentIds.Count > 0, a => visibleAgentIds.Contains(a.Id))

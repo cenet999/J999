@@ -3,7 +3,7 @@
 
 <PageTitle>用户点赞</PageTitle>
 
-<AdminTable2 TItem="UserLike" Context="item" PageSize="50" Title="用户点赞"DialogClassName="modal-lg"
+<NovaAdminTable TItem="UserLike" Context="item" PageSize="50" Title="用户点赞"DialogClassName="modal-lg"
     IsSearchText="false"
     OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit">
 
@@ -30,53 +30,53 @@
         <div class="row form-inline form-inline-end">
             <div class="form-group col-12">
                 <label class="form-label">类型</label>
-                <SelectEnum TEnum="UserLikeSubjectType" @bind-Value="item.SubjectType" />
+                <NovaSelectEnum TEnum="UserLikeSubjectType" @bind-Value="item.SubjectType" />
             </div>
             @if (item.SubjectType == UserLikeSubjectType.点赞随笔)
             {
                 <div class="form-group col-12">
                     <label class="form-label">随笔</label>
-                    <InputTable2 TItem="Article" TKey="long" @bind-Value="item.SubjectId" @bind-Item="item.Article" DisplayText="@(a => $"[{a.Id}]{a.Title}")" Context="item2">
+                    <NovaInputTable TItem="Article" TKey="long" @bind-Value="item.SubjectId" @bind-Item="item.Article" DisplayText="@(a => $"[{a.Id}]{a.Title}")" Context="item2">
                         <TableTh1>标题</TableTh1>
                         <TableTd1>@item2.Title</TableTd1>
                         <TableHeader>
                         </TableHeader>
                         <TableRow>
                         </TableRow>
-                    </InputTable2>
+                    </NovaInputTable>
                 </div>
             }
             else
             {
                 <div class="form-group col-12">
                     <label class="form-label">评论</label>
-                    <InputTable2 TItem="Comment" TKey="long" @bind-Value="item.SubjectId" @bind-Item="item.Comment" DisplayText="@(a => $"[{a.Id}]{a.Text}")" Context="item2">
+                    <NovaInputTable TItem="Comment" TKey="long" @bind-Value="item.SubjectId" @bind-Item="item.Comment" DisplayText="@(a => $"[{a.Id}]{a.Text}")" Context="item2">
                         <TableTh1>评论内容</TableTh1>
                         <TableTd1>@item2.Text</TableTd1>
                         <TableHeader>
                         </TableHeader>
                         <TableRow>
                         </TableRow>
-                    </InputTable2>
+                    </NovaInputTable>
                 </div>
             }
         </div>
     </EditTemplate> 
-</AdminTable2>
+</NovaAdminTable>
 
 @code {
 
     [Inject] IAggregateRootRepository<UserLike> repo { get; set; }
 
-    async Task InitQuery(AdminQueryInfo e)
+    async Task InitQuery(NovaAdminQueryInfo e)
     {
-        e.Filters = new AdminFilterInfo[]
+        e.Filters = new NovaAdminFilterInfo[]
         {
-            new AdminFilterInfo("点赞类型", "SubjectType", "点赞随笔,点赞评论", "1,2"),
+            new NovaAdminFilterInfo("点赞类型", "SubjectType", "点赞随笔,点赞评论", "1,2"),
         };
         await Task.Yield();
     }
-    void OnQuery(AdminQueryEventArgs<UserLike> e)
+    void OnQuery(NovaAdminQueryEventArgs<UserLike> e)
     {
         e.Select.Include(a => a.Article)
             .Include(a => a.Comment)

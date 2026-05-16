@@ -11,7 +11,7 @@ namespace J9_Admin.API;
 [Tags("轮播图系统")]
 public class BannerService : BaseService
 {
-    public BannerService(FreeSqlCloud freeSqlCloud, FreeScheduler.Scheduler scheduler, ILogger<BannerService> logger, AdminContext adminContext, IConfiguration configuration, IWebHostEnvironment webHostEnvironment)
+    public BannerService(FreeSqlCloud freeSqlCloud, FreeScheduler.Scheduler scheduler, ILogger<BannerService> logger, NovaAdminContext adminContext, IConfiguration configuration, IWebHostEnvironment webHostEnvironment)
         : base(freeSqlCloud, scheduler, logger, adminContext, configuration, webHostEnvironment)
     {
     }

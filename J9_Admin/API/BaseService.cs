@@ -17,7 +17,7 @@ public class BaseService : ControllerBase
     protected readonly FreeSqlCloud _freeSqlCloud;
     protected readonly Scheduler _scheduler;
     protected readonly ILogger<BaseService> _logger;
-    protected readonly AdminContext _adminContext;
+    protected readonly NovaAdminContext _adminContext;
     protected readonly IWebHostEnvironment _webHostEnvironment;
     protected readonly IFreeSql _fsql;
     protected readonly IConfiguration _configuration;
@@ -31,7 +31,7 @@ public class BaseService : ControllerBase
     /// <param name="logger">日志记录器</param>
     /// <param name="adminContext">管理员上下文</param>
     /// <param name="configuration">配置</param>
-    protected BaseService(FreeSqlCloud freeSqlCloud, Scheduler scheduler, ILogger<BaseService> logger, AdminContext adminContext, IConfiguration configuration, IWebHostEnvironment webHostEnvironment)
+    protected BaseService(FreeSqlCloud freeSqlCloud, Scheduler scheduler, ILogger<BaseService> logger, NovaAdminContext adminContext, IConfiguration configuration, IWebHostEnvironment webHostEnvironment)
     {
         _freeSqlCloud = freeSqlCloud;
         _scheduler = scheduler;

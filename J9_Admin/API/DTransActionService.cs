@@ -36,7 +36,7 @@ public class TransActionService : BaseService
     /// <param name="TGMessageApi">Telegram消息服务</param>
     /// <param name="pay0Api">TokenPay支付服务</param>
     /// <param name="payPOPOApi">青蛙系统四方支付服务</param>
-    public TransActionService(FreeSqlCloud freeSqlCloud, Scheduler scheduler, ILogger<TransActionService> logger, AdminContext adminContext, IConfiguration configuration, SessionAgent sessionAgent, TGMessageApi TGMessageApi, Pay0Api pay0Api, PayPOPOApi payPOPOApi, GameBetHistorySyncService gameBetHistorySyncService, IWebHostEnvironment webHostEnvironment)
+    public TransActionService(FreeSqlCloud freeSqlCloud, Scheduler scheduler, ILogger<TransActionService> logger, NovaAdminContext adminContext, IConfiguration configuration, SessionAgent sessionAgent, TGMessageApi TGMessageApi, Pay0Api pay0Api, PayPOPOApi payPOPOApi, GameBetHistorySyncService gameBetHistorySyncService, IWebHostEnvironment webHostEnvironment)
         : base(freeSqlCloud, scheduler, logger, adminContext, configuration, webHostEnvironment)
     {
         _pay0Api = pay0Api ?? throw new ArgumentNullException(nameof(pay0Api));

@@ -3,7 +3,7 @@
 
 <PageTitle>评论</PageTitle>
 
-<AdminTable2 TItem="Comment" Context="item" PageSize="50" Title="评论" DialogClassName="modal-xl"
+<NovaAdminTable TItem="Comment" Context="item" PageSize="50" Title="评论" DialogClassName="modal-xl"
     OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit">
 
     <TableHeader>
@@ -24,14 +24,14 @@
         <div class="row form-inline form-inline-end">
             <div class="form-group col-6">
                 <label class="form-label">关联随笔</label>
-                <InputTable2 TItem="Article" TKey="long" @bind-Value="item.ArticleId" @bind-Item="item.Article" DisplayText="@(a => $"[{a.Id}]{a.Title}")" Context="item2" PageSize="3">
+                <NovaInputTable TItem="Article" TKey="long" @bind-Value="item.ArticleId" @bind-Item="item.Article" DisplayText="@(a => $"[{a.Id}]{a.Title}")" Context="item2" PageSize="3">
                     <TableTh1>标题</TableTh1>
                     <TableTd1>@item2.Title</TableTd1>
                     <TableHeader>
                     </TableHeader>
                     <TableRow>
                     </TableRow>
-                </InputTable2>
+                </NovaInputTable>
             </div>
             <div class="form-group col-12">
                 <label class="form-label">内容</label>
@@ -47,20 +47,20 @@
             </div>
         </div>
     </EditTemplate> 
-</AdminTable2>
+</NovaAdminTable>
 
 @code {
 
     [Inject] IAggregateRootRepository<Comment> repo { get; set; }
 
-    async Task InitQuery(AdminQueryInfo e)
+    async Task InitQuery(NovaAdminQueryInfo e)
     {
-        e.Filters = new AdminFilterInfo[]
+        e.Filters = new NovaAdminFilterInfo[]
         {
         };
         await Task.Yield();
     }
-    void OnQuery(AdminQueryEventArgs<Comment> e)
+    void OnQuery(NovaAdminQueryEventArgs<Comment> e)
     {
         e.Select.Include(a => a.Article)
             .WhereIf(!e.SearchText.IsNull(), a => a.Text.Contains(e.SearchText));

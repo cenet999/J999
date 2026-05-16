@@ -34,7 +34,7 @@ public class GameService : BaseService
         FreeSqlCloud freeSqlCloud,
         Scheduler scheduler,
         ILogger<GameService> logger,
-        AdminContext adminContext,
+        NovaAdminContext adminContext,
         IConfiguration configuration,
         MSGameApi msGameApi,
         XHGameApi xhGameApi,

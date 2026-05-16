@@ -4,16 +4,16 @@
 
 <PageTitle>随笔文章</PageTitle>
 
-<AdminTable2 TItem="Article" Context="item" PageSize="50" Title="随笔文章" DialogClassName="modal-xxl"
+<NovaAdminTable TItem="Article" Context="item" PageSize="50" Title="随笔文章" DialogClassName="modal-xxl"
 OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit" OnSaving="OnSaving">
     <TableHeader>
         <th>随笔专栏</th>
-        <th><AdminSort Text="技术频道" Value="Channel.ChannelName" /></th>
-        <th><AdminSort Text="标题" Value="Title" /></th>
-        <th><AdminSort Text="浏览量" Value="ViewHits" /></th>
-        <th><AdminSort Text="评论数量" Value="CommentQuantity" /></th>
-        <th><AdminSort Text="点赞数量" Value="LikesQuantity" /></th>
-        <th><AdminSort Text="收藏数量" Value="CollectQuantity" /></th>
+        <th><NovaAdminSort Text="技术频道" Value="Channel.ChannelName" /></th>
+        <th><NovaAdminSort Text="标题" Value="Title" /></th>
+        <th><NovaAdminSort Text="浏览量" Value="ViewHits" /></th>
+        <th><NovaAdminSort Text="评论数量" Value="CommentQuantity" /></th>
+        <th><NovaAdminSort Text="点赞数量" Value="LikesQuantity" /></th>
+        <th><NovaAdminSort Text="收藏数量" Value="CollectQuantity" /></th>
         <th>随笔类型</th>
         <th>创建时间</th>
     </TableHeader>
@@ -46,11 +46,11 @@ OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit" OnSaving="OnSaving">
                             <div class="row form-inline form-inline-end">
                                 <div class="form-group col-6">
                                     <label class="form-label">随笔专栏</label>
-                                    <SelectEntity TItem="Classify" TKey="long?" @bind-Value="item.ClassifyId" DisplayText="e => e.ClassifyName" />
+                                    <NovaSelectEntity TItem="Classify" TKey="long?" @bind-Value="item.ClassifyId" DisplayText="e => e.ClassifyName" />
                                 </div>
                                 <div class="form-group col-6">
                                     <label class="form-label">技术频道</label>
-                                    <SelectEntity TItem="Channel" TKey="long" @bind-Value="item.ChannelId" DisplayText="e => e.ChannelName" />
+                                    <NovaSelectEntity TItem="Channel" TKey="long" @bind-Value="item.ChannelId" DisplayText="e => e.ChannelName" />
                                 </div>
                                 <div class="form-group col-8">
                                     <label class="form-label">标题</label>
@@ -58,7 +58,7 @@ OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit" OnSaving="OnSaving">
                                 </div>
                                 <div class="form-group col-4">
                                     <label class="form-label">随笔类型</label>
-                                    <SelectEnum TEnum="ArticleType" @bind-Value="item.ArticleType" />
+                                    <NovaSelectEnum TEnum="ArticleType" @bind-Value="item.ArticleType" />
                                 </div>
                                 <div class="form-group col-6">
                                     <label class="form-label">关键字</label>
@@ -128,9 +128,9 @@ OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit" OnSaving="OnSaving">
                                 </div>
                                 <div class="form-group col-12">
                                     <label class="form-label">标签</label>
-                                    <SelectTable2 TItem="Tag2" TKey="long" @bind-Items="item.Tags" IsSearchText="false" PageSize="-1">
+                                    <NovaSelectTable TItem="Tag2" TKey="long" @bind-Items="item.Tags" IsSearchText="false" PageSize="-1">
                                         @context.TagName
-                                    </SelectTable2>
+                                    </NovaSelectTable>
                                 </div>
                             </div>
                         }
@@ -139,9 +139,9 @@ OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit" OnSaving="OnSaving">
                         {
                             <div class="row">
                                 <div class="form-group col-12">
-                                    <SelectTable2 TItem="Collection" TKey="long" @bind-Items="item.Collections" IsSearchText="false" PageSize="-1">
+                                    <NovaSelectTable TItem="Collection" TKey="long" @bind-Items="item.Collections" IsSearchText="false" PageSize="-1">
                                         @context.Name
-                                    </SelectTable2>
+                                    </NovaSelectTable>
                                 </div>
                             </div>
                         }
@@ -150,42 +150,42 @@ OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit" OnSaving="OnSaving">
             </div>
         </div>
     </EditTemplate> 
-</AdminTable2>
+</NovaAdminTable>
 
 @code {
 
     [Inject] IAggregateRootRepository<Article> repo { get; set; }
     int tabindex;
 
-    AdminQueryInfo q;
-    async Task InitQuery(AdminQueryInfo e)
+    NovaAdminQueryInfo q;
+    async Task InitQuery(NovaAdminQueryInfo e)
     {
         q = e;
         var allClassifies = await repo.Orm.Select<Classify>().ToListAsync();
         var allChannels = await repo.Orm.Select<Channel>().ToListAsync();
         var allCollections = await repo.Orm.Select<Collection>().ToListAsync();
         var allTags = await repo.Orm.Select<Tag2>().ToListAsync();
-        e.Filters = new AdminFilterInfo[]
+        e.Filters = new NovaAdminFilterInfo[]
         {
-            new AdminFilterInfo("随笔专栏", "ClassifyId", false, 12,
+            new NovaAdminFilterInfo("随笔专栏", "ClassifyId", false, 12,
                 string.Join(",", allClassifies.Select(a => a.ClassifyName)), 
                 string.Join(",", allClassifies.Select(a => a.Id))),
-            new AdminFilterInfo("技术频道", "ChannelId", false, 6,
+            new NovaAdminFilterInfo("技术频道", "ChannelId", false, 6,
                 string.Join(",", allChannels.Select(a => a.ChannelName)), 
                 string.Join(",", allChannels.Select(a => a.Id))),
-            new AdminFilterInfo("随笔类型", "ArticleType", false, 6, "原创,转载,翻译", "0,1,2"),
-            new AdminFilterInfo("收藏集", "Collections", false, 6,
+            new NovaAdminFilterInfo("随笔类型", "ArticleType", false, 6, "原创,转载,翻译", "0,1,2"),
+            new NovaAdminFilterInfo("收藏集", "Collections", false, 6,
                 string.Join(",", allCollections.Select(a => a.Name)), 
                 string.Join(",", allCollections.Select(a => a.Id))),
-            new AdminFilterInfo("标签", "Tags", true, 6, 
+            new NovaAdminFilterInfo("标签", "Tags", true, 6, 
                 string.Join(",", allTags.Select(a => a.TagName)), 
                 string.Join(",", allTags.Select(a => a.Id))),
-            new AdminFilterInfo("销售日期", "SaleDate", AdminFilterType.DateRange, 6),
-            new AdminFilterInfo("标题", "Title", AdminFilterType.Text, 6),
+            new NovaAdminFilterInfo("销售日期", "SaleDate", NovaAdminFilterType.DateRange, 6),
+            new NovaAdminFilterInfo("标题", "Title", NovaAdminFilterType.Text, 6),
         };
         await Task.Yield();
     }
-    void OnQuery(AdminQueryEventArgs<Article> e)
+    void OnQuery(NovaAdminQueryEventArgs<Article> e)
     {
         e.Select.Include(a => a.Classify)
             .WhereIf(e.Filters[0].HasValue, a => e.Filters[0].Values<long?>().Contains(a.ClassifyId))
@@ -217,7 +217,7 @@ OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit" OnSaving="OnSaving">
         await Task.Yield();
     }
 
-    async Task OnSaving(AdminConfirmEventArgs<Article> e)
+    async Task OnSaving(NovaAdminConfirmEventArgs<Article> e)
     {
         //检查必须录入
         if (string.IsNullOrWhiteSpace(e.Argument.Content))

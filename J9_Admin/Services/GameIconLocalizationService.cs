@@ -9,13 +9,13 @@ public class GameIconLocalizationService
 {
     private static readonly string[] KnownImageExtensions = [".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".bmp", ".ico", ".avif"];
 
-    private readonly AdminContext _adminContext;
+    private readonly NovaAdminContext _adminContext;
     private readonly IConfiguration _configuration;
     private readonly IWebHostEnvironment _webHostEnvironment;
     private readonly ILogger<GameIconLocalizationService> _logger;
 
     public GameIconLocalizationService(
-        AdminContext adminContext,
+        NovaAdminContext adminContext,
         IConfiguration configuration,
         IWebHostEnvironment webHostEnvironment,
         ILogger<GameIconLocalizationService> logger)

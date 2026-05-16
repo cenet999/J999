@@ -3,7 +3,7 @@
 
 <PageTitle>收藏集</PageTitle>
 
-<AdminTable2 TItem="Collection" Context="item" PageSize="50" Title="收藏集"TableTd99Width="230"
+<NovaAdminTable TItem="Collection" Context="item" PageSize="50" Title="收藏集"TableTd99Width="230"
     OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit">
 
     <TableHeader>
@@ -39,34 +39,34 @@
             </div>
             <div class="form-group col-12">
                 <label class="form-label">类型</label>
-                <SelectEnum TEnum="PrivacyType" @bind-Value="item.PrivacyType" />
+                <NovaSelectEnum TEnum="PrivacyType" @bind-Value="item.PrivacyType" />
             </div>
         </div>
     </EditTemplate> 
-</AdminTable2>
+</NovaAdminTable>
 
-<AllocTable2 TItem="Collection" TChild="Article" @bind-Item="@allocItemArticles" ChildProperty="Articles" Title="@($"【分配随笔】{allocItemArticles?.Name}")">
+<NovaAllocTable TItem="Collection" TChild="Article" @bind-Item="@allocItemArticles" ChildProperty="Articles" Title="@($"【分配随笔】{allocItemArticles?.Name}")">
     <TableHeader>
         <th>随笔标题</th>
     </TableHeader>
     <TableRow>
         <td>@context.Title</td>
     </TableRow>
-</AllocTable2>
+</NovaAllocTable>
 
 @code {
 
     [Inject] IAggregateRootRepository<Collection> repo { get; set; }
 
-    async Task InitQuery(AdminQueryInfo e)
+    async Task InitQuery(NovaAdminQueryInfo e)
     {
-        e.Filters = new AdminFilterInfo[]
+        e.Filters = new NovaAdminFilterInfo[]
         {
-            new AdminFilterInfo("类型", "PrivacyType", "公开可见,仅自己可见", "0,1"),
+            new NovaAdminFilterInfo("类型", "PrivacyType", "公开可见,仅自己可见", "0,1"),
         };
         await Task.Yield();
     }
-    void OnQuery(AdminQueryEventArgs<Collection> e)
+    void OnQuery(NovaAdminQueryEventArgs<Collection> e)
     {
         e.Select.WhereIf(e.Filters[0].HasValue, a => a.PrivacyType == e.Filters[0].Value<PrivacyType>())
             .WhereIf(!e.SearchText.IsNull(), a => a.Name.Contains(e.SearchText));
@@ -78,6 +78,6 @@
     }
 
     Collection allocItemArticles;
-    [AdminButton("alloc_articles")]
+    [NovaButton("alloc_articles")]
     void BeginAllocArticles(Collection item) => allocItemArticles = item;
 }

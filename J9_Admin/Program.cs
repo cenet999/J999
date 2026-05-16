@@ -101,7 +101,7 @@ try
     var shouldAutoSyncStructure = !(dbType == DataType.PostgreSQL && builder.Environment.IsProduction());
     Log.Information("FreeSql AutoSyncStructure: {AutoSyncStructure}", shouldAutoSyncStructure);
 
-    builder.AddNovaAdmin(new NovaAdminOptions
+    builder.AddNovaAdmin(new NovaAdminOptionsItem
     {
         Assemblies = [typeof(Program).Assembly],
         FreeSqlBuilder = a => a
@@ -189,7 +189,7 @@ try
 
     app.UseBootstrapBlazor();
     app.MapRazorComponents<J9_Admin.Components.App>()
-        .AddAdditionalAssemblies(typeof(NovaAdminOptions).Assembly)
+        .AddAdditionalAssemblies(typeof(NovaAdminOptionsItem).Assembly)
         .AddInteractiveServerRenderMode();
 
     // 版本信息接口（必须在 UseAdminOmniApi 之前注册，否则会被框架覆盖）

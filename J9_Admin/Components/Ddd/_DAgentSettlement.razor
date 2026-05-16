@@ -174,7 +174,7 @@
     [Inject] IAggregateRootRepository<DAgentWeeklySettlement> repo { get; set; }
     [Inject] AgentWeeklySettlementService settlementService { get; set; }
     [Inject] SessionAgent sessionAgent { get; set; }
-    [Inject] AdminContext AdminContext { get; set; }
+    [Inject] NovaAdminContext NovaAdminContext { get; set; }
 
     List<SettlementViewRow> rows = [];
     List<AgentSummaryItem> agentSummaries = [];
@@ -397,7 +397,7 @@
         var agents = await repo.Orm.Select<DAgent>().ToListAsync();
         return VisibleAgentIdsHelper.Build(
             agents,
-            string.Equals(AdminContext.User?.Username, "admin", StringComparison.OrdinalIgnoreCase),
+            string.Equals(NovaAdminContext.User?.Username, "admin", StringComparison.OrdinalIgnoreCase),
             sessionAgent.GetAgentId());
     }
 

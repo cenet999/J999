@@ -5,9 +5,9 @@ namespace J9_Admin.Utils;
 public class SessionAgent
 {
     private readonly IAggregateRootRepository<DMember> repo;
-    private readonly AdminContext adminContext;
+    private readonly NovaAdminContext adminContext;
 
-    public SessionAgent(AdminContext adminContext, IAggregateRootRepository<DMember> repo)
+    public SessionAgent(NovaAdminContext adminContext, IAggregateRootRepository<DMember> repo)
     {
         this.adminContext = adminContext ?? throw new ArgumentNullException(nameof(adminContext));
         this.repo = repo ?? throw new ArgumentNullException(nameof(repo));

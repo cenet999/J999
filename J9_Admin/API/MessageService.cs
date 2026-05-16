@@ -26,7 +26,7 @@ public class MessageService : BaseService
 """;
 
     private readonly TGMessageApi _TGMessageApi;
-    public MessageService(FreeSqlCloud freeSqlCloud, Scheduler scheduler, ILogger<MessageService> logger, AdminContext adminContext, IConfiguration configuration, TGMessageApi TGMessageApi, IWebHostEnvironment webHostEnvironment)
+    public MessageService(FreeSqlCloud freeSqlCloud, Scheduler scheduler, ILogger<MessageService> logger, NovaAdminContext adminContext, IConfiguration configuration, TGMessageApi TGMessageApi, IWebHostEnvironment webHostEnvironment)
         : base(freeSqlCloud, scheduler, logger, adminContext, configuration, webHostEnvironment)
     {
         _TGMessageApi = TGMessageApi ?? throw new ArgumentNullException(nameof(TGMessageApi));

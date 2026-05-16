@@ -27,9 +27,9 @@ public class AgentWeeklySettlementService
 
     public const string RuleVersion = "weekly-agent-rebate-v2";
 
-    private readonly AdminContext _adminContext;
+    private readonly NovaAdminContext _adminContext;
 
-    public AgentWeeklySettlementService(AdminContext adminContext)
+    public AgentWeeklySettlementService(NovaAdminContext adminContext)
     {
         _adminContext = adminContext ?? throw new ArgumentNullException(nameof(adminContext));
     }

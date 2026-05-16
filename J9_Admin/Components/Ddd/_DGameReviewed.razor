@@ -5,7 +5,7 @@
 
 <PageTitle>已审游戏</PageTitle>
 
-<AdminTable2 @ref="adminTable" TItem="DGame" Context="item" PageSize="50" Title="已审游戏"
+<NovaAdminTable @ref="adminTable" TItem="DGame" Context="item" PageSize="50" Title="已审游戏"
     DialogClassName="modal-lg" OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit" TableTd99Width="150"
     OnSaving="OnSaving">
 
@@ -53,7 +53,7 @@
 
             <div class="form-group col-3">
                 <label class="form-label">游戏类型</label>
-                <SelectEnum TEnum="GameType" @bind-Value="item.GameType" />
+                <NovaSelectEnum TEnum="GameType" @bind-Value="item.GameType" />
             </div>
             <div class="form-group col-3">
                 <label class="form-label">游戏Code</label>
@@ -65,7 +65,7 @@
             </div>
             <div class="form-group col-3">
                 <label class="form-label">游戏平台</label>
-                <SelectEntity TItem="DGamePlatform" TKey="long" @bind-Value="item.DGamePlatformId"
+                <NovaSelectEntity TItem="DGamePlatform" TKey="long" @bind-Value="item.DGamePlatformId"
                     DisplayText="e => e.Name" />
             </div>
 
@@ -96,15 +96,15 @@
             </div>
         </div>
     </EditTemplate>
-</AdminTable2>
+</NovaAdminTable>
 
 @code {
     [Inject] IAggregateRootRepository<DGame> repo { get; set; }
 
-    private AdminTable2<DGame> adminTable = new();
+    private NovaAdminTable<DGame> adminTable = new();
     private DGame currentEditItem = new();
 
-    async Task InitQuery(AdminQueryInfo e)
+    async Task InitQuery(NovaAdminQueryInfo e)
     {
         var allDGamePlatforms = await repo.Orm.Select<DGamePlatform>().Where(a => a.IsEnabled).ToListAsync();
         var apiCodesRaw = await repo.Orm.Select<DGame>()
@@ -112,7 +112,7 @@
             .ToListAsync(a => a.ApiCode);
         var distinctApiCodes = apiCodesRaw.Distinct().OrderBy(x => x).ToList();
 
-        e.Filters = new AdminFilterInfo[]
+        e.Filters = new NovaAdminFilterInfo[]
         {
             new("游戏类型", "GameType", "真人,捕鱼,电子,彩票,体育,棋牌,电竞", "1,2,3,4,5,6,7"),
             new("游戏平台", "DGamePlatformId", false, 12,
@@ -125,7 +125,7 @@
         await Task.Yield();
     }
 
-    void OnQuery(AdminQueryEventArgs<DGame> e)
+    void OnQuery(NovaAdminQueryEventArgs<DGame> e)
     {
         e.Select
             .Include(a => a.DGamePlatform)
@@ -148,7 +148,7 @@
         await Task.Yield();
     }
 
-    async Task OnSaving(AdminConfirmEventArgs<DGame> e)
+    async Task OnSaving(NovaAdminConfirmEventArgs<DGame> e)
     {
         if (string.IsNullOrWhiteSpace(e.Argument.GameName))
         {

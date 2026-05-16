@@ -2,7 +2,7 @@
 
 <PageTitle>支付通道</PageTitle>
 
-<AdminTable2 TItem="DPayApi" Context="item" PageSize="50" Title="支付通道" DialogClassName="modal-lg"
+<NovaAdminTable TItem="DPayApi" Context="item" PageSize="50" Title="支付通道" DialogClassName="modal-lg"
     OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit">
 
     <TableHeader>
@@ -35,7 +35,7 @@
         <div class="row">
             <div class="form-group col-3">
                 <label class="form-label">IP标识</label>
-                <SelectEnum TEnum="ServerIP" @bind-Value="item.IP" />
+                <NovaSelectEnum TEnum="ServerIP" @bind-Value="item.IP" />
             </div>
             <div class="form-group col-3">
                 <label class="form-label">支付方式名称</label>
@@ -47,7 +47,7 @@
             </div>
             <div class="form-group col-3">
                 <label class="form-label">支付方式</label>
-                <SelectEnum TEnum="PayMethod" @bind-Value="item.PayMethod" />
+                <NovaSelectEnum TEnum="PayMethod" @bind-Value="item.PayMethod" />
             </div>
             <div class="form-group col-2">
                 <label class="form-label">用户输入</label>
@@ -79,24 +79,24 @@
             </div>
         </div>
     </EditTemplate> 
-</AdminTable2>
+</NovaAdminTable>
 
 
 @code {
 
     [Inject] IAggregateRootRepository<DPayApi> repo { get; set; }
 
-    async Task InitQuery(AdminQueryInfo e)
+    async Task InitQuery(NovaAdminQueryInfo e)
     {
-        e.Filters = new AdminFilterInfo[]
+        e.Filters = new NovaAdminFilterInfo[]
         {
-            new AdminFilterInfo("IP标识", "IP", "USDT,POPO", "0,1"),
-            new AdminFilterInfo("支付方式", "PayMethod", "Alipay,Wechat,BankCard,USDT,Other", "0,1,2,3,4"),
-            new AdminFilterInfo("是否启用", "IsEnabled", "0,1", "0,1"),
+            new NovaAdminFilterInfo("IP标识", "IP", "USDT,POPO", "0,1"),
+            new NovaAdminFilterInfo("支付方式", "PayMethod", "Alipay,Wechat,BankCard,USDT,Other", "0,1,2,3,4"),
+            new NovaAdminFilterInfo("是否启用", "IsEnabled", "0,1", "0,1"),
         };
         await Task.Yield();
     }
-    void OnQuery(AdminQueryEventArgs<DPayApi> e)
+    void OnQuery(NovaAdminQueryEventArgs<DPayApi> e)
     {
         e.Select.WhereIf(e.Filters[0].HasValue, a => a.IP == e.Filters[0].Value<ServerIP>())
             .WhereIf(e.Filters[1].HasValue, a => a.PayMethod == e.Filters[1].Value<PayMethod>())

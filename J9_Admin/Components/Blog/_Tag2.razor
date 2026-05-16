@@ -4,7 +4,7 @@
 
 <PageTitle>标签</PageTitle>
 
-<AdminTable2 TItem="Tag2" Context="item" PageSize="50" Title="标签" DialogClassName="modal-lg" IsNotifyChanged="true"
+<NovaAdminTable TItem="Tag2" Context="item" PageSize="50" Title="标签" DialogClassName="modal-lg" IsNotifyChanged="true"
 OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit">
 
     <TableHeader>
@@ -59,31 +59,31 @@ OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit">
             </div>
             <div class="form-group col-12">
                 <label class="form-label">技术频道</label>
-                <SelectTable2 TItem="Channel" TKey="long" @bind-Items="item.Channels" IsSearchText="false" PageSize="-1">
+                <NovaSelectTable TItem="Channel" TKey="long" @bind-Items="item.Channels" IsSearchText="false" PageSize="-1">
                     @context.ChannelName
-                </SelectTable2>
+                </NovaSelectTable>
             </div>
         </div>
     </EditTemplate> 
-</AdminTable2>
+</NovaAdminTable>
 
 @code {
 
     [Inject] IAggregateRootRepository<Tag2> repo { get; set; }
-    [Inject] AdminContext admin{ get; set; }
+    [Inject] NovaAdminContext admin{ get; set; }
 
-    async Task InitQuery(AdminQueryInfo e)
+    async Task InitQuery(NovaAdminQueryInfo e)
     {
         var allChannels = await repo.Orm.Select<Channel>().ToListAsync();
-        e.Filters = new AdminFilterInfo[]
+        e.Filters = new NovaAdminFilterInfo[]
         {
-            new AdminFilterInfo("技术频道", "Channels", true, 12, 
+            new NovaAdminFilterInfo("技术频道", "Channels", true, 12, 
                 string.Join(",", allChannels.Select(a => a.ChannelName)), 
                 string.Join(",", allChannels.Select(a => a.Id))),
         };
         await Task.Yield();
     }
-    void OnQuery(AdminQueryEventArgs<Tag2> e)
+    void OnQuery(NovaAdminQueryEventArgs<Tag2> e)
     {
         e.Select.WhereIf(e.Filters[0].HasValue, a => a.Channels.Any(b => e.Filters[0].Values<long>().Contains(b.Id)))
             .WhereIf(!e.SearchText.IsNull(), a => a.TagName.Contains(e.SearchText) || 

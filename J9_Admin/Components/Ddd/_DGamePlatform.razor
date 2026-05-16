@@ -2,7 +2,7 @@
 
 <PageTitle>游戏平台</PageTitle>
 
-<AdminTable2 TItem="DGamePlatform" Context="item" PageSize="50" Title="游戏平台"
+<NovaAdminTable TItem="DGamePlatform" Context="item" PageSize="50" Title="游戏平台"
     OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit" OnRemoving="OnRemoving">
 
     <TableHeader>
@@ -35,21 +35,21 @@
             </div>
         </div>
     </EditTemplate> 
-</AdminTable2>
+</NovaAdminTable>
 
 
 @code {
 
     [Inject] IAggregateRootRepository<DGamePlatform> repo { get; set; }
 
-    async Task InitQuery(AdminQueryInfo e)
+    async Task InitQuery(NovaAdminQueryInfo e)
     {
-        e.Filters = new AdminFilterInfo[]
+        e.Filters = new NovaAdminFilterInfo[]
         {
         };
         await Task.Yield();
     }
-    void OnQuery(AdminQueryEventArgs<DGamePlatform> e)
+    void OnQuery(NovaAdminQueryEventArgs<DGamePlatform> e)
     {
         e.Select.WhereIf(!e.SearchText.IsNull(), a => a.Name.Contains(e.SearchText) || 
                 a.CreatedUserName.Contains(e.SearchText) || 
@@ -62,7 +62,7 @@
         await Task.Yield();
     }
 
-    async Task OnRemoving(AdminConfirmEventArgs<List<DGamePlatform>> e)
+    async Task OnRemoving(NovaAdminConfirmEventArgs<List<DGamePlatform>> e)
     {
         var platformIds = e.Argument.Select(p => p.Id).ToList();
         var hasGames = await repo.Orm.Select<DGame>()

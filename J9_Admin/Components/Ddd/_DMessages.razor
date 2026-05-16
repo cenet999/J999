@@ -3,7 +3,7 @@
 
 <PageTitle>客服系统</PageTitle>
 
-<AdminTable2 @ref="adminTable" TItem="DMessage" Context="item" PageSize="50" Title="客服系统" DialogClassName="modal-lg"
+<NovaAdminTable @ref="adminTable" TItem="DMessage" Context="item" PageSize="50" Title="客服系统" DialogClassName="modal-lg"
     OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit" TableTd99Width="300" IsRefersh="true">
 
     <TableTd99>
@@ -33,7 +33,7 @@
         <div class="row">
             <div class="form-group col-6">
                 <label class="form-label">发送方角色</label>
-                <SelectEnum TEnum="MessageSenderRole" @bind-Value="item.SenderRole" />
+                <NovaSelectEnum TEnum="MessageSenderRole" @bind-Value="item.SenderRole" />
             </div>
             <div class="form-group col-12">
                 <label class="form-label">文本内容</label>
@@ -46,7 +46,7 @@
             </div>
             <div class="form-group col-6">
                 <label class="form-label">消息状态</label>
-                <SelectEnum TEnum="MessageStatus" @bind-Value="item.Status" />
+                <NovaSelectEnum TEnum="MessageStatus" @bind-Value="item.Status" />
             </div>
             <div class="form-group col-6">
                 <label class="form-label">发送方IP</label>
@@ -54,13 +54,13 @@
             </div>
             <div class="form-group col-6">
                 <label class="form-label">会员ID</label>
-                <SelectEntity TItem="DMember" TKey="long?" @bind-Value="item.DMemberId" DisplayText="e => e.Username" />
+                <NovaSelectEntity TItem="DMember" TKey="long?" @bind-Value="item.DMemberId" DisplayText="e => e.Username" />
             </div>
         </div>
     </EditTemplate>
-</AdminTable2>
+</NovaAdminTable>
 
-<AdminModal Visible="@showModal" Title="发送消息" YesButton="发送" CloseButton="取消" OnYes="@HandleSendMessage"
+<NovaModal Visible="@showModal" Title="发送消息" YesButton="发送" CloseButton="取消" OnYes="@HandleSendMessage"
     OnClose="@HandleCloseModal">
     <div class="p-3">
         <div class="mb-3">
@@ -76,15 +76,15 @@
             <textarea @bind="message" class="form-control" placeholder="请输入消息内容" maxlength="65535" rows="5"></textarea>
         </div>
     </div>
-</AdminModal>
+</NovaModal>
 
 @code {
 
     [Inject] IAggregateRootRepository<DMessage> repo { get; set; }
 
-    AdminTable2<DMessage> adminTable = new AdminTable2<DMessage>();
+    NovaAdminTable<DMessage> adminTable = new NovaAdminTable<DMessage>();
 
-    // AdminModal 相关变量
+    // NovaModal 相关变量
     bool showModal = false;
     DMessage item = new DMessage();
 
@@ -147,18 +147,18 @@
         message = ""; // 清空消息内容
     }
 
-    async Task InitQuery(AdminQueryInfo e)
+    async Task InitQuery(NovaAdminQueryInfo e)
     {
         var allDMembers = await repo.Orm.Select<DMember>().ToListAsync();
-        e.Filters = new AdminFilterInfo[]
+        e.Filters = new NovaAdminFilterInfo[]
         {
-new AdminFilterInfo("发送角色", "SenderRole", "Customer,Agent,System", "0,1,2"),
-new AdminFilterInfo("消息状态", "Status", "未读,已读,已回复,已撤回", "0,1,2,3"),
+new NovaAdminFilterInfo("发送角色", "SenderRole", "Customer,Agent,System", "0,1,2"),
+new NovaAdminFilterInfo("消息状态", "Status", "未读,已读,已回复,已撤回", "0,1,2,3"),
 
         };
         await Task.Yield();
     }
-    void OnQuery(AdminQueryEventArgs<DMessage> e)
+    void OnQuery(NovaAdminQueryEventArgs<DMessage> e)
     {
         e.Select.Include(a => a.DMember).WhereIf(e.Filters[0].HasValue, a => a.SenderRole ==
         e.Filters[0].Value<MessageSenderRole>())

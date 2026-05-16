@@ -5,7 +5,7 @@
 
 <PageTitle>玩家管理</PageTitle>
 
-<AdminTable2 TItem="DMember" Context="item" PageSize="50" Title="玩家管理" DialogClassName="modal-xl" OnQuery="OnQuery"
+<NovaAdminTable TItem="DMember" Context="item" PageSize="50" Title="玩家管理" DialogClassName="modal-xl" OnQuery="OnQuery"
     InitQuery="InitQuery" OnEdit="OnEdit">
 
     <TableHeader>
@@ -83,7 +83,7 @@
             </div>
             <div class="form-group col-4">
                 <label class="form-label">组织ID</label>
-                <SelectEntity TItem="SysOrg" TKey="long" @bind-Value="item.OrgId" DisplayText="e => e.Label" />
+                <NovaSelectEntity TItem="SysOrg" TKey="long" @bind-Value="item.OrgId" DisplayText="e => e.Label" />
             </div>
             <div class="form-group col-4">
                 <label class="form-label">描述</label>
@@ -157,22 +157,22 @@
             </div>
         </div>
     </EditTemplate>
-</AdminTable2>
+</NovaAdminTable>
 
 
 @code {
 
     [Inject] IAggregateRootRepository<DMember> repo { get; set; }
     [Inject] J9_Admin.Utils.SessionAgent sessionAgent { get; set; }
-    [Inject] AdminContext AdminContext { get; set; }
+    [Inject] NovaAdminContext NovaAdminContext { get; set; }
 
     HashSet<long> visibleAgentIds = [];
     bool showAllMembers;
     List<SelectedItem> memberAgentSelectItems = [];
 
-    async Task InitQuery(AdminQueryInfo e)
+    async Task InitQuery(NovaAdminQueryInfo e)
     {
-        showAllMembers = string.Equals(AdminContext.User?.Username, "admin", StringComparison.OrdinalIgnoreCase);
+        showAllMembers = string.Equals(NovaAdminContext.User?.Username, "admin", StringComparison.OrdinalIgnoreCase);
         var allAgents = await repo.Orm.Select<DAgent>().OrderByDescending(a => a.Id).ToListAsync();
         
         visibleAgentIds = VisibleAgentIdsHelper.Build(allAgents, showAllMembers, sessionAgent.GetAgentId());
@@ -182,7 +182,7 @@
             ? allAgents.Where(a => visibleAgentIds.Contains(a.Id)).ToList()
             : [];
 
-        // AdminFilterInfo 用英文逗号拼接选项，展示文案里不能含 ','，否则 texts/values 数量对不齐
+        // NovaAdminFilterInfo 用英文逗号拼接选项，展示文案里不能含 ','，否则 texts/values 数量对不齐
         static string NoComma(string? s) => (s ?? "").Replace(",", " ");
         string AgentLabel(DAgent a)
         {
@@ -194,15 +194,15 @@
         memberAgentSelectItems = new List<SelectedItem> { new SelectedItem("0", "（未指定代理）") };
         memberAgentSelectItems.AddRange(agents.Select(a => new SelectedItem(a.Id.ToString(), AgentLabel(a))));
 
-        e.Filters = new AdminFilterInfo[]
+        e.Filters = new NovaAdminFilterInfo[]
         {
-            new AdminFilterInfo("代理名", "DAgentId", false, 12,
+            new NovaAdminFilterInfo("代理名", "DAgentId", false, 12,
                 string.Join(",", agents.Select(AgentLabel)),
                 string.Join(",", agents.Select(a => a.Id))),
         };
         await Task.Yield();
     }
-    void OnQuery(AdminQueryEventArgs<DMember> e)
+    void OnQuery(NovaAdminQueryEventArgs<DMember> e)
     {
         e.Select.Include(a => a.DAgent)
         .WhereIf(!showAllMembers, a => visibleAgentIds.Contains(a.DAgentId))

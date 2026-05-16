@@ -20,7 +20,7 @@ namespace J9_Admin.API;
 public class LoginService : BaseService
 {
     private readonly TGMessageApi _TGMessageApi;
-    public LoginService(FreeSqlCloud freeSqlCloud, Scheduler scheduler, ILogger<LoginService> logger, AdminContext adminContext, IConfiguration configuration, TGMessageApi TGMessageApi, IWebHostEnvironment webHostEnvironment)
+    public LoginService(FreeSqlCloud freeSqlCloud, Scheduler scheduler, ILogger<LoginService> logger, NovaAdminContext adminContext, IConfiguration configuration, TGMessageApi TGMessageApi, IWebHostEnvironment webHostEnvironment)
         : base(freeSqlCloud, scheduler, logger, adminContext, configuration, webHostEnvironment)
     {
         _TGMessageApi = TGMessageApi ?? throw new ArgumentNullException(nameof(TGMessageApi));
@@ -1101,7 +1101,7 @@ IP：{TGMessageApi.EscapeHtml(ip)}
     [AllowAnonymous]
     public async Task<ApiResult> GetTenantInfo()
     {
-        var titles = await _fsql.Select<BootstrapBlazor.Components.SysTenant>()
+        var titles = await _fsql.Select<NovaAdmin.Blazor.Entities.SysTenant>()
             .Where(t => t.IsEnabled)
             .ToListAsync(t => new
             {

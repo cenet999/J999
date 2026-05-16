@@ -3,7 +3,7 @@
 @using BootstrapBlazor.Components
 @using Microsoft.AspNetCore.Hosting
 
-<AdminTable2 TItem="DBanner" Context="item" PageSize="50" Title="轮播图管理"
+<NovaAdminTable TItem="DBanner" Context="item" PageSize="50" Title="轮播图管理"
     OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit">
 
     <TableHeader>
@@ -72,7 +72,7 @@
             </div>
         </div>
     </EditTemplate> 
-</AdminTable2>
+</NovaAdminTable>
 
 @code {
     [Inject] IAggregateRootRepository<DBanner> repo { get; set; }
@@ -84,13 +84,13 @@
     private CancellationTokenSource? _token;
     private static long MaxFileLength => 10 * 1024 * 1024; // 10MB max
 
-    async Task InitQuery(AdminQueryInfo e)
+    async Task InitQuery(NovaAdminQueryInfo e)
     {
-        e.Filters = new AdminFilterInfo[] { };
+        e.Filters = new NovaAdminFilterInfo[] { };
         await Task.Yield();
     }
 
-    void OnQuery(AdminQueryEventArgs<DBanner> e)
+    void OnQuery(NovaAdminQueryEventArgs<DBanner> e)
     {
         e.Select.WhereIf(!e.SearchText.IsNull(), a => a.Title.Contains(e.SearchText));
         e.Select.OrderByDescending(a => a.Id);

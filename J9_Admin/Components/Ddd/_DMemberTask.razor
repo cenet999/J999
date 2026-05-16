@@ -1,7 +1,7 @@
 @page "/Ddd/DMemberTask"
 @using J9_Admin.Entities
 
-<AdminTable2 TItem="DMemberTask" Context="item" PageSize="50" Title="会员任务记录" DialogClassName="modal-lg"
+<NovaAdminTable TItem="DMemberTask" Context="item" PageSize="50" Title="会员任务记录" DialogClassName="modal-lg"
     OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit">
 
     <TableHeader>
@@ -57,20 +57,20 @@
             </div>
         </div>
     </EditTemplate> 
-</AdminTable2>
+</NovaAdminTable>
 
 @code {
     [Inject] IAggregateRootRepository<DMemberTask> repo { get; set; }
 
-    async Task InitQuery(AdminQueryInfo e)
+    async Task InitQuery(NovaAdminQueryInfo e)
     {
-        e.Filters = new AdminFilterInfo[]
+        e.Filters = new NovaAdminFilterInfo[]
         {
             
         };
         await Task.Yield();
     }
-    void OnQuery(AdminQueryEventArgs<DMemberTask> e)
+    void OnQuery(NovaAdminQueryEventArgs<DMemberTask> e)
     {
         e.Select.Include(x => x.DMember).Include(x => x.DTask).OrderByDescending(a => a.Id);
     }

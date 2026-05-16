@@ -5,7 +5,7 @@
 
 <PageTitle>交易流水</PageTitle>
 
-<AdminTable2 @ref="adminTable" TItem="DTransAction" Context="item" PageSize="50" Title="交易流水" DialogClassName="modal-lg"
+<NovaAdminTable @ref="adminTable" TItem="DTransAction" Context="item" PageSize="50" Title="交易流水" DialogClassName="modal-lg"
     OnQuery="OnQuery" InitQuery="InitQuery" TableTd99Width="150" IsRefersh="true" IsAdd="false" IsEdit="false">
 
     <TableTd99>
@@ -103,7 +103,7 @@
         <div class="row">
             <div class="form-group col-6">
                 <label class="form-label">交易类型</label>
-                <SelectEnum TEnum="TransactionType" @bind-Value="item.TransactionType" />
+                <NovaSelectEnum TEnum="TransactionType" @bind-Value="item.TransactionType" />
             </div>
             <div class="form-group col-6">
                 <label class="form-label">交易前金额</label>
@@ -140,7 +140,7 @@
 
             <div class="form-group col-6">
                 <label class="form-label">交易状态</label>
-                <SelectEnum TEnum="TransactionStatus" @bind-Value="item.Status" />
+                <NovaSelectEnum TEnum="TransactionStatus" @bind-Value="item.Status" />
             </div>
             <div class="form-group col-6">
                 <label class="form-label">交易描述</label>
@@ -152,35 +152,35 @@
             </div>
             <div class="form-group col-6">
                 <label class="form-label">会员ID</label>
-                <SelectEntity TItem="DMember" TKey="long" @bind-Value="item.DMemberId" DisplayText="e => e.Username" />
+                <NovaSelectEntity TItem="DMember" TKey="long" @bind-Value="item.DMemberId" DisplayText="e => e.Username" />
             </div>
             <div class="form-group col-6">
                 <label class="form-label">游戏信息ID</label>
-                <SelectEntity TItem="DGame" TKey="long" @bind-Value="item.DGameId" DisplayText="e => e.GameName" />
+                <NovaSelectEntity TItem="DGame" TKey="long" @bind-Value="item.DGameId" DisplayText="e => e.GameName" />
             </div>
             <div class="form-group col-6">
                 <label class="form-label">代理ID</label>
-                <SelectEntity TItem="DAgent" TKey="long" @bind-Value="item.DAgentId" DisplayText="e => e.AgentName" />
+                <NovaSelectEntity TItem="DAgent" TKey="long" @bind-Value="item.DAgentId" DisplayText="e => e.AgentName" />
             </div>
             <div class="form-group col-6">
                 <label class="form-label">关联交易Id</label>
-                <SelectEntity TItem="DTransAction" TKey="long?" @bind-Value="item.RelatedTransActionId"
+                <NovaSelectEntity TItem="DTransAction" TKey="long?" @bind-Value="item.RelatedTransActionId"
                     DisplayText="e => e.Id.ToString()" />
             </div>
         </div>
     </EditTemplate>
-</AdminTable2>
+</NovaAdminTable>
 
 
 @code {
 
     [Inject] IAggregateRootRepository<DTransAction> repo { get; set; }
-    [Inject] AdminContext AdminContext { get; set; }
+    [Inject] NovaAdminContext NovaAdminContext { get; set; }
     [Inject] ILogger<DTransAction> _logger { get; set; }
     [Inject] GameBetHistorySyncService GameBetHistorySyncService { get; set; }
     [Inject] J9_Admin.Utils.SessionAgent sessionAgent { get; set; }
 
-    AdminTable2<DTransAction> adminTable = new AdminTable2<DTransAction>();
+    NovaAdminTable<DTransAction> adminTable = new NovaAdminTable<DTransAction>();
 
     private string? syncBetUsername;
     private bool syncingBetHistory;
@@ -250,7 +250,7 @@
                 ? "后台标为成功"
                 : $"{row.Description} - 后台标为成功";
                 row.ModifiedTime = DateTime.Now;
-                row.ModifiedUserName = AdminContext.User?.Username ?? "系统";
+                row.ModifiedUserName = NovaAdminContext.User?.Username ?? "系统";
             }
 
             MarkOne(current);
@@ -338,7 +338,7 @@
                 ? "后台拒绝"
                 : $"{row.Description} - 后台拒绝";
                 row.ModifiedTime = DateTime.Now;
-                row.ModifiedUserName = AdminContext.User?.Username ?? "系统";
+                row.ModifiedUserName = NovaAdminContext.User?.Username ?? "系统";
             }
 
             foreach (var row in rows)
@@ -420,7 +420,7 @@
                 currentTransAction.Status = TransactionStatus.Success;
                 currentTransAction.Description = $"{currentTransAction.Description} - 手动回调成功";
                 currentTransAction.ModifiedTime = DateTime.Now;
-                currentTransAction.ModifiedUserName = AdminContext.User?.Username ?? "系统";
+                currentTransAction.ModifiedUserName = NovaAdminContext.User?.Username ?? "系统";
 
 
 
@@ -474,7 +474,7 @@
                         relatedTransaction.Status = TransactionStatus.Success;
                         relatedTransaction.Description = $"{relatedTransaction.Description} - 关联充值订单手动回调成功";
                         relatedTransaction.ModifiedTime = DateTime.Now;
-                        relatedTransaction.ModifiedUserName = AdminContext.User?.Username ?? "系统";
+                        relatedTransaction.ModifiedUserName = NovaAdminContext.User?.Username ?? "系统";
 
                         await rep_dTransAction.UpdateAsync(relatedTransaction);
 
@@ -515,9 +515,9 @@
 
 
 
-    async Task InitQuery(AdminQueryInfo e)
+    async Task InitQuery(NovaAdminQueryInfo e)
     {
-        showAllTransactions = string.Equals(AdminContext.User?.Username, "admin", StringComparison.OrdinalIgnoreCase);
+        showAllTransactions = string.Equals(NovaAdminContext.User?.Username, "admin", StringComparison.OrdinalIgnoreCase);
         var allDAgents = await repo.Orm.Select<DAgent>().OrderByDescending(a => a.Id).ToListAsync();
         visibleAgentIds = VisibleAgentIdsHelper.Build(allDAgents, showAllTransactions, sessionAgent.GetAgentId());
         agentMapForDisplay = allDAgents.ToDictionary(a => a.Id);
@@ -526,7 +526,7 @@
         : visibleAgentIds.Count > 0
         ? allDAgents.Where(a => visibleAgentIds.Contains(a.Id)).ToList()
         : [];
-        // AdminFilterInfo 用英文逗号拼接选项，展示文案里不能含 ','
+        // NovaAdminFilterInfo 用英文逗号拼接选项，展示文案里不能含 ','
         static string NoComma(string? s) => (s ?? "").Replace(",", " ");
         string AgentLabel(DAgent a)
         {
@@ -535,12 +535,12 @@
             return $"(未填写代理名) ({a.Id})";
         }
 
-        e.Filters = new AdminFilterInfo[]
+        e.Filters = new NovaAdminFilterInfo[]
         {
-new AdminFilterInfo("交易类型", "TransactionType", "上分,下分,投注,提现,充值,退款,返佣,活动,其他,代理上分,代理下分,反水,代理充值,登录,签到,注册",
+new NovaAdminFilterInfo("交易类型", "TransactionType", "上分,下分,投注,提现,充值,退款,返佣,活动,其他,代理上分,代理下分,反水,代理充值,登录,签到,注册",
 "0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15"),
-new AdminFilterInfo("交易状态", "Status", "成功,失败,处理中,待处理,已取消,已退款", "0,1,2,3,4,5"),
-new AdminFilterInfo("代理名", "DAgentId", false, 12,
+new NovaAdminFilterInfo("交易状态", "Status", "成功,失败,处理中,待处理,已取消,已退款", "0,1,2,3,4,5"),
+new NovaAdminFilterInfo("代理名", "DAgentId", false, 12,
 string.Join(",", agents.Select(AgentLabel)),
 string.Join(",", agents.Select(a => a.Id))),
         };
@@ -551,7 +551,7 @@ string.Join(",", agents.Select(a => a.Id))),
     /// 查询交易流水
     /// </summary>
     /// <param name="e">查询事件</param>
-    void OnQuery(AdminQueryEventArgs<DTransAction> e)
+    void OnQuery(NovaAdminQueryEventArgs<DTransAction> e)
     {
         var select = e.Select.Include(a => a.DMember).Include(a => a.DAgent);
 
@@ -599,7 +599,7 @@ string.Join(",", agents.Select(a => a.Id))),
         if (chain.Count == 0)
             return ("-", "-", "-");
 
-        var isAdmin = string.Equals(AdminContext.User?.Username, "admin", StringComparison.OrdinalIgnoreCase);
+        var isAdmin = string.Equals(NovaAdminContext.User?.Username, "admin", StringComparison.OrdinalIgnoreCase);
         var viewerId = sessionAgent.GetAgentId();
 
         List<DAgent> slice;

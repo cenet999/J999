@@ -41,7 +41,7 @@ public class EventService : BaseService
         return map;
     }
 
-    public EventService(FreeSqlCloud freeSqlCloud, FreeScheduler.Scheduler scheduler, ILogger<EventService> logger, AdminContext adminContext, IConfiguration configuration, IWebHostEnvironment webHostEnvironment)
+    public EventService(FreeSqlCloud freeSqlCloud, FreeScheduler.Scheduler scheduler, ILogger<EventService> logger, NovaAdminContext adminContext, IConfiguration configuration, IWebHostEnvironment webHostEnvironment)
         : base(freeSqlCloud, scheduler, logger, adminContext, configuration, webHostEnvironment)
     {
     }

@@ -3,7 +3,7 @@
 
 <PageTitle>技术频道</PageTitle>
 
-<AdminTable2 TItem="Channel" Context="item" PageSize="50" Title="技术频道"DialogClassName="modal-lg" TableTd99Width="300"
+<NovaAdminTable TItem="Channel" Context="item" PageSize="50" Title="技术频道"DialogClassName="modal-lg" TableTd99Width="300"
     OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit">
 
     <TableHeader>
@@ -55,24 +55,24 @@
             </div>
         </div>
     </EditTemplate> 
-</AdminTable2>
+</NovaAdminTable>
 
-<AllocTable2 TItem="Channel" TChild="Tag2" @bind-Item="@allocItemTags" ChildProperty="Tags" Title="@($"【分配标签】{allocItemTags?.ChannelName}")">
+<NovaAllocTable TItem="Channel" TChild="Tag2" @bind-Item="@allocItemTags" ChildProperty="Tags" Title="@($"【分配标签】{allocItemTags?.ChannelName}")">
     <TableTd1>@context.TagName</TableTd1>
-</AllocTable2>
+</NovaAllocTable>
 
 @code {
 
     [Inject] IAggregateRootRepository<Channel> repo { get; set; }
 
-    async Task InitQuery(AdminQueryInfo e)
+    async Task InitQuery(NovaAdminQueryInfo e)
     {
-        e.Filters = new AdminFilterInfo[]
+        e.Filters = new NovaAdminFilterInfo[]
         {
         };
         await Task.Yield();
     }
-    void OnQuery(AdminQueryEventArgs<Channel> e)
+    void OnQuery(NovaAdminQueryEventArgs<Channel> e)
     {
         e.Select.WhereIf(!e.SearchText.IsNull(), a => a.ChannelName.Contains(e.SearchText) || 
                 a.ChannelCode.Contains(e.SearchText));
@@ -84,7 +84,7 @@
     }
 
     Channel allocItemTags;
-    [AdminButton("alloc_tags")]
+    [NovaButton("alloc_tags")]
     async Task BeginAllocTags(Channel item) 
     {
         allocItemTags = item;

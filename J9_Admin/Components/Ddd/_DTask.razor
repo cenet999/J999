@@ -1,7 +1,7 @@
 @page "/Ddd/DTask"
 @using J9_Admin.Entities
 
-<AdminTable2 TItem="DTask" Context="item" PageSize="50" Title="每日任务管理" DialogClassName="modal-lg"
+<NovaAdminTable TItem="DTask" Context="item" PageSize="50" Title="每日任务管理" DialogClassName="modal-lg"
     OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit">
 
     <TableHeader>
@@ -70,20 +70,20 @@
             </div>
         </div>
     </EditTemplate> 
-</AdminTable2>
+</NovaAdminTable>
 
 @code {
     [Inject] IAggregateRootRepository<DTask> repo { get; set; }
 
-    async Task InitQuery(AdminQueryInfo e)
+    async Task InitQuery(NovaAdminQueryInfo e)
     {
-        e.Filters = new AdminFilterInfo[]
+        e.Filters = new NovaAdminFilterInfo[]
         {
             
         };
         await Task.Yield();
     }
-    void OnQuery(AdminQueryEventArgs<DTask> e)
+    void OnQuery(NovaAdminQueryEventArgs<DTask> e)
     {
         e.Select
             .WhereIf(!e.SearchText.IsNull(), a => a.Title.Contains(e.SearchText) || 

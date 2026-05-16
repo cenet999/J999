@@ -17,7 +17,7 @@ public class TestIP : BaseService
         FreeSqlCloud freeSqlCloud,
         Scheduler scheduler,
         ILogger<TestIP> logger,
-        AdminContext adminContext,
+        NovaAdminContext adminContext,
         IConfiguration configuration,
         IWebHostEnvironment webHostEnvironment)
         : base(freeSqlCloud, scheduler, logger, adminContext, configuration, webHostEnvironment)

@@ -2,7 +2,7 @@
 
 <PageTitle>平台公告</PageTitle>
 
-<AdminTable2 TItem="DNotice" Context="item" PageSize="50" Title="平台公告"
+<NovaAdminTable TItem="DNotice" Context="item" PageSize="50" Title="平台公告"
     OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit">
 
     <TableHeader>
@@ -45,20 +45,20 @@
             </div>
         </div>
     </EditTemplate> 
-</AdminTable2>
+</NovaAdminTable>
 
 @code {
     [Inject] IAggregateRootRepository<DNotice> repo { get; set; }
 
-    async Task InitQuery(AdminQueryInfo e)
+    async Task InitQuery(NovaAdminQueryInfo e)
     {
-        e.Filters = new AdminFilterInfo[]
+        e.Filters = new NovaAdminFilterInfo[]
         {
         };
         await Task.Yield();
     }
 
-    void OnQuery(AdminQueryEventArgs<DNotice> e)
+    void OnQuery(NovaAdminQueryEventArgs<DNotice> e)
     {
         e.Select.WhereIf(!e.SearchText.IsNull(), a => a.Title.Contains(e.SearchText) || 
                 a.Content.Contains(e.SearchText));

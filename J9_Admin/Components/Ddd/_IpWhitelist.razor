@@ -2,7 +2,7 @@
 
 <PageTitle>IpWhitelist</PageTitle>
 
-<AdminTable2 TItem="IpWhitelist" Context="item" PageSize="50" Title="IpWhitelist"
+<NovaAdminTable TItem="IpWhitelist" Context="item" PageSize="50" Title="IpWhitelist"
     OnQuery="OnQuery" InitQuery="InitQuery" OnEdit="OnEdit">
 
     <TableHeader>
@@ -43,7 +43,7 @@
             </div>
         </div>
     </EditTemplate> 
-</AdminTable2>
+</NovaAdminTable>
 
 
 @code {
@@ -51,14 +51,14 @@
     [Inject] IHttpContextAccessor HttpContextAccessor { get; set; }
     [Inject] IAggregateRootRepository<IpWhitelist> repo { get; set; }
 
-    async Task InitQuery(AdminQueryInfo e)
+    async Task InitQuery(NovaAdminQueryInfo e)
     {
-        e.Filters = new AdminFilterInfo[]
+        e.Filters = new NovaAdminFilterInfo[]
         {
         };
         await Task.Yield();
     }
-    void OnQuery(AdminQueryEventArgs<IpWhitelist> e)
+    void OnQuery(NovaAdminQueryEventArgs<IpWhitelist> e)
     {
         e.Select.WhereIf(!e.SearchText.IsNull(), a => a.IpAddress.Contains(e.SearchText) || 
                 a.Description.Contains(e.SearchText) || 
