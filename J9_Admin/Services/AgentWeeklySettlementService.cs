@@ -12,7 +12,20 @@ public class AgentWeeklySettlementService
     public const decimal SourceAgentRate = 0.008m;
     public const decimal ParentAgentRate = 0.005m;
     public const decimal GrandAgentRate = 0.002m;
-    public const string RuleVersion = "weekly-agent-rebate-v1";
+
+    // 不同游戏类型使用不同系数，最终返利比例 = 基础比例 × 游戏系数。
+    private static readonly IReadOnlyDictionary<GameType, decimal> GameTypeRateMultipliers = new Dictionary<GameType, decimal>
+    {
+        [GameType.Live] = 0.2m,
+        [GameType.Sports] = 0.2m,
+        [GameType.Electronic] = 1m,
+        [GameType.Fishing] = 1m,
+        [GameType.Lottery] = 1m,
+        [GameType.Card] = 1m,
+        [GameType.Other] = 1m,
+    };
+
+    public const string RuleVersion = "weekly-agent-rebate-v2";
 
     private readonly AdminContext _adminContext;
 
@@ -39,6 +52,7 @@ public class AgentWeeklySettlementService
 
         var transactionQuery = orm.Select<DTransAction>()
             .Include(t => t.DMember)
+            .Include(t => t.DGame)
             .Where(t => t.Status == TransactionStatus.Success)
             .Where(t => t.TransactionType == TransactionType.Bet)
             .Where(t => t.TransactionTime >= fromUnix && t.TransactionTime < toUnix);
@@ -120,9 +134,13 @@ public class AgentWeeklySettlementService
         var grandAgent = parentAgent?.ParentId > 0 && agentMap.TryGetValue(parentAgent.ParentId, out var g) ? g : null;
         var turnover = groupRows.Sum(t => t.BetAmount);
         var validBet = groupRows.Sum(t => t.ValidBetAmount);
-        var sourceRebate = RoundMoney(turnover * SourceAgentRate);
-        var parentRebate = parentAgent == null ? 0 : RoundMoney(turnover * ParentAgentRate);
-        var grandRebate = grandAgent == null ? 0 : RoundMoney(turnover * GrandAgentRate);
+        var sourceRebate = RoundMoney(groupRows.Sum(t => t.BetAmount * SourceAgentRate * GetGameTypeMultiplier(t.DGame?.GameType)));
+        var parentRebate = parentAgent == null
+            ? 0
+            : RoundMoney(groupRows.Sum(t => t.BetAmount * ParentAgentRate * GetGameTypeMultiplier(t.DGame?.GameType)));
+        var grandRebate = grandAgent == null
+            ? 0
+            : RoundMoney(groupRows.Sum(t => t.BetAmount * GrandAgentRate * GetGameTypeMultiplier(t.DGame?.GameType)));
 
         return new DAgentWeeklySettlement
         {
@@ -156,6 +174,14 @@ public class AgentWeeklySettlementService
 
     private static decimal RoundMoney(decimal value) =>
         Math.Round(value, 2, MidpointRounding.AwayFromZero);
+
+    private static decimal GetGameTypeMultiplier(GameType? gameType)
+    {
+        if (gameType == null)
+            return 1m;
+
+        return GameTypeRateMultipliers.TryGetValue(gameType.Value, out var multiplier) ? multiplier : 1m;
+    }
 
     private static string GetAgentName(DAgent agent) =>
         string.IsNullOrWhiteSpace(agent.AgentName) ? $"ID:{agent.Id}" : agent.AgentName;
