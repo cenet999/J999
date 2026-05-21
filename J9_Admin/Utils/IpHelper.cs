@@ -183,6 +183,56 @@ namespace J9_Admin.Utils
         }
 
         /// <summary>
+        /// 获取用于 IP 白名单校验的客户端地址。
+        /// 经 Cloudflare 代理时优先使用 CF-Connecting-IP，避免 NPM 的 X-Real-IP 写成 CF 边缘节点导致误判。
+        /// </summary>
+        public static string GetWhitelistClientIpAddress(HttpContext httpContext, ILogger? logger = null)
+        {
+            if (httpContext == null)
+            {
+                logger?.LogWarning("HttpContext为null，无法获取白名单校验IP");
+                return "unknown";
+            }
+
+            var remoteIp = httpContext.Connection.RemoteIpAddress;
+            if (!IsTrustedProxy(remoteIp))
+            {
+                return GetClientIpAddress(httpContext, logger);
+            }
+
+            var cfConnectingIp = NormalizeIpAddress(httpContext.Request.Headers["CF-Connecting-IP"].FirstOrDefault());
+            if (!string.IsNullOrEmpty(cfConnectingIp))
+            {
+                logger?.LogInformation("IP白名单：使用 CF-Connecting-IP: {IpAddress}", cfConnectingIp);
+                return cfConnectingIp;
+            }
+
+            var forwardedFor = httpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+            var clientIpFromXff = GetForwardedIpFirst(forwardedFor);
+            if (!string.IsNullOrEmpty(clientIpFromXff))
+            {
+                logger?.LogInformation("IP白名单：使用 X-Forwarded-For 首段: {IpAddress}", clientIpFromXff);
+                return clientIpFromXff;
+            }
+
+            return GetClientIpAddress(httpContext, logger);
+        }
+
+        /// <summary>
+        /// 从 X-Forwarded-For 取最左侧（原始客户端）IP，适用于 CF 写入的「客户端, 边缘节点」格式。
+        /// </summary>
+        private static string GetForwardedIpFirst(string? forwardedFor)
+        {
+            if (string.IsNullOrWhiteSpace(forwardedFor))
+            {
+                return string.Empty;
+            }
+
+            var parts = forwardedFor.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            return parts.Length == 0 ? string.Empty : NormalizeIpAddress(parts[0]);
+        }
+
+        /// <summary>
         /// 获取客户端IP地址（简化版本，不需要日志）
         /// </summary>
         /// <param name="httpContext">HTTP上下文对象</param>
@@ -190,6 +240,14 @@ namespace J9_Admin.Utils
         public static string GetClientIpAddress(HttpContext httpContext)
         {
             return GetClientIpAddress(httpContext, null);
+        }
+
+        /// <summary>
+        /// 获取用于 IP 白名单校验的客户端地址（简化版本，不需要日志）
+        /// </summary>
+        public static string GetWhitelistClientIpAddress(HttpContext httpContext)
+        {
+            return GetWhitelistClientIpAddress(httpContext, null);
         }
 
         /// <summary>

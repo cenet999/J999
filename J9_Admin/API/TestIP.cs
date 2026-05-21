@@ -33,11 +33,13 @@ public class TestIP : BaseService
     {
         var remoteIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
         var resolvedIp = IpHelper.GetClientIpAddress(HttpContext, _logger);
+        var whitelistIp = IpHelper.GetWhitelistClientIpAddress(HttpContext, _logger);
 
         return new
         {
             message = "用于查看当前请求实际拿到的 IP 信息",
             resolvedIp,
+            whitelistIp,
             remoteIp,
             headers = new
             {

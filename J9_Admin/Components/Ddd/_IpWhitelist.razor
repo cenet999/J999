@@ -74,7 +74,7 @@
             var httpContext = HttpContextAccessor.HttpContext;
             if (httpContext != null)
             {
-                var clientIp = J9_Admin.Utils.IpHelper.GetClientIpAddress(httpContext);
+                var clientIp = J9_Admin.Utils.IpHelper.GetWhitelistClientIpAddress(httpContext);
                 if (!string.IsNullOrWhiteSpace(clientIp) && !string.Equals(clientIp, "unknown", StringComparison.OrdinalIgnoreCase))
                 {
                     item.IpAddress = clientIp;

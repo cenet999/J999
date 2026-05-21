@@ -35,7 +35,7 @@ public class IpWhitelistMiddleware
             return;
         }
 
-        var clientIp = NormalizeIp(IpHelper.GetClientIpAddress(context, _logger));
+        var clientIp = NormalizeIp(IpHelper.GetWhitelistClientIpAddress(context, _logger));
 
         if (string.IsNullOrWhiteSpace(clientIp) || clientIp == "unknown")
         {

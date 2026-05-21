@@ -1,5 +1,5 @@
 using System.ComponentModel.DataAnnotations;
-using NovaAdmin.Blazor.Infrastructure.Encrypt;
+using NoAdmin.Blazor.Infrastructure.Encrypt;
 using BootstrapBlazor.Components;
 using FreeScheduler;
 using Microsoft.AspNetCore.Authorization;
@@ -1101,7 +1101,7 @@ IP：{TGMessageApi.EscapeHtml(ip)}
     [AllowAnonymous]
     public async Task<ApiResult> GetTenantInfo()
     {
-        var titles = await _fsql.Select<NovaAdmin.Blazor.Entities.SysTenant>()
+        var titles = await _fsql.Select<NoAdmin.Blazor.Entities.SysTenant>()
             .Where(t => t.IsEnabled)
             .ToListAsync(t => new
             {

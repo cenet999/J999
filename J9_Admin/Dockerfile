@@ -1,25 +1,23 @@
-
 # 第一阶段：构建阶段
+# 构建上下文为仓库根目录（含 J999 与 NoAdmin），见 docker-compose.yaml
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# 复制项目文件
-COPY ["J9_Admin.csproj", "./"]
+# 先复制项目文件，充分利用 Docker 缓存
+COPY ["J999/J9_Admin/J9_Admin.csproj", "J999/J9_Admin/"]
+COPY ["NoAdmin/NoAdmin.Blazor/NoAdmin.Blazor.csproj", "NoAdmin/NoAdmin.Blazor/"]
 
-# 还原包
-# RUN dotnet nuget remove source nuget.org
-# RUN dotnet nuget add source https://mirrors.huaweicloud.com/repository/nuget/v3/index.json -n tencent_nuget
-# RUN dotnet nuget list source
-RUN dotnet restore --verbosity detailed
+# 还原包（含 ProjectReference）
+RUN dotnet restore "J999/J9_Admin/J9_Admin.csproj"
 
-# 复制所有源代码
-COPY . .
-# 构建项目
-RUN dotnet build "J9_Admin.csproj" -c Release -o /app/build
+# 复制源代码
+COPY J999/J9_Admin/ J999/J9_Admin/
+COPY NoAdmin/NoAdmin.Blazor/ NoAdmin/NoAdmin.Blazor/
 
-# 发布项目
-FROM build AS publish
-RUN dotnet publish "J9_Admin.csproj" -c Release -o /app/publish
+WORKDIR /src/J999/J9_Admin
+
+# 发布（内含 build，会正确编译 NoAdmin.Blazor 等 ProjectReference）
+RUN dotnet publish "J9_Admin.csproj" -c Release -o /app/publish --no-restore
 
 # 第二阶段：运行阶段
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
@@ -35,7 +33,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # 从发布阶段复制文件
-COPY --from=publish /app/publish .
+COPY --from=build /app/publish .
 
 # 创建必要的目录并设置权限
 RUN set -eux; \

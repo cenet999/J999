@@ -96,7 +96,7 @@ try
     Log.Information("数据库配置节点: {DbProvider}", string.IsNullOrWhiteSpace(activeDbProvider) ? "ConnectionStrings(Default)" : activeDbProvider);
     Log.Information("数据库类型: {DbType}", dbType);
 
-    // 生产环境 PostgreSQL 不自动改表：NovaAdmin.Blazor 内置 SysUserLoginLog.Ip 仍是 VARCHAR(50)，
+    // 生产环境 PostgreSQL 不自动改表：NoAdmin.Blazor 内置 SysUserLoginLog.Ip 仍是 VARCHAR(50)，
     // AutoSyncStructure 会尝试把已放宽的字段收窄，遇到历史长 IP 数据会导致启动失败。
     var shouldAutoSyncStructure = !(dbType == DataType.PostgreSQL && builder.Environment.IsProduction());
     Log.Information("FreeSql AutoSyncStructure: {AutoSyncStructure}", shouldAutoSyncStructure);
@@ -174,7 +174,8 @@ try
     // 使用正确的CORS策略名称
     app.UseCors("CorsPolicy");
 
-    // 配置静态文件服务
+    // 静态文件（与 NovaAdmin 一致：先 DefaultFiles 再 StaticFiles，才能正确提供 wwwroot 与 scoped CSS）
+    app.UseDefaultFiles();
     app.UseStaticFiles();
 
     // IP白名单只限制后台页面访问，不能拦截 App/Web 的公开接口。

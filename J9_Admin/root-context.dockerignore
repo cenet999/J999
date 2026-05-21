@@ -1,0 +1,18 @@
+# Docker 构建上下文为 /root（J9_Admin 的上两级），仅打包 J9_Admin 与 NoAdmin.Blazor
+*
+
+!J999/
+!J999/J9_Admin/
+!NoAdmin/
+!NoAdmin/NoAdmin.Blazor/
+
+**/bin/
+**/obj/
+**/.git/
+**/node_modules/
+**/.vs/
+**/.idea/
+**/*.user
+**/*.suo
+**/*.db
+**/*.db-*

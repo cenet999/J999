@@ -2,8 +2,9 @@ services:
   buyu-game-backend:
     # 使用本地构建的镜像
     build:
-      context: .
-      dockerfile: Dockerfile
+      # 需包含 ProjectReference：../../NoAdmin/NoAdmin.Blazor
+      context: ../..
+      dockerfile: J999/J9_Admin/Dockerfile
     # 容器名称
     container_name: j9-admin-backend
     # 端口映射

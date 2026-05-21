@@ -1,5 +1,5 @@
 using System.Globalization;
-using NovaAdmin.Blazor.Services;
+using NoAdmin.Blazor.Services;
 using J9_Admin.Utils;
 
 namespace J9_Admin.Services;
