@@ -33,20 +33,22 @@ public class TestIP : BaseService
     {
         var remoteIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
         var resolvedIp = IpHelper.GetClientIpAddress(HttpContext, _logger);
-        var whitelistIp = IpHelper.GetWhitelistClientIpAddress(HttpContext, _logger);
+        var xForwardedFor = HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
 
         return new
         {
-            message = "用于查看当前请求实际拿到的 IP 信息",
+            message = "用于查看当前请求实际拿到的 IP 信息；白名单校验优先级：X-Real-IP → CF-Connecting-IP → RemoteIpAddress",
             resolvedIp,
-            whitelistIp,
             remoteIp,
             headers = new
             {
-                xForwardedFor = HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault(),
-                xRealIp = HttpContext.Request.Headers["X-Real-IP"].FirstOrDefault(),
-                cfConnectingIp = HttpContext.Request.Headers["CF-Connecting-IP"].FirstOrDefault(),
-                xOriginalForwardedFor = HttpContext.Request.Headers["X-Original-Forwarded-For"].FirstOrDefault()
+                xForwardedFor,
+                referenceOnly = new
+                {
+                    xRealIp = HttpContext.Request.Headers["X-Real-IP"].FirstOrDefault(),
+                    cfConnectingIp = HttpContext.Request.Headers["CF-Connecting-IP"].FirstOrDefault(),
+                    xOriginalForwardedFor = HttpContext.Request.Headers["X-Original-Forwarded-For"].FirstOrDefault()
+                }
             },
             request = new
             {

@@ -6,6 +6,7 @@ using J9_Admin.Entities;
 using J9_Admin.Utils;
 using Microsoft.AspNetCore.Http;
 
+
 namespace J9_Admin.Middlewares;
 
 /// <summary>
@@ -35,7 +36,7 @@ public class IpWhitelistMiddleware
             return;
         }
 
-        var clientIp = NormalizeIp(IpHelper.GetWhitelistClientIpAddress(context, _logger));
+        var clientIp = IpHelper.NormalizeIp(IpHelper.GetClientIpAddress(context, _logger));
 
         if (string.IsNullOrWhiteSpace(clientIp) || clientIp == "unknown")
         {
@@ -58,10 +59,10 @@ public class IpWhitelistMiddleware
             return;
         }
 
-        var matchedEntry = enabledEntries.FirstOrDefault(x => NormalizeIp(x.IpAddress) == clientIp);
+        var matchedEntry = enabledEntries.FirstOrDefault(x => IpHelper.NormalizeIp(x.IpAddress) == clientIp);
         if (matchedEntry == null)
         {
-            var clientIpv4 = ToIpv4Display(clientIp);
+            var clientIpv4 = IpHelper.ToIpv4Display(clientIp);
             _logger.LogWarning("IP白名单拦截：IP={ClientIp}，路径={Path}", clientIp, context.Request.Path);
             await RejectAsync(context, clientIpv4);
             return;
@@ -90,42 +91,7 @@ public class IpWhitelistMiddleware
             || path.StartsWithSegments("/profile", StringComparison.OrdinalIgnoreCase);
     }
 
-    private static string NormalizeIp(string? ip)
-    {
-        if (string.IsNullOrWhiteSpace(ip))
-        {
-            return string.Empty;
-        }
 
-        var trimmed = ip.Trim();
-        if (!IPAddress.TryParse(trimmed, out var parsedIp))
-        {
-            return trimmed;
-        }
-
-        if (parsedIp.IsIPv4MappedToIPv6)
-        {
-            parsedIp = parsedIp.MapToIPv4();
-        }
-
-        return parsedIp.ToString();
-    }
-
-    private static string ToIpv4Display(string? ip)
-    {
-        if (string.IsNullOrWhiteSpace(ip))
-        {
-            return "unknown";
-        }
-
-        var normalizedIp = NormalizeIp(ip);
-        if (normalizedIp == "::1")
-        {
-            return "127.0.0.1";
-        }
-
-        return normalizedIp;
-    }
 
     private static async Task RejectAsync(HttpContext context, string clientIpv4)
     {
