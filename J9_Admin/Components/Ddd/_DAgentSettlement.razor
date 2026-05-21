@@ -21,7 +21,7 @@
             <div class="row g-2 align-items-end mb-3">
                 <div class="col-2">
                     <label class="form-label">周</label>
-                    <select class="form-select form-control-sm" value="@queryWeek" @onchange="OnQueryWeekChanged" disabled="@working">
+                    <select class="form-select" style="height: 35px;" value="@queryWeek" @onchange="OnQueryWeekChanged" disabled="@working">
                         @foreach (var option in weekOptions)
                         {
                             <option value="@option.Value">@option.Text</option>
@@ -103,7 +103,7 @@
                                             <div class="fs-6 fw-bold text-success">@item.Amount.ToString("0.##")</div>
                                             <div class="small text-muted mb-2">涉及 @item.InvolvedCount 条，已付款 @item.PaidCount 条</div>
                                             <div class="d-flex gap-2">
-                                                <select class="form-select form-select-sm" value="@(item.SelectedStatus.HasValue ? ((int)item.SelectedStatus.Value).ToString() : "")" @onchange="e => OnAgentSummaryStatusChanged(item, e)" disabled="@working">
+                                                <select class="form-select" style="height: 35px;" value="@(item.SelectedStatus.HasValue ? ((int)item.SelectedStatus.Value).ToString() : "")" @onchange="e => OnAgentSummaryStatusChanged(item, e)" disabled="@working">
                                                     <option value="">选择状态</option>
                                                     @foreach (var status in statusOptions)
                                                     {
