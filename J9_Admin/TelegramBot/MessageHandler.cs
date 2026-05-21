@@ -200,9 +200,9 @@ namespace J9_Admin.TelegramBot
                         return true;
                     }
 
-                    agent.IPWhiteList = messageText.Split(' ')[1];
+                    agent.LoginIp = messageText.Split(' ')[1];
                     await _fsql.Update<DAgent>().SetSource(agent).ExecuteAffrowsAsync();
-                    await DeviceHelper.SendTempMessageAsync(device, $"成功设置IP白名单 ({agent.IPWhiteList}) 为 {agent.HomeUrl}");
+                    await DeviceHelper.SendTempMessageAsync(device, $"成功设置登录IP ({agent.LoginIp}) 为 {agent.HomeUrl}");
                     return true;
 
                 }
@@ -230,7 +230,7 @@ namespace J9_Admin.TelegramBot
                         msg += $"• USDT Address: <code>{_configuration["Payment:UsdtAddress"]}</code>\n";
                         msg += $"• Agent Domain: {agent.HomeUrl}\n";
                         msg += $"• Server IP: {agent.ServerIP}\n";
-                        msg += $"• IP Whitelist: {agent.IPWhiteList}\n";
+                        msg += $"• Login IP: {agent.LoginIp}\n";
                         msg += $"• Rebate Rate: {agent.RebateRate}\n";
                         msg += $"• Remark: {agent.Remark}\n";
                         msg += $"--------------------------------\n";

@@ -1055,7 +1055,7 @@ IP：{TGMessageApi.EscapeHtml(ip)}
                 TelegramChatId = "", // Telegram聊天ID，可后续配置
                 ServerIP = "", // 服务器IP，可后续配置
                 LogoUrl = "", // Logo URL，可后续配置
-                IPWhiteList = "", // IP白名单，默认为空
+                LoginIp = "", // 登录IP，默认为空
                 RebateRate = 0.0080m, // 默认反水比例 0.8%
                 Remark = "系统初始化默认代理", // 备注
                 CreatedTime = DateTime.Now, // 创建时间

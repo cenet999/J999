@@ -27,7 +27,7 @@
         <td>@item.TelegramChatId</td>
         <td>@item.HomeUrl</td>
         <td>@item.ServerIP</td>
-        <td>@item.IPWhiteList</td>
+        <td>@item.LoginIp</td>
         <td>@item.RebateRate</td>
         <td>@item.Remark</td>
         <td>@item.CreatedTime?.ToString("yyyy-MM-dd HH:mm:ss")</td>
@@ -68,7 +68,7 @@
             </div>
             <div class="form-group col-6">
                 <label class="form-label">登录IP</label>
-                <input @bind="item.IPWhiteList" type="text" class="form-control" placeholder="" maxlength="200">
+                <input @bind="item.LoginIp" type="text" class="form-control" placeholder="" maxlength="200">
             </div>
             <div class="form-group col-6">
                 <label class="form-label">会员反水比例</label>
@@ -295,7 +295,7 @@
                 a.HomeUrl.Contains(e.SearchText) || 
                 a.ServerIP.Contains(e.SearchText) || 
                 a.LogoUrl.Contains(e.SearchText) || 
-                a.IPWhiteList.Contains(e.SearchText) || 
+                a.LoginIp.Contains(e.SearchText) || 
                 a.Remark.Contains(e.SearchText) || 
                 a.CreatedUserName.Contains(e.SearchText) || 
                 a.ModifiedUserName.Contains(e.SearchText))

@@ -178,14 +178,6 @@ try
     app.UseDefaultFiles();
     app.UseStaticFiles();
 
-    // IP白名单只限制后台页面访问，不能拦截 App/Web 的公开接口。
-    if (environment == "Production")
-    {
-        app.UseWhen(
-            context => ShouldApplyIpWhitelist(context.Request.Path),
-            branch => branch.UseMiddleware<J9_Admin.Middlewares.IpWhitelistMiddleware>());
-    }
-
     app.UseAntiforgery();
 
     app.UseBootstrapBlazor();
@@ -255,50 +247,6 @@ static void OnSchedulerExecuting(IServiceProvider service, TaskInfo task)
     }
 }
 
-static bool ShouldApplyIpWhitelist(PathString path)
-{
-    if (!path.HasValue)
-    {
-        return true;
-    }
-
-    if (IsPublicAssetPath(path))
-    {
-        return false;
-    }
-
-    return !path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase)
-        && !path.StartsWithSegments("/profile", StringComparison.OrdinalIgnoreCase);
-}
-
-static bool IsPublicAssetPath(PathString path)
-{
-    if (path.StartsWithSegments("/uploads", StringComparison.OrdinalIgnoreCase)
-        || path.StartsWithSegments("/avatars", StringComparison.OrdinalIgnoreCase)
-        || path.StartsWithSegments("/qq_classic_35_avatars", StringComparison.OrdinalIgnoreCase)
-        || path.StartsWithSegments("/game", StringComparison.OrdinalIgnoreCase)
-        || path.StartsWithSegments("/css", StringComparison.OrdinalIgnoreCase)
-        || path.StartsWithSegments("/_content", StringComparison.OrdinalIgnoreCase)
-        || path.StartsWithSegments("/_framework", StringComparison.OrdinalIgnoreCase))
-    {
-        return true;
-    }
-
-    var value = path.Value ?? "";
-    return value.EndsWith(".png", StringComparison.OrdinalIgnoreCase)
-        || value.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase)
-        || value.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase)
-        || value.EndsWith(".gif", StringComparison.OrdinalIgnoreCase)
-        || value.EndsWith(".webp", StringComparison.OrdinalIgnoreCase)
-        || value.EndsWith(".ico", StringComparison.OrdinalIgnoreCase)
-        || value.EndsWith(".svg", StringComparison.OrdinalIgnoreCase)
-        || value.EndsWith(".css", StringComparison.OrdinalIgnoreCase)
-        || value.EndsWith(".js", StringComparison.OrdinalIgnoreCase)
-        || value.EndsWith(".map", StringComparison.OrdinalIgnoreCase)
-        || value.EndsWith(".woff", StringComparison.OrdinalIgnoreCase)
-        || value.EndsWith(".woff2", StringComparison.OrdinalIgnoreCase)
-        || value.EndsWith(".ttf", StringComparison.OrdinalIgnoreCase);
-}
 
 static bool IsAllowedOrigin(string origin, string[] allowedOrigins)
 {

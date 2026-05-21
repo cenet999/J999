@@ -225,11 +225,6 @@ namespace J9_Admin.SeedData
                     {
                         Label = "代理结算", Path = "Ddd/DAgentSettlement", Sort = 103, Type = SysMenuType.菜单,
                         Children = GetCrudButtons(), Icon = "fas fa-user-tie"
-                    },
-                    new SysMenu
-                    {
-                        Label = "IP白名单", Path = "Ddd/IpWhitelist", Sort = 104, Type = SysMenuType.菜单,
-                        Children = GetCrudButtons(), Icon = "fas fa-shield-alt"
                     }
                 }
             };

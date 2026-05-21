@@ -51,10 +51,10 @@ public partial class DAgent : EntityModified
     public string LogoUrl { get; set; }
 
     /// <summary>
-    /// 登陆IP
+    /// 登录IP
     /// </summary>
     [Column(StringLength = 200)]
-    public string IPWhiteList { get; set; } = "";
+    public string LoginIp { get; set; } = "";
 
     /// <summary>
     /// 会员反水比例
