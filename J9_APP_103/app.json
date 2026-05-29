@@ -2,7 +2,7 @@
   "expo": {
     "name": "久游俱乐部",
     "slug": "j9-club",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "j9-club",

@@ -18,3 +18,13 @@
 npx eas-cli update --channel production --message "你的更新说明"
 ```
 
+
+cd /root/dd/J999/J9_APP_103
+
+# ① 创建 production 分支并发布第一次 OTA
+npx eas-cli update --branch production --environment production --message "初始化 production OTA"
+
+# ② 把 channel 绑定到 branch（否则已安装的 App 收不到更新）
+npx eas-cli channel:edit production --branch production
+
+pnpm update:prod

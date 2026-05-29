@@ -1,7 +1,7 @@
 {
   "name": "J9_APP_103",
   "main": "expo-router/entry",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "scripts": {
     "build:web": "expo export --platform web && node ./scripts/sync-web-download-assets.mjs",
     "dev:server": "mkdir -p .tmp && TMPDIR=\"$(pwd)/.tmp\" expo start -c --tunnel --port 8099",
