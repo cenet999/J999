@@ -2,7 +2,7 @@ import { copyFileSync, existsSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 
 const root = resolve(import.meta.dirname, '..');
-const androidApkFileName = 'application-97eb89ee-73ae-4f16-9180-a773eae0d8a5.apk';
+const androidApkFileName = 'application-49699ab3-25bb-4573-b684-98bc9eccbb4e.apk';
 const filesToCopy = [
   {
     source: resolve(root, 'assets', androidApkFileName),
