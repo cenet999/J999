@@ -14,6 +14,8 @@
     "build:android:production": "npx eas-cli build -p android --profile production",
     "build:android:aab": "npx eas-cli build -p android --profile store",
     "build:ios": "npx eas-cli build -p ios --profile production",
+    "update:prod": "npx eas-cli update --channel production --message \"更新说明\"",
+    "update:preview": "npx eas-cli update --channel preview --message \"更新说明\"",
     "e2e": "playwright test",
     "e2e:headed": "playwright test --headed",
     "e2e:live": "playwright test tests/e2e/live.spec.ts --workers=1",
