@@ -2,18 +2,29 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getClientPlatform } from '@/lib/platform-mode';
 import { Platform } from 'react-native';
 
-const DEV_API =
-  typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_API_URL
-    ? process.env.EXPO_PUBLIC_API_URL
-    : 'http://localhost:5231';
-
+/** 生产环境固定后端地址 */
 const PROD_API = 'https://bc.moneysb.com';
+
+/** 本地未配置 EXPO_PUBLIC_API_URL 时的默认后端 */
+const DEFAULT_DEV_API = 'http://localhost:5231';
 
 function normalizeBaseUrl(url: string) {
   return url.replace(/\/+$/, '');
 }
 
-export const BASE_URL = normalizeBaseUrl(__DEV__ ? DEV_API : PROD_API);
+/** 开发读 EXPO_PUBLIC_API_URL，生产固定 PROD_API */
+function getApiBaseUrl(): string {
+  if (!__DEV__) {
+    return PROD_API;
+  }
+
+  const envUrl =
+    typeof process !== 'undefined' ? process.env?.EXPO_PUBLIC_API_URL : undefined;
+
+  return normalizeBaseUrl(envUrl || DEFAULT_DEV_API);
+}
+
+export const BASE_URL = getApiBaseUrl();
 export const FRONTEND_CACHE_ENABLED = !__DEV__;
 
 const TOKEN_KEY = '@auth_token';
@@ -34,8 +45,6 @@ export interface ApiResult<T = unknown> {
   data?: T;
 }
 
-const PROD_API_MISSING_MESSAGE = '未配置生产环境接口地址';
-
 export function setUnauthorizedCallback(callback: (() => void) | null) {
   onUnauthorizedCallback = callback;
 }
@@ -49,31 +58,6 @@ export function apiOk(result: ApiResult | null | undefined) {
   }
 
   return Boolean(result.success);
-}
-
-function getWebProxyBaseUrl() {
-  if (Platform.OS !== 'web' || typeof window === 'undefined') {
-    return '';
-  }
-
-  return `${window.location.origin}/__api_proxy`;
-}
-
-function getConfiguredBaseUrl() {
-  const webProxyBaseUrl = getWebProxyBaseUrl();
-  if (webProxyBaseUrl) {
-    return webProxyBaseUrl;
-  }
-
-  if (BASE_URL) {
-    return BASE_URL;
-  }
-
-  if (!__DEV__) {
-    console.error(PROD_API_MISSING_MESSAGE);
-  }
-
-  return '';
 }
 
 export async function getToken(): Promise<string | null> {
@@ -117,8 +101,7 @@ async function handleUnauthorized() {
 export function toAbsoluteUrl(url?: string | null) {
   if (!url) return '';
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  const baseUrl = getConfiguredBaseUrl();
-  if (!baseUrl) return '';
+  const baseUrl = getApiBaseUrl();
   if (url.startsWith('/')) return `${baseUrl}${url}`;
   return `${baseUrl}/${url}`;
 }
@@ -147,15 +130,7 @@ export async function request<T>(
   options: RequestInit = {}
 ): Promise<ApiResult<T>> {
   try {
-    const baseUrl = getConfiguredBaseUrl();
-    if (!baseUrl) {
-      return {
-        success: false,
-        code: -1,
-        message: PROD_API_MISSING_MESSAGE,
-      };
-    }
-
+    const baseUrl = getApiBaseUrl();
     const token = await getToken();
     const method = getMethod(options);
     const headers: Record<string, string> = {
