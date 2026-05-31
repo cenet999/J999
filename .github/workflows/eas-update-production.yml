@@ -23,15 +23,10 @@ jobs:
       run:
         working-directory: J9_APP_103
 
-    steps:
-      - name: 检查 EXPO_TOKEN
-        run: |
-          if [ -z "${{ secrets.EXPO_TOKEN }}" ]; then
-            echo "请在 GitHub 仓库 Settings → Secrets → Actions 中配置 EXPO_TOKEN"
-            echo "创建地址: https://expo.dev/settings/access-tokens"
-            exit 1
-          fi
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
+    steps:
       - name: Checkout
         uses: actions/checkout@v4
 
