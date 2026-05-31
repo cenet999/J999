@@ -16,7 +16,7 @@ fi
 # 与 docker-compose.yaml 宿主机端口一致（本地 dotnet 常用 5231，可用 HOST_PORT=5231 ./docker-auto.sh）
 HOST_PORT="${HOST_PORT:-8015}"
 
-ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 IGNORE_SRC="$SCRIPT_DIR/root-context.dockerignore"
 IGNORE_TARGET="$ROOT_DIR/.dockerignore"
 IGNORE_BACKUP=""

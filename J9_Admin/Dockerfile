@@ -1,20 +1,20 @@
 # 第一阶段：构建阶段
-# 构建上下文为仓库根目录（含 J999 与 NoAdmin），见 docker-compose.yaml
+# 构建上下文为 J999 仓库根目录（含 J9_Admin 与 NoAdmin），见 docker-compose.yaml
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
 # 先复制项目文件，充分利用 Docker 缓存
-COPY ["J999/J9_Admin/J9_Admin.csproj", "J999/J9_Admin/"]
+COPY ["J9_Admin/J9_Admin.csproj", "J9_Admin/"]
 COPY ["NoAdmin/NoAdmin.Blazor/NoAdmin.Blazor.csproj", "NoAdmin/NoAdmin.Blazor/"]
 
 # 还原包（含 ProjectReference）
-RUN dotnet restore "J999/J9_Admin/J9_Admin.csproj"
+RUN dotnet restore "J9_Admin/J9_Admin.csproj"
 
 # 复制源代码
-COPY J999/J9_Admin/ J999/J9_Admin/
+COPY J9_Admin/ J9_Admin/
 COPY NoAdmin/NoAdmin.Blazor/ NoAdmin/NoAdmin.Blazor/
 
-WORKDIR /src/J999/J9_Admin
+WORKDIR /src/J9_Admin
 
 # 发布（内含 build，会正确编译 NoAdmin.Blazor 等 ProjectReference）
 RUN dotnet publish "J9_Admin.csproj" -c Release -o /app/publish --no-restore
