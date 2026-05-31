@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "NoAdmin",
+  "classifications": ["Web", "Blazor", "Admin"],
+  "identity": "NoAdmin.Template.CSharp",
+  "name": "NoAdmin 后台管理模板",
+  "shortName": "noadmin",
+  "sourceName": "NoAdminApp",
+  "preferNameDirectory": false,
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  },
+  "sources": [
+    {
+      "source": "./",
+      "target": "./",
+      "exclude": [
+        "**/[Bb]in/**",
+        "**/[Oo]bj/**",
+        "**/.template.config/**"
+      ]
+    }
+  ]
+}

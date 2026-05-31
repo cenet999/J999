@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <PackageId>NoAdmin.Templates</PackageId>
+    <Title>NoAdmin.Templates</Title>
+    <Version>1.0.0</Version>
+    <Product>NoAdmin.Templates</Product>
+    <Description>NoAdmin 的 dotnet new 项目模板，适用于快速创建基于 Blazor Server、BootstrapBlazor 与 FreeSql 的后台管理项目。</Description>
+    <PackageTags>dotnet-new;template;blazor;blazor-server;admin;noadmin</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageType>Template</PackageType>
+    <IncludeContentInPack>true</IncludeContentInPack>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="content\**\*" />
+    <EmbeddedResource Remove="content\**\*" />
+    <None Remove="content\**\*" />
+    <Content Include="content\**\*" Pack="true" PackagePath="content" Exclude="content\**\bin\**;content\**\obj\**" />
+    <None Include="..\README.md" Pack="true" PackagePath="\" Link="README.md" />
+  </ItemGroup>
+</Project>
