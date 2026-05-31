@@ -9,22 +9,21 @@
 
 ## OTA升级
 
+推荐用 **GitHub Actions** 发布（避免本地 ARM 机器 Hermes 编译失败）：
+
+1. 在 [expo.dev/settings/access-tokens](https://expo.dev/settings/access-tokens) 创建 Token
+2. 在 GitHub 仓库 **Settings → Secrets → Actions** 添加 `EXPO_TOKEN`
+3. 推送 `J9_APP_103/` 的改动到 `main`，或在 Actions 页手动运行 **EAS Update (Production OTA)**
+
+本地命令（x86 Mac/Linux 可用）：
+
 - 生产环境：`pnpm update:prod`
 - 预览环境：`pnpm update:preview`
 
-如需自定义说明，可直接改 `package.json` 里的 `--message`，或执行：
+首次初始化（只需执行一次，GitHub Actions 也会自动做）：
 
 ```bash
-npx eas-cli update --channel production --message "你的更新说明"
-```
-
-
-cd /root/dd/J999/J9_APP_103
-
-# ① 创建 production 分支并发布第一次 OTA
+cd J9_APP_103
 npx eas-cli update --branch production --environment production --message "初始化 production OTA"
-
-# ② 把 channel 绑定到 branch（否则已安装的 App 收不到更新）
 npx eas-cli channel:edit production --branch production
-
-pnpm update:prod
+```
