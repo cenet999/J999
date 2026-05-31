@@ -80,7 +80,7 @@ public class GameService : BaseService
 
     private async Task<(List<string> ApiCodes, int DistinctTotal)> GetRecentTransferApiCodesAsync(long memberId, int maxApiCodes, params string[] platformNames)
     {
-        var sinceUnix = TimeHelper.LocalToUnix(DateTime.Now.AddDays(-2));
+        var sinceUnix = TimeHelper.LocalToUnix(DateTime.Now.AddDays(-10));
         var platformIds = await ResolveGamePlatformIdsAsync(platformNames);
         if (platformIds.Count == 0)
         {
@@ -484,7 +484,7 @@ public class GameService : BaseService
                 if (apiCodes.Count == 0)
                 {
                     return ApiResult.Success
-                        .SetMessage("近2日内无关联游戏的上分记录，无需回收")
+                        .SetMessage("近10日内无关联游戏的上分记录，无需回收")
                         .SetData(new { apiCodes = Array.Empty<string>(), details = Array.Empty<object>() });
                 }
 
@@ -1134,7 +1134,7 @@ public class GameService : BaseService
                 if (apiCodes.Count == 0)
                 {
                     return ApiResult.Success
-                        .SetMessage("近2日内无关联游戏的上分记录，无需回收")
+                        .SetMessage("近10日内无关联游戏的上分记录，无需回收")
                         .SetData(new { apiCodes = Array.Empty<string>(), details = Array.Empty<object>() });
                 }
 
