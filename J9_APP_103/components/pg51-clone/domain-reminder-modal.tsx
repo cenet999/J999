@@ -100,6 +100,11 @@ export function DomainReminderModal({ visible, onClose }: DomainReminderModalPro
             </Pressable>
           </View>
 
+          <Text className="mt-2 text-center text-[12px] leading-[16px] text-[#d6dbeb]">
+            官方主域名：
+            <Text className="font-bold text-[#f0c05a]">{PRIMARY_DOMAIN.toUpperCase()}</Text>
+          </Text>
+
           <View className="mt-2 rounded-[16px] border border-[#2f3548] bg-[#111827] px-2 py-0.5">
             {MIRROR_DOMAINS.map((domain, index) => (
               <View
