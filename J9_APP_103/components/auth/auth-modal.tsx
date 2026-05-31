@@ -81,8 +81,8 @@ function AuthInput({
   keyboardType?: 'default' | 'number-pad' | 'phone-pad';
 }) {
   return (
-    <View className="mt-3">
-      <Text className="mb-2 text-[13px] font-medium text-[#d6dbeb]">{label}</Text>
+    <View className="mt-2">
+      <Text className="mb-1 text-[13px] font-medium text-[#d6dbeb]">{label}</Text>
       <TextInput
         value={value}
         onChangeText={onChangeText}
@@ -90,7 +90,7 @@ function AuthInput({
         placeholderTextColor="#7f879b"
         secureTextEntry={secureTextEntry}
         keyboardType={keyboardType}
-        className="h-12 rounded-[16px] border border-[#2f3548] bg-[#111827] px-4 text-[15px] text-white"
+        className="h-11 rounded-[16px] border border-[#2f3548] bg-[#111827] px-4 text-[15px] text-white"
       />
     </View>
   );
@@ -253,11 +253,11 @@ export function AuthModal({ visible, mode, onClose, onAuthSuccess }: AuthModalPr
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         className="flex-1">
         <Pressable
-          className="flex-1 items-center justify-center bg-black/75 px-4 py-8"
+          className="flex-1 items-center justify-center bg-black/75 px-4 py-4"
           onPress={handleClose}>
           <Pressable
             onPress={(event) => event.stopPropagation()}
-            className="relative w-full max-w-[420px] overflow-visible rounded-[24px] border border-[#3f4760] bg-[#1a1a1d] px-4 pb-5 pt-6">
+            className="relative w-full max-w-[420px] overflow-visible rounded-[24px] border border-[#3f4760] bg-[#1a1a1d] px-4 pb-3.5 pt-4">
             <Pressable
               onPress={handleClose}
               accessibilityRole="button"
@@ -269,24 +269,24 @@ export function AuthModal({ visible, mode, onClose, onAuthSuccess }: AuthModalPr
             <View className="flex-row items-center justify-center">
               <Image
                 source={brandLogo}
-                style={{ width: 40, height: 40, borderRadius: 10 }}
+                style={{ width: 36, height: 36, borderRadius: 9 }}
                 resizeMode="cover"
               />
-              <Text className="ml-3 text-[22px] font-black text-white">
+              <Text className="ml-2.5 text-[20px] font-black leading-tight text-white">
                 {activeMode === 'login' ? '会员登录' : '开户注册'}
               </Text>
             </View>
 
-            <Text className="mt-2 text-center text-[13px] leading-[20px] text-[#d6dbeb]">
+            <Text className="mt-1 text-center text-[13px] leading-[18px] text-[#d6dbeb]">
               {activeMode === 'login'
                 ? '请输入账号信息以继续访问会员服务'
                 : '请填写基础信息，完成账户注册'}
             </Text>
 
-            <View className="mt-4 flex-row rounded-full border border-[#2f3548] bg-[#111827] p-1">
+            <View className="mt-2.5 flex-row rounded-full border border-[#2f3548] bg-[#111827] p-1">
               <Pressable
                 onPress={() => setActiveMode('login')}
-                className={`flex-1 rounded-full px-4 py-2.5 ${
+                className={`flex-1 rounded-full px-4 py-2 ${
                   activeMode === 'login' ? 'bg-[#6f1dff]' : ''
                 }`}>
                 <Text
@@ -299,7 +299,7 @@ export function AuthModal({ visible, mode, onClose, onAuthSuccess }: AuthModalPr
 
               <Pressable
                 onPress={() => setActiveMode('register')}
-                className={`flex-1 rounded-full px-4 py-2.5 ${
+                className={`flex-1 rounded-full px-4 py-2 ${
                   activeMode === 'register' ? 'bg-[#6f1dff]' : ''
                 }`}>
                 <Text
@@ -312,8 +312,8 @@ export function AuthModal({ visible, mode, onClose, onAuthSuccess }: AuthModalPr
             </View>
 
             <ScrollView
-              className="mt-4 max-h-[420px]"
-              contentContainerStyle={{ paddingBottom: 4 }}
+              className="mt-2.5 max-h-[380px]"
+              contentContainerStyle={{ paddingBottom: 2 }}
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}>
               {activeMode === 'register' && pendingInvite.agentName ? (
@@ -327,7 +327,7 @@ export function AuthModal({ visible, mode, onClose, onAuthSuccess }: AuthModalPr
                 </Text>
               ) : null}
 
-              <View className="mt-3 rounded-[16px] border border-[#2f3548] bg-[#111827] px-3 py-1">
+              <View className="mt-2 rounded-[16px] border border-[#2f3548] bg-[#111827] px-3 py-0.5">
                 {activeMode === 'login' ? (
                   <>
                     <AuthInput
@@ -386,8 +386,8 @@ export function AuthModal({ visible, mode, onClose, onAuthSuccess }: AuthModalPr
               </View>
 
               {errorText ? (
-                <View className="mt-3 rounded-[16px] border border-[#5a2f3d] bg-[#3a1e28] px-4 py-3">
-                  <Text className="text-[13px] leading-[20px] text-[#ffb8c8]">{errorText}</Text>
+                <View className="mt-2 rounded-[16px] border border-[#5a2f3d] bg-[#3a1e28] px-4 py-2">
+                  <Text className="text-[13px] leading-[18px] text-[#ffb8c8]">{errorText}</Text>
                 </View>
               ) : null}
 
@@ -396,17 +396,17 @@ export function AuthModal({ visible, mode, onClose, onAuthSuccess }: AuthModalPr
                   <Pressable
                     onPress={handleLogin}
                     disabled={submitting}
-                    className={`mt-5 items-center rounded-full py-3.5 ${
+                    className={`mt-3 items-center rounded-full py-2.5 ${
                       submitting ? 'bg-[#4d2f9c]' : 'bg-[#6f1dff]'
                     }`}>
                     {submitting ? (
                       <ActivityIndicator color="#fff" />
                     ) : (
-                      <Text className="text-[16px] font-black text-white">登录账户</Text>
+                      <Text className="text-[15px] font-black text-white">登录账户</Text>
                     )}
                   </Pressable>
 
-                  <Pressable onPress={() => setActiveMode('register')} className="mt-3 items-center py-1">
+                  <Pressable onPress={() => setActiveMode('register')} className="mt-2 items-center py-0.5">
                     <Text className="text-[13px] text-[#f0c05a] underline">还没有账户？立即注册</Text>
                   </Pressable>
                 </>
@@ -415,17 +415,17 @@ export function AuthModal({ visible, mode, onClose, onAuthSuccess }: AuthModalPr
                   <Pressable
                     onPress={handleRegister}
                     disabled={submitting || !inviteHydrated}
-                    className={`mt-5 items-center rounded-full py-3.5 ${
+                    className={`mt-3 items-center rounded-full py-2.5 ${
                       submitting || !inviteHydrated ? 'bg-[#4d2f9c]' : 'bg-[#6f1dff]'
                     }`}>
                     {submitting || !inviteHydrated ? (
                       <ActivityIndicator color="#fff" />
                     ) : (
-                      <Text className="text-[16px] font-black text-white">提交注册</Text>
+                      <Text className="text-[15px] font-black text-white">提交注册</Text>
                     )}
                   </Pressable>
 
-                  <Pressable onPress={() => setActiveMode('login')} className="mt-3 items-center py-1">
+                  <Pressable onPress={() => setActiveMode('login')} className="mt-2 items-center py-0.5">
                     <Text className="text-[13px] text-[#f0c05a] underline">已有账户？前往登录</Text>
                   </Pressable>
                 </>

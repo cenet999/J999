@@ -61,11 +61,11 @@ export function DomainReminderModal({ visible, onClose }: DomainReminderModalPro
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={handleDismiss}>
       <Pressable
-        className="flex-1 items-center justify-center bg-black/75 px-4 py-8"
+        className="flex-1 items-center justify-center bg-black/75 px-4 py-4"
         onPress={handleDismiss}>
         <Pressable
           onPress={(event) => event.stopPropagation()}
-          className="relative w-full max-w-[420px] overflow-visible rounded-[24px] border border-[#3f4760] bg-[#1a1a1d] px-4 pb-5 pt-6">
+          className="relative w-full max-w-[420px] overflow-visible rounded-[24px] border border-[#3f4760] bg-[#1a1a1d] px-4 pb-3.5 pt-4">
           <Pressable
             onPress={handleDismiss}
             accessibilityRole="button"
@@ -74,8 +74,10 @@ export function DomainReminderModal({ visible, onClose }: DomainReminderModalPro
             <Text className="text-[20px] font-bold leading-[20px] text-white">×</Text>
           </Pressable>
 
-          <Text className="text-center text-[22px] font-black text-white">牢记最新域名</Text>
-          <View className="mt-2 flex-row flex-wrap items-center justify-center gap-2">
+          <Text className="text-center text-[20px] font-black leading-tight text-white">
+            牢记最新域名
+          </Text>
+          <View className="mt-1 flex-row flex-wrap items-center justify-center gap-2">
             <Text className="text-[13px] text-[#d6dbeb]">截图保存可以防止走丢哦</Text>
             <Pressable
               onPress={() => void copyAllDomains()}
@@ -84,10 +86,10 @@ export function DomainReminderModal({ visible, onClose }: DomainReminderModalPro
             </Pressable>
           </View>
 
-          <View className="mt-4 flex-row items-center rounded-[16px] border border-[#2f3548] bg-[#111827] px-3 py-3">
+          <View className="mt-2.5 flex-row items-center rounded-[16px] border border-[#2f3548] bg-[#111827] px-3 py-2">
             <Image
               source={brandLogo}
-              style={{ width: 40, height: 40, borderRadius: 10 }}
+              style={{ width: 36, height: 36, borderRadius: 9 }}
               resizeMode="cover"
             />
             <Text className="mx-3 flex-1 text-[18px] font-black text-white">{PRIMARY_DOMAIN}</Text>
@@ -98,16 +100,11 @@ export function DomainReminderModal({ visible, onClose }: DomainReminderModalPro
             </Pressable>
           </View>
 
-          <Text className="mt-3 text-center text-[12px] leading-[18px] text-[#d6dbeb]">
-            官方主域名：
-            <Text className="font-bold text-[#f0c05a]">{PRIMARY_DOMAIN.toUpperCase()}</Text>
-          </Text>
-
-          <View className="mt-3 rounded-[16px] border border-[#2f3548] bg-[#111827] px-2 py-1">
+          <View className="mt-2 rounded-[16px] border border-[#2f3548] bg-[#111827] px-2 py-0.5">
             {MIRROR_DOMAINS.map((domain, index) => (
               <View
                 key={domain}
-                className={`flex-row items-center px-2 py-2.5 ${
+                className={`flex-row items-center px-2 py-1.5 ${
                   index > 0 ? 'border-t border-[#2f3548]' : ''
                 }`}>
                 <Icon as={Search} size={16} className="text-[#9fa8be]" />
@@ -125,11 +122,11 @@ export function DomainReminderModal({ visible, onClose }: DomainReminderModalPro
 
           <Pressable
             onPress={handleDownload}
-            className="mt-5 items-center rounded-full bg-[#6f1dff] py-3.5">
-            <Text className="text-[16px] font-black text-white">下载 APP</Text>
+            className="mt-3 items-center rounded-full bg-[#6f1dff] py-2.5">
+            <Text className="text-[15px] font-black text-white">下载 APP</Text>
           </Pressable>
 
-          <Pressable onPress={handleOpenTutorial} className="mt-3 items-center py-1">
+          <Pressable onPress={handleOpenTutorial} className="mt-2 items-center py-0.5">
             <Text className="text-[13px] text-[#f0c05a] underline">点击查看安装教程</Text>
           </Pressable>
         </Pressable>
