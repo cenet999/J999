@@ -18,17 +18,17 @@ test('首页能加载并打开登录弹窗', async ({ page }) => {
   await expect(page.getByPlaceholder('请输入登录密码')).toBeVisible();
 });
 
-test('登录页和注册页都能正常打开', async ({ page }) => {
+test('登录页和注册页都会回到首页并打开弹窗', async ({ page }) => {
   await mockAppApis(page);
 
   await page.goto('/login');
-  await expect(page.getByText('打开登录窗口')).toBeVisible();
-  await expect(page.getByText('会员登录').first()).toBeVisible();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByText('会员登录').last()).toBeVisible();
   await expect(page.getByText('登录账户').last()).toBeVisible();
 
   await page.goto('/register');
-  await expect(page.getByText('打开注册窗口')).toBeVisible();
-  await expect(page.getByText('开户注册').first()).toBeVisible();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByText('开户注册').last()).toBeVisible();
   await expect(page.getByText('提交注册').last()).toBeVisible();
 });
 
@@ -147,13 +147,13 @@ test('注册成功后会自动登录并进入 mine', async ({ page }) => {
   await expect(page.getByText('UID: 2002')).toBeVisible();
 });
 
-test('未登录访问 mine 会自动跳转到 login', async ({ page }) => {
+test('未登录访问 mine 会自动回到首页并打开登录弹窗', async ({ page }) => {
   await mockAppApis(page);
 
   await page.goto('/mine');
 
-  await expect(page).toHaveURL(/\/login$/);
-  await expect(page.getByText('打开登录窗口')).toBeVisible();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByText('会员登录').last()).toBeVisible();
 });
 
 test('游戏启动页缺少参数时显示错误提示', async ({ page }) => {

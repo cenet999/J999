@@ -2,7 +2,7 @@ import 'react-native-gesture-handler';
 import '../global.css';
 
 import { InviteFromUrlCapture } from '@/components/invite-from-url-capture';
-import { AuthModalProvider } from '@/components/auth/auth-modal-provider';
+import { AuthModalProvider, useAuthModal } from '@/components/auth/auth-modal-provider';
 import { ToastProvider } from '@/components/ui/toast';
 import { UpdateModal, type UpdateStatus } from '@/components/ui/update-modal';
 import { getToken } from '@/lib/api/request';
@@ -40,6 +40,8 @@ const AUTH_REQUIRED_PATHS = [
   '/bind-info',
   '/messages',
   '/chat',
+  '/game-launch',
+  '/game-play',
 ];
 
 function isAuthRequiredPath(pathname: string) {
@@ -55,7 +57,7 @@ const bottomTabScreenOptions =
 
 function AuthRouteGuard() {
   const pathname = usePathname();
-  const router = useRouter();
+  const { redirectToHomeAndOpenAuth } = useAuthModal();
 
   React.useEffect(() => {
     if (!isAuthRequiredPath(pathname)) return;
@@ -65,14 +67,14 @@ function AuthRouteGuard() {
     (async () => {
       const token = await getToken();
       if (!token && !cancelled) {
-        router.replace('/login');
+        redirectToHomeAndOpenAuth('login');
       }
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [pathname, router]);
+  }, [pathname, redirectToHomeAndOpenAuth]);
 
   return null;
 }

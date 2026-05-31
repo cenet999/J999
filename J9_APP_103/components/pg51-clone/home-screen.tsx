@@ -6,15 +6,18 @@ import {
   Pg51SideNav,
   Pg51TrackedScrollView,
 } from '@/components/pg51-clone/chrome';
+import { DomainReminderModal } from '@/components/pg51-clone/domain-reminder-modal';
 import { Pg51GameCard } from '@/components/pg51-clone/game-card';
 import type { Pg51Category, Pg51CategoryId, Pg51GameItem } from '@/components/pg51-clone/types';
 import { getGameList, type BackendGame } from '@/lib/api/game';
 import { getNotices, type Notice } from '@/lib/api/notice';
 import { apiOk, toAbsoluteUrl } from '@/lib/api/request';
+import { isDomainReminderSnoozed } from '@/lib/domain-reminder-snooze';
 import { isIosHomeScreenRuntime } from '@/lib/platform-mode';
 import { extractImageSourceUri } from '@/lib/utils';
 import { Text } from '@/components/ui/text';
 import { Toast } from '@/components/ui/toast';
+import { useFocusEffect } from 'expo-router';
 import * as React from 'react';
 import {
   ActivityIndicator,
@@ -252,6 +255,7 @@ export function Pg51CloneHomeScreen() {
   const [gameLoading, setGameLoading] = React.useState(true);
   const [noticeLoading, setNoticeLoading] = React.useState(true);
   const [noticeModalVisible, setNoticeModalVisible] = React.useState(false);
+  const [domainModalVisible, setDomainModalVisible] = React.useState(false);
   const [notices, setNotices] = React.useState<HomeNotice[]>([]);
   const [activeNoticeIndex, setActiveNoticeIndex] = React.useState(0);
   const [queuedNoticeIndex, setQueuedNoticeIndex] = React.useState<number | null>(null);
@@ -267,13 +271,35 @@ export function Pg51CloneHomeScreen() {
   const noticeTranslateY = React.useRef(new Animated.Value(0)).current;
   const activeNoticeIndexRef = React.useRef(0);
   const noticeAnimatingRef = React.useRef(false);
-  const { openAuthModal, isAuthenticated, displayName } = useAuthModal();
+  const { openAuthModal, requireAuth, isAuthenticated, displayName, consumeDomainReminderSkip } =
+    useAuthModal();
   const isSingleColumnCategory = singleColumnCategories.includes(activeCategory);
   const supportsApiCodeFilter = activeCategory === 'electronic' || activeCategory === 'card';
 
   React.useEffect(() => {
     activeNoticeIndexRef.current = activeNoticeIndex;
   }, [activeNoticeIndex]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      let cancelled = false;
+
+      (async () => {
+        if (consumeDomainReminderSkip()) {
+          return;
+        }
+
+        const snoozed = await isDomainReminderSnoozed();
+        if (!cancelled && !snoozed) {
+          setDomainModalVisible(true);
+        }
+      })();
+
+      return () => {
+        cancelled = true;
+      };
+    }, [consumeDomainReminderSkip])
+  );
 
   React.useEffect(() => {
     if (!supportsApiCodeFilter) {
@@ -539,9 +565,14 @@ export function Pg51CloneHomeScreen() {
     [categoryAnchorY, gameLoading, handleLoadMore, hasMore]
   );
 
-  const handleLaunchGame = React.useCallback((item: Pg51GameItem) => {
-    setLaunchGame(item);
-  }, []);
+  const handleLaunchGame = React.useCallback(
+    async (item: Pg51GameItem) => {
+      const authenticated = await requireAuth('login');
+      if (!authenticated) return;
+      setLaunchGame(item);
+    },
+    [requireAuth]
+  );
 
   return (
     <Pg51PageShell>
@@ -662,6 +693,11 @@ export function Pg51CloneHomeScreen() {
         visible={noticeModalVisible}
         notices={notices}
         onClose={() => setNoticeModalVisible(false)}
+      />
+
+      <DomainReminderModal
+        visible={domainModalVisible}
+        onClose={() => setDomainModalVisible(false)}
       />
 
       <GameLaunchModal game={launchGame} onClose={() => setLaunchGame(null)} />

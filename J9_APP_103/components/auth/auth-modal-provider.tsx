@@ -4,9 +4,15 @@ import { AuthModal, type AuthMode } from '@/components/auth/auth-modal';
 import { usePathname, useRouter } from 'expo-router';
 import * as React from 'react';
 
+function isHomePath(pathname: string) {
+  return pathname === '/' || pathname === '' || pathname === '/index';
+}
+
 type AuthModalContextValue = {
   openAuthModal: (mode?: AuthMode) => void;
   closeAuthModal: () => void;
+  redirectToHomeAndOpenAuth: (mode?: AuthMode) => void;
+  consumeDomainReminderSkip: () => boolean;
   isAuthenticated: boolean;
   displayName: string;
   refreshAuthState: () => Promise<void>;
@@ -22,6 +28,7 @@ export function AuthModalProvider({ children }: { children: React.ReactNode }) {
   const [mode, setMode] = React.useState<AuthMode>('login');
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
   const [displayName, setDisplayName] = React.useState('');
+  const skipDomainReminderRef = React.useRef(false);
 
   const refreshAuthState = React.useCallback(async () => {
     const token = await getToken();
@@ -62,23 +69,43 @@ export function AuthModalProvider({ children }: { children: React.ReactNode }) {
     refreshAuthState();
   }, [refreshAuthState]);
 
+  const openAuthModal = React.useCallback((nextMode: AuthMode = 'login') => {
+    setMode(nextMode);
+    setVisible(true);
+  }, []);
+
+  const redirectToHomeAndOpenAuth = React.useCallback(
+    (nextMode: AuthMode = 'login') => {
+      skipDomainReminderRef.current = true;
+      if (!isHomePath(pathname)) {
+        router.replace('/');
+      }
+      setMode(nextMode);
+      setVisible(true);
+    },
+    [pathname, router]
+  );
+
+  const consumeDomainReminderSkip = React.useCallback(() => {
+    if (!skipDomainReminderRef.current) {
+      return false;
+    }
+
+    skipDomainReminderRef.current = false;
+    return true;
+  }, []);
+
   React.useEffect(() => {
     setUnauthorizedCallback(() => {
       setIsAuthenticated(false);
       setDisplayName('');
-      setVisible(false);
-      router.replace('/login');
+      redirectToHomeAndOpenAuth('login');
     });
 
     return () => {
       setUnauthorizedCallback(null);
     };
-  }, [router]);
-
-  const openAuthModal = React.useCallback((nextMode: AuthMode = 'login') => {
-    setMode(nextMode);
-    setVisible(true);
-  }, []);
+  }, [redirectToHomeAndOpenAuth]);
 
   const requireAuth = React.useCallback(
     async (nextMode: AuthMode = 'login') => {
@@ -87,22 +114,12 @@ export function AuthModalProvider({ children }: { children: React.ReactNode }) {
       setIsAuthenticated(authenticated);
       if (!authenticated) {
         setDisplayName('');
-      }
-
-      if (!authenticated) {
-        const targetPath = nextMode === 'register' ? '/register' : '/login';
-
-        if (pathname === targetPath) {
-          setMode(nextMode);
-          setVisible(true);
-        } else {
-          router.replace(targetPath);
-        }
+        openAuthModal(nextMode);
       }
 
       return authenticated;
     },
-    [pathname, router]
+    [openAuthModal]
   );
 
   const closeAuthModal = React.useCallback(() => {
@@ -114,6 +131,8 @@ export function AuthModalProvider({ children }: { children: React.ReactNode }) {
       value={{
         openAuthModal,
         closeAuthModal,
+        redirectToHomeAndOpenAuth,
+        consumeDomainReminderSkip,
         isAuthenticated,
         displayName,
         refreshAuthState,

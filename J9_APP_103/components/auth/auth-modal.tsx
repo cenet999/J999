@@ -6,12 +6,12 @@ import { apiOk, setToken } from '@/lib/api/request';
 import * as React from 'react';
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
   ScrollView,
-  StyleSheet,
   TextInput,
   View,
 } from 'react-native';
@@ -59,6 +59,8 @@ const defaultPendingInvite: PendingInviteState = {
   agentName: '',
 };
 
+const brandLogo = require('@/assets/images/ios-light.png');
+
 function isValidPhone(value: string) {
   return /^1[3-9]\d{9}$/.test(value.trim());
 }
@@ -79,8 +81,8 @@ function AuthInput({
   keyboardType?: 'default' | 'number-pad' | 'phone-pad';
 }) {
   return (
-    <View className="mt-3 px-[2px]">
-      <Text className="mb-2 text-[13px] font-medium text-[#7b849d]">{label}</Text>
+    <View className="mt-3">
+      <Text className="mb-2 text-[13px] font-medium text-[#d6dbeb]">{label}</Text>
       <TextInput
         value={value}
         onChangeText={onChangeText}
@@ -88,7 +90,7 @@ function AuthInput({
         placeholderTextColor="#7f879b"
         secureTextEntry={secureTextEntry}
         keyboardType={keyboardType}
-        className="h-12 rounded-2xl border border-[#313a4f] bg-[#171d2a] px-4 text-[15px] text-white"
+        className="h-12 rounded-[16px] border border-[#2f3548] bg-[#111827] px-4 text-[15px] text-white"
       />
     </View>
   );
@@ -249,202 +251,189 @@ export function AuthModal({ visible, mode, onClose, onAuthSuccess }: AuthModalPr
       onRequestClose={handleClose}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.keyboardContainer}>
-        <View pointerEvents="box-none" style={styles.overlay}>
-          <Pressable style={styles.backdrop} onPress={handleClose} />
+        className="flex-1">
+        <Pressable
+          className="flex-1 items-center justify-center bg-black/75 px-4 py-8"
+          onPress={handleClose}>
+          <Pressable
+            onPress={(event) => event.stopPropagation()}
+            className="relative w-full max-w-[420px] overflow-visible rounded-[24px] border border-[#3f4760] bg-[#1a1a1d] px-4 pb-5 pt-6">
+            <Pressable
+              onPress={handleClose}
+              accessibilityRole="button"
+              accessibilityLabel="关闭"
+              className="absolute -right-2 -top-3 z-10 size-9 items-center justify-center rounded-full bg-[#6f1dff]">
+              <Text className="text-[20px] font-bold leading-[20px] text-white">×</Text>
+            </Pressable>
 
-          <View style={styles.dialogShell}>
-            <View className="rounded-[32px] border border-[#3f4760] bg-[#202737] p-4">
-              <View className="mb-2 flex-row justify-end">
-                <Pressable
-                  onPress={handleClose}
-                  className="size-8 items-center justify-center rounded-full bg-[#31384a]">
-                  <Text className="text-[18px] font-bold leading-[18px] text-[#d2d7e4]">×</Text>
-                </Pressable>
-              </View>
-
-              <View className="rounded-[28px] border border-[#343d52] bg-[#111827] p-4">
-                <View className="flex-row rounded-full bg-[#232b3d] p-1">
-                  <Pressable
-                    onPress={() => setActiveMode('login')}
-                    className={`flex-1 rounded-full px-4 py-3 ${
-                      activeMode === 'login' ? 'bg-[#b79249]' : ''
-                    }`}>
-                    <Text
-                      className={`text-center text-[15px] ${
-                        activeMode === 'login' ? 'text-white' : 'text-[#97a0b7]'
-                      }`}>
-                      登录
-                    </Text>
-                  </Pressable>
-
-                  <Pressable
-                    onPress={() => setActiveMode('register')}
-                    className={`flex-1 rounded-full px-4 py-3 ${
-                      activeMode === 'register' ? 'bg-[#6f1dff]' : ''
-                    }`}>
-                    <Text
-                      className={`text-center text-[15px] ${
-                        activeMode === 'register' ? 'text-white' : 'text-[#97a0b7]'
-                      }`}>
-                      注册
-                    </Text>
-                  </Pressable>
-                </View>
-
-                <ScrollView
-                  className="mt-4 max-h-[460px]"
-                  contentContainerStyle={{ paddingBottom: 6 }}
-                  keyboardShouldPersistTaps="handled"
-                  showsVerticalScrollIndicator={false}>
-                  <Text className="text-[24px] font-black text-white">
-                    {activeMode === 'login' ? '会员登录' : '开户注册'}
-                  </Text>
-                  <Text className="mt-2 text-[13px] leading-[20px] text-[#9ba5bc]">
-                    {activeMode === 'login'
-                      ? '请输入账号信息以继续访问会员服务。'
-                      : '请填写基础信息，完成账户注册。'}
-                  </Text>
-                  {activeMode === 'register' && pendingInvite.agentName ? (
-                    <Text className="mt-2 text-[12px] font-medium text-[#c9a35b]">
-                      所属渠道：{pendingInvite.agentName}
-                    </Text>
-                  ) : null}
-                  {activeMode === 'register' && pendingInvite.inviteCode ? (
-                    <Text className="mt-1 text-[12px] text-[#8f9ab2]">
-                      邀请码：{pendingInvite.inviteCode}
-                    </Text>
-                  ) : null}
-
-                  {activeMode === 'login' ? (
-                    <>
-                      <AuthInput
-                        label="手机号"
-                        placeholder="请输入 11 位手机号"
-                        value={loginForm.account}
-                        onChangeText={(value) =>
-                          setLoginForm((current) => ({ ...current, account: value }))
-                        }
-                        keyboardType="phone-pad"
-                      />
-                      <AuthInput
-                        label="密码"
-                        placeholder="请输入登录密码"
-                        value={loginForm.password}
-                        onChangeText={(value) =>
-                          setLoginForm((current) => ({ ...current, password: value }))
-                        }
-                        secureTextEntry
-                      />
-
-                      <Pressable
-                        onPress={handleLogin}
-                        disabled={submitting}
-                        className={`mt-5 h-12 items-center justify-center rounded-2xl ${
-                          submitting ? 'bg-[#7d6a3e]' : 'bg-[#b79249]'
-                        }`}>
-                        {submitting ? (
-                          <ActivityIndicator color="#fff" />
-                        ) : (
-                          <Text className="text-[15px] text-white">登录账户</Text>
-                        )}
-                      </Pressable>
-
-                      <Pressable onPress={() => setActiveMode('register')} className="mt-4">
-                        <Text className="text-center text-[13px] font-medium text-[#9b5cff]">
-                          还没有账户？立即注册
-                        </Text>
-                      </Pressable>
-                    </>
-                  ) : (
-                    <>
-                      <AuthInput
-                        label="手机号"
-                        placeholder="请输入手机号"
-                        value={registerForm.phone}
-                        onChangeText={(value) =>
-                          setRegisterForm((current) => ({ ...current, phone: value }))
-                        }
-                        keyboardType="phone-pad"
-                      />
-                      <AuthInput
-                        label="密码"
-                        placeholder="设置登录密码"
-                        value={registerForm.password}
-                        onChangeText={(value) =>
-                          setRegisterForm((current) => ({ ...current, password: value }))
-                        }
-                        secureTextEntry
-                      />
-                      <AuthInput
-                        label="确认密码"
-                        placeholder="再输一次密码"
-                        value={registerForm.confirmPassword}
-                        onChangeText={(value) =>
-                          setRegisterForm((current) => ({
-                            ...current,
-                            confirmPassword: value,
-                          }))
-                        }
-                        secureTextEntry
-                      />
-
-                      <Pressable
-                        onPress={handleRegister}
-                        disabled={submitting || !inviteHydrated}
-                        className={`mt-5 h-12 items-center justify-center rounded-2xl ${
-                          submitting || !inviteHydrated ? 'bg-[#4d2f9c]' : 'bg-[#6f1dff]'
-                        }`}>
-                        {submitting || !inviteHydrated ? (
-                          <ActivityIndicator color="#fff" />
-                        ) : (
-                          <Text className="text-[15px] text-white">提交注册</Text>
-                        )}
-                      </Pressable>
-
-                      <Pressable onPress={() => setActiveMode('login')} className="mt-4">
-                        <Text className="text-center text-[13px] font-medium text-[#b79249]">
-                          已有账户？前往登录
-                        </Text>
-                      </Pressable>
-                    </>
-                  )}
-
-                  {errorText ? (
-                    <View className="mt-4 rounded-2xl border border-[#5a2f3d] bg-[#3a1e28] px-4 py-3">
-                      <Text className="text-[13px] leading-[20px] text-[#ffb8c8]">
-                        {errorText}
-                      </Text>
-                    </View>
-                  ) : null}
-                </ScrollView>
-              </View>
+            <View className="flex-row items-center justify-center">
+              <Image
+                source={brandLogo}
+                style={{ width: 40, height: 40, borderRadius: 10 }}
+                resizeMode="cover"
+              />
+              <Text className="ml-3 text-[22px] font-black text-white">
+                {activeMode === 'login' ? '会员登录' : '开户注册'}
+              </Text>
             </View>
-          </View>
-        </View>
+
+            <Text className="mt-2 text-center text-[13px] leading-[20px] text-[#d6dbeb]">
+              {activeMode === 'login'
+                ? '请输入账号信息以继续访问会员服务'
+                : '请填写基础信息，完成账户注册'}
+            </Text>
+
+            <View className="mt-4 flex-row rounded-full border border-[#2f3548] bg-[#111827] p-1">
+              <Pressable
+                onPress={() => setActiveMode('login')}
+                className={`flex-1 rounded-full px-4 py-2.5 ${
+                  activeMode === 'login' ? 'bg-[#6f1dff]' : ''
+                }`}>
+                <Text
+                  className={`text-center text-[14px] font-bold ${
+                    activeMode === 'login' ? 'text-white' : 'text-[#9fa8be]'
+                  }`}>
+                  登录
+                </Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => setActiveMode('register')}
+                className={`flex-1 rounded-full px-4 py-2.5 ${
+                  activeMode === 'register' ? 'bg-[#6f1dff]' : ''
+                }`}>
+                <Text
+                  className={`text-center text-[14px] font-bold ${
+                    activeMode === 'register' ? 'text-white' : 'text-[#9fa8be]'
+                  }`}>
+                  注册
+                </Text>
+              </Pressable>
+            </View>
+
+            <ScrollView
+              className="mt-4 max-h-[420px]"
+              contentContainerStyle={{ paddingBottom: 4 }}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}>
+              {activeMode === 'register' && pendingInvite.agentName ? (
+                <Text className="text-center text-[12px] font-medium text-[#f0c05a]">
+                  所属渠道：{pendingInvite.agentName}
+                </Text>
+              ) : null}
+              {activeMode === 'register' && pendingInvite.inviteCode ? (
+                <Text className="mt-1 text-center text-[12px] text-[#9fa8be]">
+                  邀请码：{pendingInvite.inviteCode}
+                </Text>
+              ) : null}
+
+              <View className="mt-3 rounded-[16px] border border-[#2f3548] bg-[#111827] px-3 py-1">
+                {activeMode === 'login' ? (
+                  <>
+                    <AuthInput
+                      label="手机号"
+                      placeholder="请输入 11 位手机号"
+                      value={loginForm.account}
+                      onChangeText={(value) =>
+                        setLoginForm((current) => ({ ...current, account: value }))
+                      }
+                      keyboardType="phone-pad"
+                    />
+                    <AuthInput
+                      label="密码"
+                      placeholder="请输入登录密码"
+                      value={loginForm.password}
+                      onChangeText={(value) =>
+                        setLoginForm((current) => ({ ...current, password: value }))
+                      }
+                      secureTextEntry
+                    />
+                  </>
+                ) : (
+                  <>
+                    <AuthInput
+                      label="手机号"
+                      placeholder="请输入手机号"
+                      value={registerForm.phone}
+                      onChangeText={(value) =>
+                        setRegisterForm((current) => ({ ...current, phone: value }))
+                      }
+                      keyboardType="phone-pad"
+                    />
+                    <AuthInput
+                      label="密码"
+                      placeholder="设置登录密码"
+                      value={registerForm.password}
+                      onChangeText={(value) =>
+                        setRegisterForm((current) => ({ ...current, password: value }))
+                      }
+                      secureTextEntry
+                    />
+                    <AuthInput
+                      label="确认密码"
+                      placeholder="再输一次密码"
+                      value={registerForm.confirmPassword}
+                      onChangeText={(value) =>
+                        setRegisterForm((current) => ({
+                          ...current,
+                          confirmPassword: value,
+                        }))
+                      }
+                      secureTextEntry
+                    />
+                  </>
+                )}
+              </View>
+
+              {errorText ? (
+                <View className="mt-3 rounded-[16px] border border-[#5a2f3d] bg-[#3a1e28] px-4 py-3">
+                  <Text className="text-[13px] leading-[20px] text-[#ffb8c8]">{errorText}</Text>
+                </View>
+              ) : null}
+
+              {activeMode === 'login' ? (
+                <>
+                  <Pressable
+                    onPress={handleLogin}
+                    disabled={submitting}
+                    className={`mt-5 items-center rounded-full py-3.5 ${
+                      submitting ? 'bg-[#4d2f9c]' : 'bg-[#6f1dff]'
+                    }`}>
+                    {submitting ? (
+                      <ActivityIndicator color="#fff" />
+                    ) : (
+                      <Text className="text-[16px] font-black text-white">登录账户</Text>
+                    )}
+                  </Pressable>
+
+                  <Pressable onPress={() => setActiveMode('register')} className="mt-3 items-center py-1">
+                    <Text className="text-[13px] text-[#f0c05a] underline">还没有账户？立即注册</Text>
+                  </Pressable>
+                </>
+              ) : (
+                <>
+                  <Pressable
+                    onPress={handleRegister}
+                    disabled={submitting || !inviteHydrated}
+                    className={`mt-5 items-center rounded-full py-3.5 ${
+                      submitting || !inviteHydrated ? 'bg-[#4d2f9c]' : 'bg-[#6f1dff]'
+                    }`}>
+                    {submitting || !inviteHydrated ? (
+                      <ActivityIndicator color="#fff" />
+                    ) : (
+                      <Text className="text-[16px] font-black text-white">提交注册</Text>
+                    )}
+                  </Pressable>
+
+                  <Pressable onPress={() => setActiveMode('login')} className="mt-3 items-center py-1">
+                    <Text className="text-[13px] text-[#f0c05a] underline">已有账户？前往登录</Text>
+                  </Pressable>
+                </>
+              )}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
       </KeyboardAvoidingView>
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  keyboardContainer: {
-    flex: 1,
-  },
-  overlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-  },
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-  },
-  dialogShell: {
-    width: '100%',
-    maxWidth: 420,
-    zIndex: 1,
-    elevation: 1,
-  },
-});
