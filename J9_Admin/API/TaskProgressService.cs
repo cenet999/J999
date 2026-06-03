@@ -18,7 +18,7 @@ public class TaskProgressService
     /// 更新任务进度
     /// </summary>
     /// <param name="memberId">会员ID</param>
-    /// <param name="taskType">任务类型：Login, CheckIn, Recharge, PlayGame, Invite</param>
+    /// <param name="taskType">任务类型：Login, CheckIn, Recharge, PlayGame, RealName, Invite</param>
     /// <param name="incrementValue">进度增加值，如充值金额、游戏局数等</param>
     public async Task UpdateTaskProgressAsync(long memberId, string taskType, int incrementValue = 1)
     {

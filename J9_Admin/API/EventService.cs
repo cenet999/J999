@@ -320,6 +320,12 @@ public class EventService : BaseService
 
         var today = DateTime.Now.Date;
 
+        var member = await _fsql.Select<DMember>().Where(m => m.Id == currentUserId).ToOneAsync();
+        if (member != null && !string.IsNullOrWhiteSpace(member.RealName))
+        {
+            await TryUpdateTaskProgressAsync(currentUserId.Value, "RealName", 1);
+        }
+
         // 获取所有启用的任务
         var allTasks = await _fsql.Select<DTask>()
             .Where(t => t.IsEnabled)

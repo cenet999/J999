@@ -25,7 +25,7 @@ public partial class DMember : SysUser
     public string InviteCode { get; set; } = "";
 
     /// <summary>
-    /// USDT余额
+    /// 账户余额（人民币，元）
     /// </summary>
     public decimal CreditAmount { get; set; } = 0;
 
@@ -45,9 +45,14 @@ public partial class DMember : SysUser
     public string Telegram { get; set; }
 
     /// <summary>
-    /// 联系电话
+    /// 邮箱地址
     /// </summary>
-    public string PhoneNumber {get;set;}
+    public string Email { get; set; } = "";
+
+    /// <summary>
+    /// 真实姓名
+    /// </summary>
+    public string RealName { get; set; } = "";
 
     /// <summary>
     /// 取款密码
@@ -59,7 +64,20 @@ public partial class DMember : SysUser
     /// </summary>
     public string USDTAddress { get; set; }
 
+    /// <summary>
+    /// 银行名称
+    /// </summary>
+    public string BankName { get; set; } = "";
 
+    /// <summary>
+    /// 银行账号
+    /// </summary>
+    public string BankAccount { get; set; } = "";
+
+    /// <summary>
+    /// 支付宝账号
+    /// </summary>
+    public string AlipayAccount { get; set; } = "";
 
     /// <summary>
     /// 注册IP

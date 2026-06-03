@@ -15,7 +15,7 @@ import {
 import { apiOk } from '@/lib/api/request';
 import { isInstalledAppRuntime } from '@/lib/platform-mode';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
-import { Check } from 'lucide-react-native';
+import { Check, IdCard } from 'lucide-react-native';
 import type { ComponentType, ReactNode } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
@@ -96,8 +96,22 @@ const GiftIcon = createFontAwesomeIcon(FONT_AWESOME_ICONS.gift);
 const UserPlusIcon = createFontAwesomeIcon(FONT_AWESOME_ICONS.userPlus);
 const WalletIcon = createFontAwesomeIcon(FONT_AWESOME_ICONS.wallet);
 
+function IdCardTaskIcon({ size = 18, color = '#9EA5B8' }: TaskIconProps) {
+  return <Icon as={IdCard} size={size} color={color} />;
+}
+
 function formatMoney(amount: number) {
   return `¥${amount.toFixed(2)}`;
+}
+
+function getTaskProgressText(task: DailyTask) {
+  if (task.targetValue > 1 && task.description?.trim()) {
+    return task.description.trim();
+  }
+  if (task.targetValue > 1) {
+    return `${task.currentValue}/${task.targetValue}`;
+  }
+  return task.description || '';
 }
 
 function getTaskActionPath(task: DailyTask) {
@@ -105,12 +119,10 @@ function getTaskActionPath(task: DailyTask) {
 
   if (path.includes('recharge')) return '/deposit';
   if (path.includes('invite')) return '/mine';
+  if (path.includes('bind-info') || path.includes('realname')) return '/bind-info';
   if (path.includes('game')) return '/';
+  if (task.title.includes('实名')) return '/bind-info';
   return null;
-}
-
-function normalizeDailyTasks(tasks: DailyTask[]) {
-  return tasks.map((task) => (task.title.includes('邀请') ? { ...task, rewardAmount: 100 } : task));
 }
 
 function getTaskPendingVisual(task: DailyTask): {
@@ -145,6 +157,15 @@ function getTaskPendingVisual(task: DailyTask): {
       bg: '#3a1f29',
       border: '#6a4050',
       color: '#ff9fbb',
+    };
+  }
+
+  if (title.includes('实名')) {
+    return {
+      icon: IdCardTaskIcon,
+      bg: '#1a2e35',
+      border: '#2d5a6b',
+      color: '#5ec8e8',
     };
   }
 
@@ -365,7 +386,7 @@ function DailyTasksCard({
     const result = await getDailyTasks();
 
     if (apiOk(result) && result.data) {
-      setTasks(normalizeDailyTasks(result.data.tasks || []));
+      setTasks(result.data.tasks || []);
       setTotalActivityPoint(result.data.totalActivityPoint || 0);
       setClaimedChests(result.data.claimedChests || []);
     } else {
@@ -435,7 +456,7 @@ function DailyTasksCard({
 
       const path = getTaskActionPath(task);
       if (path) {
-        router.push(path as '/' | '/deposit' | '/mine');
+        router.push(path as '/' | '/deposit' | '/mine' | '/bind-info');
         return;
       }
 
@@ -543,8 +564,7 @@ function TaskRow({
 }) {
   const isDone = task.status === 2;
   const isClaim = task.status === 1;
-  const progressText =
-    task.targetValue > 1 ? `${task.currentValue}/${task.targetValue}` : task.description;
+  const progressText = getTaskProgressText(task);
   const pendingVisual = getTaskPendingVisual(task);
   const TaskIcon = pendingVisual.icon;
 

@@ -31,7 +31,7 @@ Authorization: {{token}}
 Content-Type: application/json
 
 ### 更新资料（Telegram / USDT / 手机 / 提现密码）
-POST {{baseUrl}}/api/login/@UpdateMemberInfo?Telegram=&USDTAddress=&PhoneNumber=&WithdrawPassword=
+POST {{baseUrl}}/api/login/@UpdateMemberInfo?Telegram=&USDTAddress=&Username=&Nickname=&RealName=&Email=&BankName=&BankAccount=&AlipayAccount=&WithdrawPassword=
 Authorization: {{token}}
 Content-Type: application/json
 

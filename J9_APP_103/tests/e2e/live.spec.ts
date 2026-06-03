@@ -66,7 +66,7 @@ test.describe.serial('真实接口 Live Smoke', () => {
     await expect(page.locator('body')).toContainText(/在线处理中|暂无会话记录|客服/);
 
     await page.goto('/bind-info');
-    await expect(page.locator('body')).toContainText('系统设置');
+    await expect(page.locator('body')).toContainText('账号信息');
 
     await page.goto('/change-password');
     await expect(page.locator('body')).toContainText('修改密码');

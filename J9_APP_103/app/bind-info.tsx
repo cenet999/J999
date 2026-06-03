@@ -9,21 +9,53 @@ import { toAbsoluteUrl } from '@/lib/api/request';
 import * as ImagePicker from 'expo-image-picker';
 import { Stack, useRouter } from 'expo-router';
 import { ActivityIndicator, Image, Pressable, TouchableOpacity, View } from 'react-native';
-import { Camera, Link, MessageCircle, Phone, UserCheck } from 'lucide-react-native';
+import {
+  Building2,
+  Camera,
+  CreditCard,
+  IdCard,
+  Link,
+  Mail,
+  MessageCircle,
+  Phone,
+  User,
+  UserCheck,
+  Wallet,
+} from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 
 type FormState = {
   telegram: string;
   usdtAddress: string;
-  phoneNumber: string;
+  username: string;
+  nickname: string;
+  realName: string;
+  email: string;
+  bankName: string;
+  bankAccount: string;
+  alipayAccount: string;
   avatar: string;
 };
+
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function isValidPhone(value: string) {
+  return /^1[3-9]\d{9}$/.test(value);
+}
 
 const emptyForm: FormState = {
   telegram: '',
   usdtAddress: '',
-  phoneNumber: '',
+  username: '',
+  nickname: '',
+  realName: '',
+  email: '',
+  bankName: '',
+  bankAccount: '',
+  alipayAccount: '',
   avatar: '',
 };
 
@@ -54,7 +86,13 @@ export default function BindInfoScreen() {
         const nextForm: FormState = {
           telegram: String(result.data.Telegram ?? result.data.telegram ?? ''),
           usdtAddress: String(result.data.USDTAddress ?? result.data.usdtAddress ?? ''),
-          phoneNumber: String(result.data.PhoneNumber ?? result.data.phoneNumber ?? ''),
+          username: String(result.data.Username ?? result.data.username ?? ''),
+          nickname: String(result.data.Nickname ?? result.data.nickname ?? ''),
+          realName: String(result.data.RealName ?? result.data.realName ?? ''),
+          email: String(result.data.Email ?? result.data.email ?? ''),
+          bankName: String(result.data.BankName ?? result.data.bankName ?? ''),
+          bankAccount: String(result.data.BankAccount ?? result.data.bankAccount ?? ''),
+          alipayAccount: String(result.data.AlipayAccount ?? result.data.alipayAccount ?? ''),
           avatar: String(result.data.Avatar ?? result.data.avatar ?? ''),
         };
 
@@ -73,7 +111,13 @@ export default function BindInfoScreen() {
   const canSubmit =
     form.telegram !== initialForm.telegram ||
     form.usdtAddress !== initialForm.usdtAddress ||
-    form.phoneNumber !== initialForm.phoneNumber;
+    form.username !== initialForm.username ||
+    form.nickname !== initialForm.nickname ||
+    form.realName !== initialForm.realName ||
+    form.email !== initialForm.email ||
+    form.bankName !== initialForm.bankName ||
+    form.bankAccount !== initialForm.bankAccount ||
+    form.alipayAccount !== initialForm.alipayAccount;
 
   const updateField = (key: keyof FormState, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -119,13 +163,46 @@ export default function BindInfoScreen() {
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
+
+    const username = form.username.trim();
+    if (!username) {
+      Toast.show({ type: 'error', text1: '请填写登录账号（手机号）' });
+      return;
+    }
+    if (!isValidPhone(username)) {
+      Toast.show({ type: 'error', text1: '手机号格式错误', text2: '请输入正确的 11 位手机号。' });
+      return;
+    }
+
+    const realName = form.realName.trim();
+    if (!realName) {
+      Toast.show({ type: 'error', text1: '请填写真实姓名' });
+      return;
+    }
+
+    const email = form.email.trim();
+    if (!email) {
+      Toast.show({ type: 'error', text1: '请填写邮箱地址' });
+      return;
+    }
+    if (!isValidEmail(email)) {
+      Toast.show({ type: 'error', text1: '邮箱格式不正确', text2: '请输入有效的邮箱地址。' });
+      return;
+    }
+
     setLoading(true);
 
     try {
       const result = await updateMemberInfo(
         form.telegram.trim(),
         form.usdtAddress.trim(),
-        form.phoneNumber.trim(),
+        username,
+        form.nickname.trim(),
+        realName,
+        email,
+        form.bankName.trim(),
+        form.bankAccount.trim(),
+        form.alipayAccount.trim(),
         // 提现密码不再在此页维护，传空字符串，后端将保留原值。
         ''
       );
@@ -156,8 +233,8 @@ export default function BindInfoScreen() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <Pg51InnerPage
-        title="系统设置"
-        subtitle="维护手机、TG 与提现地址"
+        title="账号信息"
+        subtitle="手机号、实名、TG 与 USDT 提现地址"
         tag="资料维护"
         tone="purple"
         hideHero>
@@ -165,8 +242,8 @@ export default function BindInfoScreen() {
           onBack={leaveSettings}
           icon={UserCheck}
           iconColor="#9b5cff"
-          title="系统设置"
-          subtitle="维护手机、TG 与提现地址"
+          title="账号信息"
+          subtitle="手机号、实名、TG 与 USDT 提现地址"
           tone="purple"
         />
 
@@ -207,14 +284,61 @@ export default function BindInfoScreen() {
             </Pressable>
           </View>
 
-          <FormField label="手机号" icon={Phone}>
+          <FormField label="昵称" icon={User}>
             <Input
-              placeholder="请输入手机号"
+              placeholder="请输入昵称"
               placeholderTextColor="#7f879b"
-              value={form.phoneNumber}
-              onChangeText={(value) => updateField('phoneNumber', value)}
+              value={form.nickname}
+              onChangeText={(value) => updateField('nickname', value)}
+              className="border-[#39435a] bg-[#212838] pl-10 text-white"
+            />
+          </FormField>
+
+          <FormField label="登录账号（手机号）" icon={Phone} required>
+            <Input
+              placeholder="请输入 11 位手机号（必填）"
+              placeholderTextColor="#7f879b"
+              value={form.username}
+              onChangeText={(value) => updateField('username', value)}
               className="border-[#39435a] bg-[#212838] pl-10 text-white"
               keyboardType="phone-pad"
+            />
+          </FormField>
+
+          <FormField label="邮箱地址" icon={Mail} required>
+            <Input
+              placeholder="请输入邮箱地址（必填）"
+              placeholderTextColor="#7f879b"
+              value={form.email}
+              onChangeText={(value) => updateField('email', value)}
+              className="border-[#39435a] bg-[#212838] pl-10 text-white"
+              autoCapitalize="none"
+              keyboardType="email-address"
+            />
+          </FormField>
+
+          <FormField label="Telegram" icon={MessageCircle}>
+            <Input
+              placeholder="请输入 Telegram 账号"
+              placeholderTextColor="#7f879b"
+              value={form.telegram}
+              onChangeText={(value) => updateField('telegram', value)}
+              className="border-[#39435a] bg-[#212838] pl-10 text-white"
+              autoCapitalize="none"
+            />
+          </FormField>
+        </Pg51SectionCard>
+
+        <Pg51SectionCard
+          title="实名信息"
+          description="填写真实姓名、提现与收款方式，用于实名认证与提现到账">
+          <FormField label="真实姓名" icon={IdCard} required>
+            <Input
+              placeholder="请输入真实姓名（必填）"
+              placeholderTextColor="#7f879b"
+              value={form.realName}
+              onChangeText={(value) => updateField('realName', value)}
+              className="border-[#39435a] bg-[#212838] pl-10 text-white"
             />
           </FormField>
 
@@ -229,53 +353,75 @@ export default function BindInfoScreen() {
             />
           </FormField>
 
-          <FormField label="Telegram" icon={MessageCircle}>
+          <FormField label="银行名称" icon={Building2}>
             <Input
-              placeholder="请输入 Telegram 账号"
+              placeholder="请输入银行名称"
               placeholderTextColor="#7f879b"
-              value={form.telegram}
-              onChangeText={(value) => updateField('telegram', value)}
+              value={form.bankName}
+              onChangeText={(value) => updateField('bankName', value)}
+              className="border-[#39435a] bg-[#212838] pl-10 text-white"
+            />
+          </FormField>
+
+          <FormField label="银行账号" icon={CreditCard}>
+            <Input
+              placeholder="请输入银行账号"
+              placeholderTextColor="#7f879b"
+              value={form.bankAccount}
+              onChangeText={(value) => updateField('bankAccount', value)}
+              className="border-[#39435a] bg-[#212838] pl-10 text-white"
+              keyboardType="number-pad"
+            />
+          </FormField>
+
+          <FormField label="支付宝账号" icon={Wallet}>
+            <Input
+              placeholder="请输入支付宝账号"
+              placeholderTextColor="#7f879b"
+              value={form.alipayAccount}
+              onChangeText={(value) => updateField('alipayAccount', value)}
               className="border-[#39435a] bg-[#212838] pl-10 text-white"
               autoCapitalize="none"
             />
           </FormField>
-
-          <Pressable
-            onPress={() => router.push('/change-password')}
-            className="flex-row items-center justify-between rounded-[20px] bg-[#212838] px-4 py-3.5">
-            <View className="flex-1">
-              <Text className="text-[13px] font-bold text-white">修改提现密码</Text>
-              <Text className="mt-1 text-[11px] text-[#97a1b8]">
-                请前往「修改密码」完成设置，开始前需验证登录密码。
-              </Text>
-            </View>
-            <Text className="text-[18px] text-[#9b5cff]">›</Text>
-          </Pressable>
-
-          <TouchableOpacity
-            onPress={handleSubmit}
-            disabled={!canSubmit || loading}
-            className="items-center justify-center rounded-[22px] px-4 py-4"
-            style={{
-              backgroundColor: canSubmit ? '#6f1dff' : '#3a4256',
-              opacity: loading ? 0.75 : 1,
-            }}>
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text className="text-[15px] font-black text-white">更新信息</Text>
-            )}
-          </TouchableOpacity>
         </Pg51SectionCard>
+
+        <TouchableOpacity
+          onPress={handleSubmit}
+          disabled={!canSubmit || loading}
+          className="items-center justify-center rounded-[22px] px-4 py-4"
+          style={{
+            backgroundColor: canSubmit ? '#6f1dff' : '#3a4256',
+            opacity: loading ? 0.75 : 1,
+          }}>
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text className="text-[15px] font-black text-white">更新信息</Text>
+          )}
+        </TouchableOpacity>
       </Pg51InnerPage>
     </>
   );
 }
 
-function FormField({ label, icon, children }: { label: string; icon: any; children: ReactNode }) {
+function FormField({
+  label,
+  icon,
+  required = false,
+  children,
+}: {
+  label: string;
+  icon: any;
+  required?: boolean;
+  children: ReactNode;
+}) {
   return (
     <View className="gap-2">
-      <Text className="text-[13px] font-bold text-white">{label}</Text>
+      <Text className="text-[13px] font-bold text-white">
+        {label}
+        {required ? <Text className="text-[#ff7e93]"> *</Text> : null}
+      </Text>
       <View className="relative">
         <View className="absolute bottom-0 left-3 top-0 z-10 justify-center">
           <Icon as={icon} size={18} color="#9b5cff" />

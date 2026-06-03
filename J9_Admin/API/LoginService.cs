@@ -110,7 +110,7 @@ public class LoginService : BaseService
             var newMember = await uow.GetRepository<DMember>().InsertOrUpdateAsync(new DMember
             {
                 Username = request.Username,
-                Nickname = request.Username,
+                Nickname = NicknameGenerator.Generate(),
                 Password = request.Password,
                 BrowserFingerprint = request.BrowserFingerprint,
                 RegisterIp = registerIp,
@@ -122,6 +122,8 @@ public class LoginService : BaseService
                 CreditAmount = 2,
                 Avatar = GetRandomDefaultAvatarUrl(),
                 Telegram = "",
+                Email = "",
+                RealName = "",
                 LoginTime = DateTime.Now,
                 UpdatedTime = DateTime.Now,
                 WithdrawPassword = "123456",
@@ -129,6 +131,9 @@ public class LoginService : BaseService
                 USDTAddress = string.IsNullOrWhiteSpace(_configuration["Payment:UsdtAddress"])
                     ? "usdt00000000"
                     : _configuration["Payment:UsdtAddress"]!.Trim(),
+                BankName = "",
+                BankAccount = "",
+                AlipayAccount = "",
             });
 
             // 分配角色
@@ -360,6 +365,8 @@ IP：{TGMessageApi.EscapeHtml(ip)}
                 Nickname = member.Nickname,
                 Avatar = member.Avatar,
                 Telegram = member.Telegram,
+                Email = member.Email,
+                RealName = member.RealName,
                 CreditAmount = member.CreditAmount,
                 ActivityPoint = member.ActivityPoint,
                 IsEnabled = member.IsEnabled,
@@ -369,7 +376,9 @@ IP：{TGMessageApi.EscapeHtml(ip)}
                 DAgentId = member.DAgentId,
                 AgentName = member.DAgent?.AgentName,
                 USDTAddress = member.USDTAddress,
-                PhoneNumber = member.PhoneNumber,
+                BankName = member.BankName,
+                BankAccount = member.BankAccount,
+                AlipayAccount = member.AlipayAccount,
                 RebateTotalAmount = rebateTotalAmount,
                 RebateAmount = rebateAmount,
                 TodayBet = todayBet,
@@ -608,13 +617,45 @@ IP：{TGMessageApi.EscapeHtml(ip)}
     /// 更新会员资料
     /// </summary>
     [HttpPost($"@{nameof(UpdateMemberInfo)}")]
-    public async Task<ApiResult> UpdateMemberInfo(string Telegram, string USDTAddress, string PhoneNumber, string WithdrawPassword)
+    public async Task<ApiResult> UpdateMemberInfo(string Telegram, string USDTAddress, string Username, string Nickname, string RealName, string Email, string BankName, string BankAccount, string AlipayAccount, string WithdrawPassword)
     {
         // 先获取当前用户ID
         var currentUserId = await GetCurrentUserIdAsync();
         if (currentUserId == null)
         {
             return ApiResult.Error.SetMessage("未登录或登录已过期");
+        }
+
+        var newUsername = Username?.Trim() ?? "";
+        if (string.IsNullOrWhiteSpace(newUsername))
+        {
+            return ApiResult.Error.SetMessage("请输入登录账号（手机号）");
+        }
+
+        if (!System.Text.RegularExpressions.Regex.IsMatch(newUsername, @"^1[3-9]\d{9}$"))
+        {
+            return ApiResult.Error.SetMessage("请输入正确的11位手机号");
+        }
+
+        var realName = RealName?.Trim() ?? "";
+        if (string.IsNullOrWhiteSpace(realName))
+        {
+            return ApiResult.Error.SetMessage("请输入真实姓名");
+        }
+
+        var email = Email?.Trim() ?? "";
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            return ApiResult.Error.SetMessage("请输入邮箱地址");
+        }
+
+        try
+        {
+            _ = new System.Net.Mail.MailAddress(email);
+        }
+        catch
+        {
+            return ApiResult.Error.SetMessage("邮箱格式不正确");
         }
 
         using var uow = _fsql.CreateUnitOfWork();
@@ -629,9 +670,27 @@ IP：{TGMessageApi.EscapeHtml(ip)}
                 return ApiResult.Error.SetMessage("会员未找到");
             }
 
+            if (!string.Equals(member.Username, newUsername, StringComparison.Ordinal))
+            {
+                var usernameTaken = await uow.Orm.Select<DMember>()
+                    .Where(a => a.Username == newUsername && a.Id != member.Id)
+                    .AnyAsync();
+                if (usernameTaken)
+                {
+                    return ApiResult.Error.SetMessage("该手机号已被注册");
+                }
+
+                member.Username = newUsername;
+            }
+
+            member.Nickname = Nickname?.Trim() ?? "";
+            member.RealName = realName;
             member.Telegram = Telegram;
             member.USDTAddress = USDTAddress;
-            member.PhoneNumber = PhoneNumber;
+            member.BankName = BankName?.Trim() ?? "";
+            member.BankAccount = BankAccount?.Trim() ?? "";
+            member.AlipayAccount = AlipayAccount?.Trim() ?? "";
+            member.Email = email;
             // 仅在前端显式传入新的提现密码时才更新，避免空字符串覆盖已有密码。
             if (!string.IsNullOrWhiteSpace(WithdrawPassword))
             {
@@ -640,10 +699,15 @@ IP：{TGMessageApi.EscapeHtml(ip)}
             member.UpdatedTime = DateTime.Now;
             await uow.GetRepository<DMember>().InsertOrUpdateAsync(member);
 
-            _logger.LogInformation("会员 {MemberId} 信息更新成功", currentUserId);
-
             // 提交事务
             uow.Commit();
+
+            if (!string.IsNullOrWhiteSpace(member.RealName))
+            {
+                _ = TryUpdateTaskProgressAsync(member.Id, "RealName", 1);
+            }
+
+            _logger.LogInformation("会员 {MemberId} 信息更新成功", currentUserId);
 
             return ApiResult.Success.SetMessage("会员信息更新成功");
         }
@@ -1083,7 +1147,7 @@ IP：{TGMessageApi.EscapeHtml(ip)}
             {
                 new J9_Admin.Entities.DTask { Title = "每日登录", TaskType = "Login", TargetValue = 1, RewardAmount = 1m, ActivityPoint = 20, Description = "每天首次登录系统领取", Icon = "flame", JumpPath = "", IsEnabled = true, Sort = 1, CreatedTime = DateTime.Now },
                 new J9_Admin.Entities.DTask { Title = "每日签到", TaskType = "CheckIn", TargetValue = 1, RewardAmount = 1m, ActivityPoint = 20, Description = "完成每日签到打卡", Icon = "calendar-check", JumpPath = "", IsEnabled = true, Sort = 2, CreatedTime = DateTime.Now },
-                new J9_Admin.Entities.DTask { Title = "每日充值", TaskType = "Recharge", TargetValue = 100, RewardAmount = 5m, ActivityPoint = 30, Description = "每日累计充值金额大于100元", Icon = "coins", JumpPath = "/trans/recharge", IsEnabled = true, Sort = 3, CreatedTime = DateTime.Now },
+                new J9_Admin.Entities.DTask { Title = "每日充值", TaskType = "Recharge", TargetValue = 100, RewardAmount = 5m, ActivityPoint = 30, Description = "每日充值>100元可领取", Icon = "coins", JumpPath = "/trans/recharge", IsEnabled = true, Sort = 3, CreatedTime = DateTime.Now },
                 new J9_Admin.Entities.DTask { Title = "参与游戏", TaskType = "PlayGame", TargetValue = 5, RewardAmount = 2m, ActivityPoint = 30, Description = "每日累计参与5局游戏", Icon = "star", JumpPath = "/game/list", IsEnabled = true, Sort = 4, CreatedTime = DateTime.Now },
                 new J9_Admin.Entities.DTask { Title = "邀请好友", TaskType = "Invite", TargetValue = 1, RewardAmount = 10m, ActivityPoint = 20, Description = "成功邀请1位好友注册", Icon = "star", JumpPath = "/user/invite", IsEnabled = true, Sort = 5, CreatedTime = DateTime.Now }
             };

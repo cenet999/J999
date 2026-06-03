@@ -10,6 +10,8 @@ public class DMemberInfoResponse
     public string? Nickname { get; set; }
     public string? Avatar { get; set; }
     public string? Telegram { get; set; }
+    public string? Email { get; set; }
+    public string? RealName { get; set; }
     public decimal CreditAmount { get; set; }
     public bool IsEnabled { get; set; }
     public DateTime? CreatedTime { get; set; }
@@ -22,7 +24,9 @@ public class DMemberInfoResponse
     /// </summary>
     public string? AgentName { get; set; }
     public string? USDTAddress { get; set; }
-    public string? PhoneNumber { get; set; }
+    public string? BankName { get; set; }
+    public string? BankAccount { get; set; }
+    public string? AlipayAccount { get; set; }
     public decimal RebateTotalAmount { get; set; }
     public decimal RebateAmount { get; set; }
     public decimal TodayBet { get; set; }

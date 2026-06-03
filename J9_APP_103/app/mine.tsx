@@ -48,10 +48,10 @@ const SECURITY_MENU: MenuItemData[] = [
     path: '/transactions',
   },
   {
-    title: '邀请好友',
-    iconName: 'invite',
-    hint: '邀请码、排行和邀请记录',
-    path: '/invite-friends',
+    title: '账号信息',
+    iconName: 'settings',
+    hint: '手机号、实名、TG 与提现地址',
+    path: '/bind-info',
   },
   {
     title: '修改密码',
@@ -60,10 +60,10 @@ const SECURITY_MENU: MenuItemData[] = [
     path: '/change-password',
   },
   {
-    title: '系统设置',
-    iconName: 'settings',
-    hint: '手机号、TG、地址、提现密码',
-    path: '/bind-info',
+    title: '邀请好友',
+    iconName: 'invite',
+    hint: '邀请码、排行和邀请记录',
+    path: '/invite-friends',
   },
 ];
 
@@ -111,6 +111,10 @@ function pickText(...values: Array<string | number | null | undefined>) {
   }
 
   return '';
+}
+
+function isRealNameVerified(memberInfo: MineMemberInfo | null) {
+  return !!pickText(memberInfo?.RealName, memberInfo?.realName);
 }
 
 function pickNumber(...values: Array<string | number | null | undefined>) {
@@ -379,7 +383,7 @@ function ProfileOverviewCard({
             <View className="min-w-0 flex-1 flex-row items-center gap-3">
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="头像，进入系统设置"
+                accessibilityLabel="头像，进入账号信息"
                 hitSlop={6}
                 onPress={() => {
                   if (!isAuthenticated) {
@@ -625,6 +629,9 @@ function ProfileOverviewCard({
                   borderColor: '#5A3891',
                 }}
               />
+              <Text className="text-[11px] leading-[17px] text-[#E8DDF899]">
+                提现须满足其一：有效流水大于充值金额，或充值已满 7 天。款项将按实名绑定的收款账户原路退回。
+              </Text>
             </View>
 
             <Pressable
@@ -921,6 +928,15 @@ export default function MineScreen() {
       return;
     }
 
+    if (!isRealNameVerified(memberInfo)) {
+      Toast.show({
+        type: 'error',
+        text1: '请先完成实名认证',
+        text2: '实名认证后方可提现，请前往「账号信息」填写真实姓名。',
+      });
+      return;
+    }
+
     const username = pickText(memberInfo.Username, memberInfo.username);
     const usdtAddress = pickText(memberInfo.USDTAddress, memberInfo.usdtAddress);
     const amount =
@@ -940,7 +956,7 @@ export default function MineScreen() {
       Toast.show({
         type: 'error',
         text1: '未绑定地址',
-        text2: '请前往"系统设置"维护 USDT 提现地址。',
+        text2: '请前往「账号信息」维护 USDT 提现地址。',
       });
       return;
     }

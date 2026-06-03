@@ -30,6 +30,53 @@ namespace J9_Admin.SeedData.Ddd
                     repo.Insert(task);
                 }
             }
+
+            // 实名认证排在邀请好友之上：已有库中邀请任务 Sort 可能仍为 5
+            var inviteTask = fsql.Select<DTask>().Where(t => t.TaskType == "Invite").First();
+            if (inviteTask != null && inviteTask.Sort < 6)
+            {
+                inviteTask.Sort = 6;
+                inviteTask.ModifiedTime = now;
+                repo.Update(inviteTask);
+            }
+
+            var realNameTask = fsql.Select<DTask>().Where(t => t.TaskType == "RealName").First();
+            const string realNameDescription = "实名后每日可领";
+            if (realNameTask != null)
+            {
+                var changed = false;
+                if (realNameTask.RewardAmount != 5m)
+                {
+                    realNameTask.RewardAmount = 5m;
+                    changed = true;
+                }
+                if (realNameTask.Description != realNameDescription)
+                {
+                    realNameTask.Description = realNameDescription;
+                    changed = true;
+                }
+                if (changed)
+                {
+                    realNameTask.ModifiedTime = now;
+                    repo.Update(realNameTask);
+                }
+            }
+
+            if (inviteTask != null && inviteTask.RewardAmount != 50m)
+            {
+                inviteTask.RewardAmount = 50m;
+                inviteTask.ModifiedTime = now;
+                repo.Update(inviteTask);
+            }
+
+            var rechargeTask = fsql.Select<DTask>().Where(t => t.TaskType == "Recharge").First();
+            const string rechargeDescription = "每日充值>100元可领取";
+            if (rechargeTask != null && rechargeTask.Description != rechargeDescription)
+            {
+                rechargeTask.Description = rechargeDescription;
+                rechargeTask.ModifiedTime = now;
+                repo.Update(rechargeTask);
+            }
         }
 
         /// <summary>
@@ -72,7 +119,7 @@ namespace J9_Admin.SeedData.Ddd
                 new DTask
                 {
                     Title = "每日充值",
-                    Description = "每日累计充值金额大于100美元",
+                    Description = "每日充值>100元可领取",
                     TaskType = "Recharge",
                     TargetValue = 100,
                     RewardAmount = 5m,
@@ -101,16 +148,31 @@ namespace J9_Admin.SeedData.Ddd
                 },
                 new DTask
                 {
+                    Title = "实名认证",
+                    Description = "实名后每日可领",
+                    TaskType = "RealName",
+                    TargetValue = 1,
+                    RewardAmount = 5m,
+                    ActivityPoint = 20,
+                    Icon = "id-card",
+                    JumpPath = "/bind-info",
+                    IsEnabled = true,
+                    Sort = 5,
+                    CreatedTime = now,
+                    ModifiedTime = now,
+                },
+                new DTask
+                {
                     Title = "邀请好友",
                     Description = "成功邀请1位好友注册",
                     TaskType = "Invite",
                     TargetValue = 1,
-                    RewardAmount = 10m,
+                    RewardAmount = 50m,
                     ActivityPoint = 20,
                     Icon = "star",
                     JumpPath = "/user/invite",
                     IsEnabled = true,
-                    Sort = 5,
+                    Sort = 6,
                     CreatedTime = now,
                     ModifiedTime = now,
                 }

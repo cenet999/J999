@@ -35,13 +35,6 @@ export default function ChangePasswordScreen() {
           tone="red"
         />
 
-        <View className="items-center gap-3 rounded-[28px] border border-[#39435a] bg-[#171d2a] p-5">
-          <Pg51LucideIconBadge icon={ShieldCheck} size={72} iconSize={34} radius={36} />
-          <Text className="text-[14px] font-semibold text-[#b7c0d6]">
-            修改敏感信息需验证当前登录密码。
-          </Text>
-        </View>
-
         <LoginPasswordSection
           onChanged={async () => {
             await clearToken();
@@ -199,7 +192,7 @@ function WithdrawPasswordSection() {
       <View className="flex-row items-center gap-3 rounded-[20px] bg-[#2d2618] px-4 py-3">
         <Pg51LucideIconBadge icon={Wallet} />
         <Text className="flex-1 text-[11px] leading-[18px] text-[#d3c299]">
-          用于出账校验，建议勿与登录密码相同。
+          用于出账校验，建议勿与登录密码相同。新用户默认提现密码为 123456，请尽快修改。
         </Text>
       </View>
 

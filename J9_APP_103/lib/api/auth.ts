@@ -14,16 +14,24 @@ export type MemberInfo = {
   username?: string;
   Nickname?: string;
   nickname?: string;
+  RealName?: string;
+  realName?: string;
   DAgentId?: string | number;
   dAgentId?: string | number;
   Avatar?: string;
   avatar?: string;
-  PhoneNumber?: string;
-  phoneNumber?: string;
   Telegram?: string;
   telegram?: string;
+  Email?: string;
+  email?: string;
   USDTAddress?: string;
   usdtAddress?: string;
+  BankName?: string;
+  bankName?: string;
+  BankAccount?: string;
+  bankAccount?: string;
+  AlipayAccount?: string;
+  alipayAccount?: string;
   WithdrawPassword?: string;
   withdrawPassword?: string;
   RebateAmount?: string | number;
@@ -89,11 +97,17 @@ export async function changeWithdrawPassword(
 export async function updateMemberInfo(
   telegram: string,
   usdtAddress: string,
-  phoneNumber: string,
+  username: string,
+  nickname: string,
+  realName: string,
+  email: string,
+  bankName: string,
+  bankAccount: string,
+  alipayAccount: string,
   withdrawPassword: string
 ): Promise<ApiResult<unknown>> {
   return await api.post<unknown>(
-    `/api/login/@UpdateMemberInfo?Telegram=${encodeURIComponent(telegram)}&USDTAddress=${encodeURIComponent(usdtAddress)}&PhoneNumber=${encodeURIComponent(phoneNumber)}&WithdrawPassword=${encodeURIComponent(withdrawPassword)}`
+    `/api/login/@UpdateMemberInfo?Telegram=${encodeURIComponent(telegram)}&USDTAddress=${encodeURIComponent(usdtAddress)}&Username=${encodeURIComponent(username)}&Nickname=${encodeURIComponent(nickname)}&RealName=${encodeURIComponent(realName)}&Email=${encodeURIComponent(email)}&BankName=${encodeURIComponent(bankName)}&BankAccount=${encodeURIComponent(bankAccount)}&AlipayAccount=${encodeURIComponent(alipayAccount)}&WithdrawPassword=${encodeURIComponent(withdrawPassword)}`
   );
 }
 

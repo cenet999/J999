@@ -19,7 +19,6 @@ const authenticatedMemberResponse = {
     ActivityPoint: 88,
     VipLevel: 3,
     RebateAmount: 12.34,
-    PhoneNumber: '13800138000',
     Telegram: 'j9_e2e',
     USDTAddress: 'TRC20-E2E-ADDRESS',
   },
@@ -156,7 +155,7 @@ test('登录后邀请与设置页面可以正常打开', async ({ page }) => {
   await expect(page.getByText('邀请记录', { exact: true })).toBeVisible();
 
   await page.goto('/bind-info');
-  await expect(page.getByText('系统设置').first()).toBeVisible();
+  await expect(page.getByText('账号信息').first()).toBeVisible();
   await expect(page.getByText('资料设置')).toBeVisible();
   await page.getByPlaceholder('请输入 Telegram 账号').fill('updated_e2e_tg');
   await page.getByText('更新信息').click();

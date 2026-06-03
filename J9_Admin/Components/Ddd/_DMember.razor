@@ -123,8 +123,12 @@
                 <input @bind="item.Telegram" type="text" class="form-control" placeholder="" maxlength="255">
             </div>
             <div class="form-group col-4">
-                <label class="form-label">联系电话</label>
-                <input @bind="item.PhoneNumber" type="text" class="form-control" placeholder="" maxlength="255">
+                <label class="form-label">邮箱地址</label>
+                <input @bind="item.Email" type="email" class="form-control" placeholder="" maxlength="255">
+            </div>
+            <div class="form-group col-4">
+                <label class="form-label">真实姓名</label>
+                <input @bind="item.RealName" type="text" class="form-control" placeholder="" maxlength="50">
             </div>
             <div class="form-group col-4">
                 <label class="form-label">取款密码</label>
@@ -133,6 +137,18 @@
             <div class="form-group col-4">
                 <label class="form-label">USDT地址</label>
                 <input @bind="item.USDTAddress" type="text" class="form-control" placeholder="" maxlength="255">
+            </div>
+            <div class="form-group col-4">
+                <label class="form-label">银行名称</label>
+                <input @bind="item.BankName" type="text" class="form-control" placeholder="" maxlength="100">
+            </div>
+            <div class="form-group col-4">
+                <label class="form-label">银行账号</label>
+                <input @bind="item.BankAccount" type="text" class="form-control" placeholder="" maxlength="100">
+            </div>
+            <div class="form-group col-4">
+                <label class="form-label">支付宝账号</label>
+                <input @bind="item.AlipayAccount" type="text" class="form-control" placeholder="" maxlength="100">
             </div>
             <div class="form-group col-4">
                 <label class="form-label">注册IP</label>
@@ -215,9 +231,13 @@
         a.BrowserFingerprint.Contains(e.SearchText) ||
         a.InviteCode.Contains(e.SearchText) ||
         a.Telegram.Contains(e.SearchText) ||
-        a.PhoneNumber.Contains(e.SearchText) ||
+        a.Email.Contains(e.SearchText) ||
+        a.RealName.Contains(e.SearchText) ||
         a.WithdrawPassword.Contains(e.SearchText) ||
         a.USDTAddress.Contains(e.SearchText) ||
+        a.BankName.Contains(e.SearchText) ||
+        a.BankAccount.Contains(e.SearchText) ||
+        a.AlipayAccount.Contains(e.SearchText) ||
         a.RegisterIp.Contains(e.SearchText) ||
         a.Avatar.Contains(e.SearchText) ||
         a.CreatedUserName.Contains(e.SearchText))

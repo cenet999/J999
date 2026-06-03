@@ -265,6 +265,11 @@ public class TransActionService : BaseService
                 return ApiResult.Error.SetMessage("提款密码错误");
             }
 
+            if (string.IsNullOrWhiteSpace(member.RealName))
+            {
+                return ApiResult.Error.SetMessage("请先完成实名认证后再提现");
+            }
+
             if (amount <= 0)
             {
                 return ApiResult.Error.SetMessage("提现金额必须大于 0");
