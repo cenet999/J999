@@ -96,11 +96,6 @@ try
     Log.Information("数据库配置节点: {DbProvider}", string.IsNullOrWhiteSpace(activeDbProvider) ? "ConnectionStrings(Default)" : activeDbProvider);
     Log.Information("数据库类型: {DbType}", dbType);
 
-    // 生产环境 PostgreSQL 不自动改表：NoAdmin.Blazor 内置 SysUserLoginLog.Ip 仍是 VARCHAR(50)，
-    // AutoSyncStructure 会尝试把已放宽的字段收窄，遇到历史长 IP 数据会导致启动失败。
-    var shouldAutoSyncStructure = !(dbType == DataType.PostgreSQL && builder.Environment.IsProduction());
-    Log.Information("FreeSql AutoSyncStructure: {AutoSyncStructure}", shouldAutoSyncStructure);
-
     builder.AddNovaAdmin(new NovaAdminOptionsItem
     {
         Assemblies = [typeof(Program).Assembly],
@@ -114,7 +109,7 @@ try
                     System.Console.WriteLine($"[{DateTime.Now.ToString("HH:mm:ss")}] {cmd.CommandText}\r\n");
                 }
             }) //监听SQL语句
-            .UseAutoSyncStructure(shouldAutoSyncStructure), // 生产环境 PostgreSQL 禁止自动改表，避免历史字段类型差异阻塞线上编辑。
+            .UseAutoSyncStructure(true),
         SchedulerExecuting = OnSchedulerExecuting //定时任务-自定义触发
     });
 
