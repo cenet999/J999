@@ -133,6 +133,7 @@
         <th>游戏类型</th>
         <th>是否启用</th>
         <th>是否推荐</th>
+        <th>排序</th>
         <th>测试通过</th>
         <th>测试时间</th>
         <th>接口代码</th>
@@ -160,6 +161,7 @@
                                 : "普通")
             </Badge>
         </td>
+        <td>@item.Sort</td>
         <td>
             <Badge Color="@(item.IsTestPassed? Color.Success: Color.Secondary)">
                 <i class="fa-solid @(item.IsTestPassed ? "fa-circle-check" : "fa-flask") me-1"></i>@(item.IsTestPassed ?
@@ -223,6 +225,10 @@
             <div class="form-group col-2">
                 <label class="form-label">是否推荐</label>
                 <Switch @bind-Value="item.IsRecommended" OnColor="Color.Success" />
+            </div>
+            <div class="form-group col-2">
+                <label class="form-label">排序</label>
+                <input @bind="item.Sort" type="number" class="form-control" placeholder="越大越靠前">
             </div>
             <div class="form-group col-2">
                 <label class="form-label">在玩人数</label>
@@ -658,6 +664,7 @@ new NovaAdminFilterInfo("游戏平台", "DGamePlatformId", false, 12,
 string.Join(",", allDGamePlatforms.Select(a => a.Name)),
 string.Join(",", allDGamePlatforms.Select(a => a.Id))),
 new NovaAdminFilterInfo("是否启用", "IsEnabled", "停用,启用", "0,1"),
+new NovaAdminFilterInfo("是否推荐", "IsRecommended", "普通,推荐", "0,1"),
 new NovaAdminFilterInfo("测试通过", "IsTestPassed", "待测试,已通过", "0,1"),
 new NovaAdminFilterInfo("接口代码", "ApiCode", false, 12, apiCodeLabels, apiCodeValues),
         };
@@ -670,8 +677,9 @@ new NovaAdminFilterInfo("接口代码", "ApiCode", false, 12, apiCodeLabels, api
         .WhereIf(e.Filters[0].HasValue, a => a.GameType == e.Filters[0].Value<GameType>())
         .WhereIf(e.Filters[1].HasValue, a => a.DGamePlatformId == e.Filters[1].Value<long>())
         .WhereIf(e.Filters[2].HasValue, a => a.IsEnabled == e.Filters[2].Value<bool>())
-        .WhereIf(e.Filters[3].HasValue, a => a.IsTestPassed == e.Filters[3].Value<bool>())
-        .WhereIf(e.Filters[4].HasValue, a => a.ApiCode != null && a.ApiCode == e.Filters[4].Value<string>())
+        .WhereIf(e.Filters[3].HasValue, a => a.IsRecommended == e.Filters[3].Value<bool>())
+        .WhereIf(e.Filters[4].HasValue, a => a.IsTestPassed == e.Filters[4].Value<bool>())
+        .WhereIf(e.Filters[5].HasValue, a => a.ApiCode != null && a.ApiCode == e.Filters[5].Value<string>())
         .WhereIf(!e.SearchText.IsNull(), a =>
             a.Id.ToString().Contains(e.SearchText)||
             a.GameName.Contains(e.SearchText) ||

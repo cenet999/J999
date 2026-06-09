@@ -126,8 +126,12 @@ function buildDepositChannels(items: PayApiChannel[] | undefined): DepositChanne
       const successRate = pickNumber(obj, 'successRate', 'SuccessRate', 0);
       const payMethodName = pickString(obj, 'payMethodName', 'PayMethodName');
       const payMethod = pickString(obj, 'payMethod', 'PayMethod');
+      const channelCode = pickString(obj, 'channelCode', 'ChannelCode');
       const defaultValue = pickString(obj, 'defaultValue', 'DefaultValue');
       const id = pickString(obj, 'id', 'Id') || `${ip}-${index}`;
+      const amountRange = `¥${minAmount}-${maxAmount}`;
+      const methodLabel = ip === 'POPO' ? payMethod || '在线支付' : 'TRC20 转账';
+      const methodWithCode = channelCode ? `${methodLabel}${channelCode}` : methodLabel;
 
       if (!isEnabled || (ip !== 'USDT' && ip !== 'POPO')) return null;
 
@@ -136,10 +140,7 @@ function buildDepositChannels(items: PayApiChannel[] | undefined): DepositChanne
         payApiId: id,
         ip,
         title: payMethodName || (ip === 'POPO' ? 'POPO' : 'USDT'),
-        description:
-          ip === 'POPO'
-            ? `${payMethod || '在线支付'} · ¥${minAmount}-${maxAmount}`
-            : `TRC20 转账 · ¥${minAmount}-${maxAmount}`,
+        description: `${methodWithCode} · ${amountRange}`,
         badge: formatSuccessBadge(successRate, ip),
         icon: ip === 'POPO' ? AlipayIcon : UsdtIcon,
         iconColor: ip === 'POPO' ? '#39a8ff' : '#35d6a3',

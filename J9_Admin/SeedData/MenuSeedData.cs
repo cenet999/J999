@@ -339,6 +339,11 @@ namespace J9_Admin.SeedData
                     {
                         Label = "会员宝箱记录", Path = "Ddd/DMemberChest", Sort = 407, Type = SysMenuType.菜单,
                         Children = GetCrudButtons(), Icon = "fas fa-box-open"
+                    },
+                    new SysMenu
+                    {
+                        Label = "IP白名单", Path = "Ddd/IpWhitelist", Sort = 408, Type = SysMenuType.菜单,
+                        Children = GetCrudButtons(), Icon = "fas fa-shield-alt"
                     }
                 }
             };

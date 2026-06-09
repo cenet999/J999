@@ -151,6 +151,7 @@ public class GameService : BaseService
                 .WhereIf(!string.IsNullOrEmpty(apiCode), d => d.ApiCode == apiCode)
                 .WhereIf(isHotRequest, d => d.GameType != GameType.Live && d.GameType != GameType.Sports && d.GameType != GameType.Other)
                 .OrderByDescending(d => d.IsRecommended)
+                .OrderByDescending(d => d.Sort)
                 .OrderByDescending(d => d.ClickCount)
                 .OrderByDescending(d => d.PlayerCount);
 

@@ -57,6 +57,11 @@ public partial class DGame : EntityModified
     public bool IsRecommended { get; set; }
 
     /// <summary>
+    /// 排序（数值越大越靠前）
+    /// </summary>
+    public int Sort { get; set; }
+
+    /// <summary>
     /// 接口代码
     /// </summary>
     public string ApiCode { get; set; }
