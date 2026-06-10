@@ -138,6 +138,12 @@ public class DAgentWeeklySettlement : EntityModified
     public string RuleVersion { get; set; } = "weekly-agent-rebate-v1";
 
     /// <summary>
+    /// 返利比例细则（按游戏类型流水占比与系数说明）
+    /// </summary>
+    [Column(StringLength = 500)]
+    public string RebateRateDetail { get; set; } = "";
+
+    /// <summary>
     /// 结算状态
     /// </summary>
     public AgentSettlementStatus Status { get; set; } = AgentSettlementStatus.Draft;

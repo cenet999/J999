@@ -57,8 +57,19 @@ public class AgentWeeklySettlementService
             .Where(t => t.TransactionType == TransactionType.Bet)
             .Where(t => t.TransactionTime >= fromUnix && t.TransactionTime < toUnix);
 
-        if (scopedAgentIds.Count > 0)
-            transactionQuery = transactionQuery.Where(t => scopedAgentIds.Contains(t.DAgentId));
+        var regenScope = await ResolveWeekRegenScopeAsync(orm, weekStart, scopedAgentIds);
+        if (regenScope.ShouldSkipWeek)
+        {
+            return new GenerateAgentWeeklySettlementResult
+            {
+                WeekStartDate = weekStart,
+                WeekEndDate = weekEnd,
+                WeekKey = weekKey
+            };
+        }
+
+        if (regenScope.SourceAgentIds is { Count: > 0 })
+            transactionQuery = transactionQuery.Where(t => regenScope.SourceAgentIds.Contains(t.DAgentId));
 
         var transactions = await transactionQuery
             .ToListAsync();
@@ -71,19 +82,13 @@ public class AgentWeeklySettlementService
             .ToList();
 
         using var uow = orm.CreateUnitOfWork();
-        var lockedCount = await uow.Orm.Select<DAgentWeeklySettlement>()
-            .Where(x => x.WeekStartDate == weekStart)
-            .WhereIf(scopedAgentIds.Count > 0, x => scopedAgentIds.Contains(x.SourceAgentId))
-            .Where(x => x.Status != AgentSettlementStatus.Draft)
-            .CountAsync();
 
-        if (lockedCount > 0)
-            throw new InvalidOperationException($"{weekKey} 已存在确认、付款或作废数据，不能重算。");
-
-        await uow.Orm.Delete<DAgentWeeklySettlement>()
+        var deleteQuery = uow.Orm.Delete<DAgentWeeklySettlement>()
             .Where(x => x.WeekStartDate == weekStart)
-            .WhereIf(scopedAgentIds.Count > 0, x => scopedAgentIds.Contains(x.SourceAgentId))
-            .ExecuteAffrowsAsync();
+            .Where(x => x.Status == AgentSettlementStatus.Draft);
+        if (regenScope.SourceAgentIds is { Count: > 0 })
+            deleteQuery = deleteQuery.Where(x => regenScope.SourceAgentIds.Contains(x.SourceAgentId));
+        await deleteQuery.ExecuteAffrowsAsync();
 
         if (rows.Count > 0)
             await uow.Orm.Insert(rows).ExecuteAffrowsAsync();
@@ -115,6 +120,94 @@ public class AgentWeeklySettlementService
         var week = ISOWeek.GetWeekOfYear(weekStart);
         var year = ISOWeek.GetYear(weekStart);
         return $"{year}-W{week:00}";
+    }
+
+    /// <summary>
+    /// 按当周实际投注流水，按游戏类型占比与系数累计加权，生成比例说明。
+    /// </summary>
+    public async Task<Dictionary<(long MemberId, long AgentId, DateTime WeekStart), string>> BuildRebateRateDetailsFromTransactionsAsync(
+        IReadOnlyList<DAgentWeeklySettlement> settlements)
+    {
+        var result = new Dictionary<(long MemberId, long AgentId, DateTime WeekStart), string>();
+        if (settlements.Count == 0)
+            return result;
+
+        foreach (var weekGroup in settlements.GroupBy(s => s.WeekStartDate))
+        {
+            var weekStart = weekGroup.Key;
+            var weekEnd = weekStart.AddDays(7);
+            var fromUnix = TimeHelper.LocalToUnix(weekStart);
+            var toUnix = TimeHelper.LocalToUnix(weekEnd);
+
+            var agentIds = weekGroup.Select(s => s.SourceAgentId).Distinct().ToList();
+            var memberIds = weekGroup.Select(s => s.DMemberId).Distinct().ToList();
+
+            var transactions = await _adminContext.Orm.Select<DTransAction>()
+                .Include(t => t.DGame)
+                .Where(t => t.Status == TransactionStatus.Success)
+                .Where(t => t.TransactionType == TransactionType.Bet)
+                .Where(t => t.TransactionTime >= fromUnix && t.TransactionTime < toUnix)
+                .Where(t => agentIds.Contains(t.DAgentId))
+                .Where(t => memberIds.Contains(t.DMemberId))
+                .ToListAsync();
+
+            var txByKey = transactions
+                .GroupBy(t => (t.DMemberId, t.DAgentId))
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            foreach (var settlement in weekGroup)
+            {
+                var key = (settlement.DMemberId, settlement.SourceAgentId);
+                var groupRows = txByKey.GetValueOrDefault(key) ?? [];
+                result[(settlement.DMemberId, settlement.SourceAgentId, weekStart)] = BuildRebateRateDetail(groupRows);
+            }
+        }
+
+        return result;
+    }
+
+    private sealed class WeekRegenScope
+    {
+        public bool ShouldSkipWeek { get; init; }
+        public List<long>? SourceAgentIds { get; init; }
+    }
+
+    /// <summary>
+    /// 解析本周可重算的直属代理范围：范围内若某代理已有确认/付款/作废快照，则跳过该代理，不影响同级其它代理。
+    /// 未传范围（admin 全量）时，只要当周存在任意锁定记录就整周禁止重算。
+    /// </summary>
+    private static async Task<WeekRegenScope> ResolveWeekRegenScopeAsync(
+        IFreeSql orm,
+        DateTime weekStart,
+        List<long> scopedAgentIds)
+    {
+        if (scopedAgentIds.Count == 0)
+        {
+            var anyLocked = await orm.Select<DAgentWeeklySettlement>()
+                .Where(x => x.WeekStartDate == weekStart)
+                .Where(x => x.Status != AgentSettlementStatus.Draft)
+                .AnyAsync();
+            if (anyLocked)
+                throw new InvalidOperationException($"{BuildWeekKey(weekStart)} 已存在确认、付款或作废数据，不能重算。");
+
+            return new WeekRegenScope();
+        }
+
+        var lockedAgentIds = await orm.Select<DAgentWeeklySettlement>()
+            .Where(x => x.WeekStartDate == weekStart)
+            .Where(x => x.Status != AgentSettlementStatus.Draft)
+            .Where(x => scopedAgentIds.Contains(x.SourceAgentId))
+            .Distinct()
+            .ToListAsync(x => x.SourceAgentId);
+
+        var regeneratableAgentIds = scopedAgentIds
+            .Where(id => id > 0 && !lockedAgentIds.Contains(id))
+            .Distinct()
+            .ToList();
+        if (regeneratableAgentIds.Count == 0)
+            return new WeekRegenScope { ShouldSkipWeek = true };
+
+        return new WeekRegenScope { SourceAgentIds = regeneratableAgentIds };
     }
 
     private static DAgentWeeklySettlement? BuildRow(
@@ -168,9 +261,54 @@ public class AgentWeeklySettlementService
             FromUnixTime = fromUnix,
             ToUnixTime = toUnix,
             RuleVersion = RuleVersion,
+            RebateRateDetail = BuildRebateRateDetail(groupRows),
             Status = AgentSettlementStatus.Draft
         };
     }
+
+    public static string BuildRebateRateDetail(List<DTransAction> groupRows)
+    {
+        if (groupRows.Count == 0)
+            return "";
+
+        var turnover = groupRows.Sum(t => t.BetAmount);
+        if (turnover <= 0)
+            return "";
+
+        var segments = groupRows
+            .GroupBy(t => t.DGame?.GameType ?? GameType.Other)
+            .Select(g => new
+            {
+                GameType = g.Key,
+                Turnover = g.Sum(t => t.BetAmount),
+                Multiplier = GetGameTypeMultiplier(g.Key)
+            })
+            .Where(x => x.Turnover > 0)
+            .OrderByDescending(x => x.Turnover)
+            .ToList();
+
+        var weightedMultiplier = segments.Sum(x => x.Turnover * x.Multiplier) / turnover;
+        var segmentFormula = string.Join("+", segments.Select(x =>
+            $"{DescribeGameType(x.GameType)}{(x.Turnover / turnover * 100m):0.#}%×{x.Multiplier:0.#}"));
+
+        if (segments.All(x => x.Multiplier >= 1m))
+            return "W=1|全额系数";
+
+        return $"W={weightedMultiplier.ToString("0.####", CultureInfo.InvariantCulture)}|{segmentFormula}";
+    }
+
+    private static string DescribeGameType(GameType? gameType) =>
+        gameType switch
+        {
+            GameType.Live => "真人",
+            GameType.Fishing => "捕鱼",
+            GameType.Electronic => "电子",
+            GameType.Lottery => "彩票",
+            GameType.Sports => "体育",
+            GameType.Card => "棋牌",
+            GameType.Other => "电竞",
+            _ => "其他"
+        };
 
     private static decimal RoundMoney(decimal value) =>
         Math.Round(value, 2, MidpointRounding.AwayFromZero);

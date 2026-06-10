@@ -8,18 +8,13 @@
 <div class="p-3">
     <div class="card shadow-sm border-0">
         <div class="card-body">
-            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
-                <div>
-                    <h5 class="mb-1">代理周结算</h5>
-                    <div class="text-muted small">按周统计会员投注流水，生成代理、父代理、爷代理三段返利快照。比例：代理 0.8%，父代理 0.5%，爷代理 0.2%；没有父代理或爷代理时，对应金额为 0。</div>
-                </div>
-                <button type="button" class="btn btn-success" @onclick="GenerateWeekAsync" disabled="@working">
-                    @(working ? "处理中..." : "生成 / 重算统计")
-                </button>
+            <div class="mb-3">
+                <h5 class="mb-1">代理周结算</h5>
+                <div class="text-muted small">按周统计可见范围内会员投注流水（本人、直属下级、下级的直属下级）。表格「返利比例 / 返利」按当前登录代理应得比例展示：本人直属会员 0.8%，下级代理会员 0.5%，下下级代理会员 0.2%；实际比例 = 基础比例 × 游戏系数（真人、体育 ×0.2；电子、捕鱼、彩票、棋牌、电竞 ×1）。</div>
             </div>
 
             <div class="row g-2 align-items-end mb-3">
-                <div class="col-2">
+                <div class="col-4">
                     <label class="form-label">周</label>
                     <select class="form-select" style="height: 35px;" value="@queryWeek" @onchange="OnQueryWeekChanged" disabled="@working">
                         @foreach (var option in weekOptions)
@@ -35,6 +30,12 @@
                 <div class="col-auto">
                     <button type="button" class="btn btn-primary" @onclick="LoadRowsAsync" disabled="@working">查询</button>
                     <button type="button" class="btn btn-outline-secondary" @onclick="ResetFilters" disabled="@working">重置</button>
+                </div>
+                <div class="col-auto">
+                    <label class="form-label d-block invisible">操作</label>
+                    <button type="button" class="btn btn-success" @onclick="GenerateWeekAsync" disabled="@working">
+                        @(working ? "处理中..." : "生成 / 重算统计")
+                    </button>
                 </div>
             </div>
 
@@ -97,11 +98,12 @@
                             @foreach (var item in agentSummaries)
                             {
                                 <div class="col-3">
-                                    <div class="card h-100 border-success shadow-sm">
-                                        <div class="card-body p-3">
-                                            <div class="small text-muted text-truncate" title="@item.Name">@item.Name</div>
-                                            <div class="fs-6 fw-bold text-success">@item.Amount.ToString("0.##")</div>
-                                            <div class="small text-muted mb-2">涉及 @item.InvolvedCount 条，已付款 @item.PaidCount 条</div>
+                                    <div class="border rounded p-3 h-100">
+                                        <div class="text-muted small text-truncate" title="@item.Name">@item.Name</div>
+                                        <div class="fs-5 fw-bold">@item.Amount.ToString("0.##")</div>
+                                        <div class="text-muted small mb-@(IsSiteAdmin ? "2" : "0")">涉及 @item.InvolvedCount 条，已付款 @item.PaidCount 条</div>
+                                        @if (IsSiteAdmin)
+                                        {
                                             <div class="d-flex gap-2">
                                                 <select class="form-select" style="height: 35px;" value="@(item.SelectedStatus.HasValue ? ((int)item.SelectedStatus.Value).ToString() : "")" @onchange="e => OnAgentSummaryStatusChanged(item, e)" disabled="@working">
                                                     <option value="">选择状态</option>
@@ -114,7 +116,7 @@
                                                     确认
                                                 </button>
                                             </div>
-                                        </div>
+                                        }
                                     </div>
                                 </div>
                             }
@@ -130,15 +132,11 @@
                                 <th>周</th>
                                 <th>会员</th>
                                 <th>代理</th>
-                                <th>父代理</th>
-                                <th>爷代理</th>
-                                <th>流水</th>
                                 <th>有效投注</th>
+                                <th>返利比例</th>
+                                <th>比例说明</th>
                                 <th>笔数</th>
-                                <th>代理返利</th>
-                                <th>父代理返利</th>
-                                <th>爷代理返利</th>
-                                <th>返利总计</th>
+                                <th>返利</th>
                                 <th>状态</th>
                             </tr>
                         </thead>
@@ -150,15 +148,11 @@
                                     <td>@item.WeekText</td>
                                     <td>@item.MemberName</td>
                                     <td>@item.SourceAgentName</td>
-                                    <td>@DisplayName(item.ParentAgentName)</td>
-                                    <td>@DisplayName(item.GrandAgentName)</td>
-                                    <td>@item.TurnoverAmount.ToString("0.##")</td>
                                     <td>@item.ValidBetAmount.ToString("0.##")</td>
+                                    <td>@FormatViewerRebateRate(item)</td>
+                                    <td class="small text-muted" style="min-width: 320px;">@FormatViewerRateDetail(item)</td>
                                     <td>@item.BetTransactionCount</td>
-                                    <td><span class="badge bg-success">@item.SourceRebateAmount.ToString("0.##")</span></td>
-                                    <td>@item.ParentRebateAmount.ToString("0.##")</td>
-                                    <td>@item.GrandRebateAmount.ToString("0.##")</td>
-                                    <td class="text-danger fw-bold">@item.TotalRebateAmount.ToString("0.##")</td>
+                                    <td><span class="badge bg-success">@GetViewerRebateAmount(item).ToString("0.##")</span></td>
                                     <td>@FormatStatus(item.Status)</td>
                                 </tr>
                             }
@@ -188,8 +182,7 @@
     bool working;
     string loadError = "";
     string successMessage = "";
-    const string RecentFourWeeksValue = "__recent_4_weeks__";
-    string queryWeek = RecentFourWeeksValue;
+    string queryWeek = "";
     string keyword = "";
     DateTime businessToday = DateTime.Today;
     List<WeekOption> weekOptions = [];
@@ -197,6 +190,10 @@
     decimal totalValidBet;
     decimal totalRebate;
     int totalBetCount;
+    long viewerAgentId;
+
+    bool IsSiteAdmin =>
+        string.Equals(NovaAdminContext.User?.Username, "admin", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// 初始化周选项并加载默认结算数据。
@@ -204,6 +201,7 @@
     protected override async Task OnInitializedAsync()
     {
         weekOptions = BuildWeekOptions(businessToday);
+        queryWeek = GetDefaultWeekValue(businessToday);
         await LoadRowsAsync();
     }
 
@@ -227,6 +225,7 @@
 
         businessToday = browserToday.Date;
         weekOptions = BuildWeekOptions(businessToday);
+        queryWeek = GetDefaultWeekValue(businessToday);
         await LoadRowsAsync();
         StateHasChanged();
     }
@@ -237,7 +236,7 @@
     async Task OnQueryWeekChanged(ChangeEventArgs e)
     {
         var value = e.Value?.ToString();
-        queryWeek = string.IsNullOrWhiteSpace(value) ? RecentFourWeeksValue : value;
+        queryWeek = string.IsNullOrWhiteSpace(value) ? GetDefaultWeekValue(businessToday) : value;
 
         await LoadRowsAsync();
     }
@@ -339,9 +338,7 @@
         var visibleAgentIdList = visibleAgentIds.ToList();
         var data = await repo.Orm.Select<DAgentWeeklySettlement>()
             .Where(x => selectedWeekStarts.Contains(x.WeekStartDate))
-            .Where(x => visibleAgentIdList.Contains(x.SourceAgentId)
-                || visibleAgentIdList.Contains(x.ParentAgentId)
-                || visibleAgentIdList.Contains(x.GrandAgentId))
+            .Where(x => visibleAgentIdList.Contains(x.SourceAgentId))
             .ToListAsync();
 
         if (!string.IsNullOrWhiteSpace(keyword))
@@ -349,20 +346,18 @@
             var text = keyword.Trim();
             data = data.Where(x =>
                 x.MemberName.Contains(text, StringComparison.OrdinalIgnoreCase) ||
-                x.SourceAgentName.Contains(text, StringComparison.OrdinalIgnoreCase) ||
-                x.ParentAgentName.Contains(text, StringComparison.OrdinalIgnoreCase) ||
-                x.GrandAgentName.Contains(text, StringComparison.OrdinalIgnoreCase)).ToList();
+                x.SourceAgentName.Contains(text, StringComparison.OrdinalIgnoreCase)).ToList();
         }
 
+        viewerAgentId = IsSiteAdmin ? 0 : sessionAgent.GetAgentId();
+
+        var rateDetails = await settlementService.BuildRebateRateDetailsFromTransactionsAsync(data);
+
         rows = data
-            .OrderByDescending(x => x.WeekStartDate)
-            .ThenByDescending(x => x.TotalRebateAmount)
-            .ThenBy(x => x.SourceAgentName)
-            .ThenBy(x => x.MemberName)
-            .Select((x, index) => new SettlementViewRow
+            .Select(x => new SettlementViewRow
             {
-                Id = index + 1,
                 SettlementId = x.Id,
+                WeekStartDate = x.WeekStartDate,
                 WeekText = FormatWeekText(x.WeekKey, x.WeekStartDate, x.WeekEndDate, businessToday),
                 MemberName = x.MemberName,
                 SourceAgentId = x.SourceAgentId,
@@ -374,19 +369,32 @@
                 TurnoverAmount = x.TurnoverAmount,
                 ValidBetAmount = x.ValidBetAmount,
                 BetTransactionCount = x.BetTransactionCount,
+                SourceRate = x.SourceRate,
+                ParentRate = x.ParentRate,
+                GrandRate = x.GrandRate,
                 SourceRebateAmount = x.SourceRebateAmount,
                 ParentRebateAmount = x.ParentRebateAmount,
                 GrandRebateAmount = x.GrandRebateAmount,
                 TotalRebateAmount = x.TotalRebateAmount,
+                RebateRateDetail = rateDetails.GetValueOrDefault((x.DMemberId, x.SourceAgentId, x.WeekStartDate)) ?? "",
                 Status = x.Status
+            })
+            .OrderByDescending(x => x.WeekStartDate)
+            .ThenByDescending(GetViewerRebateAmount)
+            .ThenBy(x => x.SourceAgentName)
+            .ThenBy(x => x.MemberName)
+            .Select((x, index) =>
+            {
+                x.Id = index + 1;
+                return x;
             })
             .ToList();
 
         totalTurnover = rows.Sum(x => x.TurnoverAmount);
         totalValidBet = rows.Sum(x => x.ValidBetAmount);
         totalBetCount = rows.Sum(x => x.BetTransactionCount);
-        totalRebate = rows.Sum(x => x.TotalRebateAmount);
-        RebuildAgentSummaries(data);
+        totalRebate = rows.Sum(GetViewerRebateAmount);
+        RebuildAgentSummaries();
     }
 
     /// <summary>
@@ -395,10 +403,7 @@
     async Task<HashSet<long>> BuildVisibleAgentIdsAsync()
     {
         var agents = await repo.Orm.Select<DAgent>().ToListAsync();
-        return VisibleAgentIdsHelper.Build(
-            agents,
-            string.Equals(NovaAdminContext.User?.Username, "admin", StringComparison.OrdinalIgnoreCase),
-            sessionAgent.GetAgentId());
+        return VisibleAgentIdsHelper.Build(agents, IsSiteAdmin, sessionAgent.GetAgentId());
     }
 
     /// <summary>
@@ -417,6 +422,9 @@
     /// </summary>
     async Task UpdateAgentStatusAsync(AgentSummaryItem item)
     {
+        if (!IsSiteAdmin)
+            return;
+
         if (!item.SelectedStatus.HasValue)
             return;
 
@@ -479,7 +487,7 @@
     /// </summary>
     void ResetFilters()
     {
-        queryWeek = RecentFourWeeksValue;
+        queryWeek = GetDefaultWeekValue(businessToday);
         keyword = "";
         _ = LoadRowsAsync();
     }
@@ -489,40 +497,24 @@
     /// </summary>
     List<DateTime> GetSelectedWeekStarts()
     {
-        if (string.IsNullOrWhiteSpace(queryWeek) || queryWeek == RecentFourWeeksValue)
-            return GetRecentWeekStarts(4, businessToday);
+        if (TryParseWeek(queryWeek, out var weekStart))
+            return [weekStart];
 
-        return TryParseWeek(queryWeek, out var weekStart)
-            ? [weekStart]
-            : [];
+        return [AgentWeeklySettlementService.NormalizeWeekStart(businessToday)];
     }
 
-    /// <summary>
-    /// 从指定日期所在周开始，向前取最近若干周的周一日期。
-    /// </summary>
-    static List<DateTime> GetRecentWeekStarts(int count, DateTime today)
-    {
-        var current = AgentWeeklySettlementService.NormalizeWeekStart(today);
-        var list = new List<DateTime>();
-        for (var i = 0; i < count; i++)
-            list.Add(current.AddDays(-7 * i));
-
-        return list;
-    }
+    static string GetDefaultWeekValue(DateTime today) =>
+        AgentWeeklySettlementService.BuildWeekKey(AgentWeeklySettlementService.NormalizeWeekStart(today));
 
     /// <summary>
-    /// 按代理汇总返利金额，并统计该代理当前涉及的结算条目状态。
+    /// 按会员所属直属代理分组，汇总当前查看者应得的返利金额。
     /// </summary>
-    void RebuildAgentSummaries(List<DAgentWeeklySettlement> data)
+    void RebuildAgentSummaries()
     {
         var map = new Dictionary<long, AgentSummaryItem>();
 
-        foreach (var item in data)
-        {
-            AddAmount(item.SourceAgentId, item.SourceAgentName, item.SourceRebateAmount);
-            AddAmount(item.ParentAgentId, item.ParentAgentName, item.ParentRebateAmount);
-            AddAmount(item.GrandAgentId, item.GrandAgentName, item.GrandRebateAmount);
-        }
+        foreach (var item in rows)
+            AddAmount(item.SourceAgentId, item.SourceAgentName, GetViewerRebateAmount(item));
 
         agentSummaries = map
             .Select(x =>
@@ -555,20 +547,17 @@
     }
 
     /// <summary>
-    /// 判断代理是否参与了指定结算行的任一返利层级。
+    /// 判断代理是否为指定结算行的直属代理。
     /// </summary>
     static bool IsAgentInvolved(SettlementViewRow row, long agentId) =>
-        row.SourceAgentId == agentId || row.ParentAgentId == agentId || row.GrandAgentId == agentId;
+        row.SourceAgentId == agentId;
 
     /// <summary>
     /// 构建页面周筛选下拉选项。
     /// </summary>
     static List<WeekOption> BuildWeekOptions(DateTime today)
     {
-        var list = new List<WeekOption>
-        {
-            new() { Value = RecentFourWeeksValue, Text = "最近 4 周" }
-        };
+        var list = new List<WeekOption>();
         var current = AgentWeeklySettlementService.NormalizeWeekStart(today);
         for (var i = 0; i < 12; i++)
         {
@@ -626,10 +615,120 @@
     }
 
     /// <summary>
-    /// 统一处理空代理名的表格显示。
+    /// 当前查看者在本行应得的返利金额：本人直属 0.8%、下级会员 0.5%、下下级会员 0.2%；admin 看直属代理 0.8%。
     /// </summary>
-    static string DisplayName(string name) =>
-        string.IsNullOrWhiteSpace(name) ? "-" : name;
+    decimal GetViewerRebateAmount(SettlementViewRow row)
+    {
+        if (IsSiteAdmin || viewerAgentId <= 0)
+            return row.SourceRebateAmount;
+        if (row.SourceAgentId == viewerAgentId)
+            return row.SourceRebateAmount;
+        if (row.ParentAgentId == viewerAgentId)
+            return row.ParentRebateAmount;
+        if (row.GrandAgentId == viewerAgentId)
+            return row.GrandRebateAmount;
+        return 0;
+    }
+
+    decimal GetViewerBaseRate(SettlementViewRow row)
+    {
+        if (IsSiteAdmin || viewerAgentId <= 0)
+            return row.SourceRate;
+        if (row.SourceAgentId == viewerAgentId)
+            return row.SourceRate;
+        if (row.ParentAgentId == viewerAgentId)
+            return row.ParentRate;
+        if (row.GrandAgentId == viewerAgentId)
+            return row.GrandRate;
+        return 0;
+    }
+
+    /// <summary>
+    /// 展示当前查看者在本行的实际返利比例（应得返利 ÷ 流水），保留 2 位小数。
+    /// </summary>
+    string FormatViewerRebateRate(SettlementViewRow item)
+    {
+        var viewerAmount = GetViewerRebateAmount(item);
+        decimal percent;
+        if (item.TurnoverAmount > 0 && viewerAmount > 0)
+            percent = viewerAmount / item.TurnoverAmount * 100m;
+        else
+        {
+            var baseRate = GetViewerBaseRate(item);
+            if (baseRate <= 0)
+                return "-";
+            percent = baseRate * 100m;
+        }
+
+        return percent.ToString("0.00", CultureInfo.InvariantCulture) + "%";
+    }
+
+    /// <summary>
+    /// 展示当前查看者的返利比例计算过程。
+    /// </summary>
+    string FormatViewerRateDetail(SettlementViewRow item)
+    {
+        var basePercent = GetViewerBaseRate(item) * 100m;
+        if (basePercent <= 0)
+            return "—";
+
+        var viewerAmount = GetViewerRebateAmount(item);
+        var effectivePercent = item.TurnoverAmount > 0 && viewerAmount > 0
+            ? viewerAmount / item.TurnoverAmount * 100m
+            : basePercent;
+
+        if (TryParseRebateRateDetail(item.RebateRateDetail, out var weighted, out var segmentFormula))
+        {
+            if (segmentFormula == "全额系数" && effectivePercent >= basePercent - 0.005m)
+                return "—";
+
+            return BuildRateCalcText(basePercent, segmentFormula, weighted, effectivePercent);
+        }
+
+        return "—";
+    }
+
+    static string BuildRateCalcText(decimal basePercent, string segmentFormula, decimal weighted, decimal effectivePercent)
+    {
+        var baseText = basePercent.ToString("0.00", CultureInfo.InvariantCulture);
+        var effectiveText = effectivePercent.ToString("0.00", CultureInfo.InvariantCulture);
+        var weightText = weighted.ToString("0.####", CultureInfo.InvariantCulture);
+
+        if (segmentFormula == "全额系数")
+            return $"{baseText}%={effectiveText}%";
+
+        return $"{baseText}%×({segmentFormula})={baseText}%×{weightText}={effectiveText}%";
+    }
+
+    static bool TryParseRebateRateDetail(string? detail, out decimal weighted, out string segmentFormula)
+    {
+        weighted = 1m;
+        segmentFormula = "";
+        if (string.IsNullOrWhiteSpace(detail))
+            return false;
+
+        if (detail.StartsWith("W=", StringComparison.Ordinal))
+        {
+            var pipe = detail.IndexOf('|');
+            if (pipe < 2)
+                return false;
+
+            if (!decimal.TryParse(detail[2..pipe], NumberStyles.Number, CultureInfo.InvariantCulture, out weighted))
+                return false;
+
+            segmentFormula = detail[(pipe + 1)..];
+            return true;
+        }
+
+        if (detail == "游戏系数均为×1")
+        {
+            weighted = 1m;
+            segmentFormula = "全额系数";
+            return true;
+        }
+
+        return false;
+    }
 
     /// <summary>
     /// 将结算状态转换为页面展示文案。
@@ -653,6 +752,7 @@
     {
         public int Id { get; set; }
         public long SettlementId { get; set; }
+        public DateTime WeekStartDate { get; set; }
         public string WeekText { get; set; } = "";
         public string MemberName { get; set; } = "";
         public long SourceAgentId { get; set; }
@@ -664,10 +764,14 @@
         public decimal TurnoverAmount { get; set; }
         public decimal ValidBetAmount { get; set; }
         public int BetTransactionCount { get; set; }
+        public decimal SourceRate { get; set; }
+        public decimal ParentRate { get; set; }
+        public decimal GrandRate { get; set; }
         public decimal SourceRebateAmount { get; set; }
         public decimal ParentRebateAmount { get; set; }
         public decimal GrandRebateAmount { get; set; }
         public decimal TotalRebateAmount { get; set; }
+        public string RebateRateDetail { get; set; } = "";
         public AgentSettlementStatus Status { get; set; }
     }
 
