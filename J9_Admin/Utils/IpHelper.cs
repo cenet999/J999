@@ -21,26 +21,33 @@ namespace J9_Admin.Utils
                     return "unknown";
                 }
 
-                var xRealIp = httpContext.Request.Headers["X-Real-IP"].FirstOrDefault();
-                if (!string.IsNullOrEmpty(xRealIp))
+                // Cloudflare 场景下 NPM 的 X-Real-IP 往往是 CF 边缘节点，真实客户端在 CF-Connecting-IP
+                var cfConnectingIp = httpContext.Request.Headers["CF-Connecting-IP"].FirstOrDefault();
+                if (!string.IsNullOrWhiteSpace(cfConnectingIp))
                 {
-                    return xRealIp;
+                    return NormalizeIp(cfConnectingIp);
                 }
 
-                var cfConnectingIp = httpContext.Request.Headers["CF-Connecting-IP"].FirstOrDefault();
-                if (!string.IsNullOrEmpty(cfConnectingIp))
+                var xRealIp = httpContext.Request.Headers["X-Real-IP"].FirstOrDefault();
+                if (!string.IsNullOrWhiteSpace(xRealIp))
                 {
-                    return cfConnectingIp;
+                    return NormalizeIp(xRealIp);
+                }
+
+                var xForwardedFor = httpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+                if (!string.IsNullOrWhiteSpace(xForwardedFor))
+                {
+                    var firstForwardedIp = xForwardedFor
+                        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                        .FirstOrDefault();
+                    if (!string.IsNullOrWhiteSpace(firstForwardedIp))
+                    {
+                        return NormalizeIp(firstForwardedIp);
+                    }
                 }
 
                 var remoteIp = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-                if (!string.IsNullOrEmpty(NormalizeIp(remoteIp)))
-                {
-                    return NormalizeIp(remoteIp);
-                }
-
-
-                return "unknown";
+                return NormalizeIp(remoteIp);
             }
             catch (Exception ex)
             {

@@ -37,7 +37,7 @@ public class TestIP : BaseService
 
         return new
         {
-            message = "用于查看当前请求实际拿到的 IP 信息；白名单校验优先级：X-Real-IP → CF-Connecting-IP → RemoteIpAddress",
+            message = "用于查看当前请求实际拿到的 IP 信息；解析优先级：CF-Connecting-IP → X-Real-IP → X-Forwarded-For 首段 → RemoteIpAddress",
             resolvedIp,
             remoteIp,
             headers = new
