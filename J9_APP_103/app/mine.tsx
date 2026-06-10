@@ -1050,9 +1050,9 @@ export default function MineScreen() {
         {isAuthenticated ? (
           <Pressable
             onPress={handleLogout}
-            className="flex-row items-center justify-center gap-2 rounded-[20px] bg-[#3a1f29] px-4 py-3.5">
-            <Icon as={LogOut} size={18} color="#ff9ab3" />
-            <Text className="text-[14px] font-bold text-[#ff9ab3]">退出登录</Text>
+            className="flex-row items-center justify-center gap-2 rounded-[20px] border border-[#4f3a80] bg-[#221b35] px-4 py-3.5">
+            <Icon as={LogOut} size={18} color="#b89bff" />
+            <Text className="text-[14px] font-bold text-[#b89bff]">退出登录</Text>
           </Pressable>
         ) : null}
       </Pg51InnerPage>

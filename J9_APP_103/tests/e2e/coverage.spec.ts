@@ -150,7 +150,7 @@ test('登录后邀请与设置页面可以正常打开', async ({ page }) => {
 
   await page.goto('/invite-friends');
   await expect(page.getByText('邀请好友').first()).toBeVisible();
-  await expect(page.getByText('我的邀请码')).toBeVisible();
+  await expect(page.getByText('我的邀请链接')).toBeVisible();
   await expect(page.getByText('J9E2E')).toBeVisible();
   await expect(page.getByText('邀请记录', { exact: true })).toBeVisible();
 

@@ -118,15 +118,6 @@ export default function InviteFriendsScreen() {
     data?.agentName || undefined
   );
 
-  const copyInviteCode = async () => {
-    if (!inviteCode) {
-      Toast.show({ type: 'info', text1: '当前没有邀请码' });
-      return;
-    }
-    await Clipboard.setStringAsync(inviteCode);
-    Toast.show({ type: 'success', text1: '邀请码已复制' });
-  };
-
   const copyInviteLink = async () => {
     if (!inviteLink) {
       Toast.show({ type: 'info', text1: '当前没有邀请链接' });
@@ -155,7 +146,7 @@ export default function InviteFriendsScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       <Pg51InnerPage
         title="邀请好友"
-        subtitle="邀请码与奖励一览"
+        subtitle="邀请链接与奖励一览"
         tag="邀请返利"
         tone="purple"
         hideHero>
@@ -164,7 +155,7 @@ export default function InviteFriendsScreen() {
           icon={Users}
           iconColor="#9b5cff"
           title="邀请好友"
-          subtitle="邀请码与奖励一览"
+          subtitle="邀请链接与奖励一览"
           tone="purple"
         />
 
@@ -175,26 +166,28 @@ export default function InviteFriendsScreen() {
         ) : (
           <>
             <Pg51SectionCard
-              title="我的邀请码"
-              description="邀请码或链接注册即计入">
-              <View className="flex-row items-center justify-between rounded-[22px] border border-[#4f3a80] bg-[#221b35] px-4 py-4">
-                <View>
-                  <Text className="text-[11px] font-semibold text-[#9fa8be]">邀请码</Text>
-                  <Text className="mt-1 text-[26px] font-black tracking-[3px] text-white">
-                    {inviteCode || '—'}
+              title="我的邀请链接"
+              description="分享链接注册即计入">
+              <View className="flex-row items-center justify-between gap-3 rounded-[22px] border border-[#4f3a80] bg-[#221b35] px-4 py-4">
+                <View className="min-w-0 flex-1">
+                  <Text className="text-[11px] font-semibold text-[#9fa8be]">邀请链接</Text>
+                  <Text
+                    className="mt-1 text-[13px] font-semibold leading-[20px] text-white"
+                    numberOfLines={3}
+                    selectable>
+                    {inviteLink || '—'}
                   </Text>
                 </View>
 
                 <Pressable
-                  onPress={copyInviteCode}
-                  className="flex-row items-center gap-2 rounded-full bg-[#6f1dff] px-3 py-2">
+                  onPress={copyInviteLink}
+                  className="shrink-0 flex-row items-center gap-2 rounded-full bg-[#6f1dff] px-3 py-2">
                   <Icon as={Copy} size={15} className="text-white" />
                   <Text className="text-[12px] font-bold text-white">复制</Text>
                 </Pressable>
               </View>
 
               <View className="flex-row gap-3">
-                <ActionButton icon={Copy} label="复制链接" onPress={copyInviteLink} />
                 <ActionButton icon={Share2} label="分享邀请" onPress={shareInvite} tone="pink" />
               </View>
             </Pg51SectionCard>
