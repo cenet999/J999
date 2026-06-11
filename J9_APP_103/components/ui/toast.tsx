@@ -284,28 +284,28 @@ export function ToastProvider() {
     </Animated.View>
   );
 
-  if (isModal) {
-    return (
-      <Modal visible transparent statusBarTranslucent animationType="fade">
+  return (
+    <Modal visible transparent statusBarTranslucent animationType="fade">
+      {isModal ? (
         <View style={styles.modalBackdrop}>
           <View style={{ width: '100%', maxWidth: 360 }}>{card}</View>
         </View>
-      </Modal>
-    );
-  }
-
-  return (
-    <View pointerEvents="box-none" style={[StyleSheet.absoluteFill, { zIndex: 99999 }]}>
-      <View
-        pointerEvents="box-none"
-        style={{
-          alignItems: 'center',
-          paddingHorizontal: 16,
-          paddingTop: insets.top + 14,
-        }}>
-        <View style={{ width: '100%', maxWidth: 400 }}>{card}</View>
-      </View>
-    </View>
+      ) : (
+        <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
+          <View
+            pointerEvents="box-none"
+            style={{
+              alignItems: 'center',
+              paddingHorizontal: 16,
+              paddingTop: insets.top + 14,
+            }}>
+            <View pointerEvents="auto" style={{ width: '100%', maxWidth: 400 }}>
+              {card}
+            </View>
+          </View>
+        </View>
+      )}
+    </Modal>
   );
 }
 
