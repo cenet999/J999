@@ -9,6 +9,7 @@ using System.Text.RegularExpressions;
 using System.Data;
 using System.Text.Json;
 using J9_Admin.API;
+using J9_Admin.Utils;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
@@ -74,20 +75,14 @@ namespace J9_Admin.TelegramBot
                 if (messageText.StartsWith("/start"))
                 {
                     _logger.LogInformation($"命中指令 /start: ChatId={chatId}, MessageId={messageId}");
-                    // 欢迎消息
                     var msg = "Welcome to the 800800win Telegram bot!\n";
-                    msg += "Please use the correct format:\n <code>/bind AgentId</code>\n";
-                    msg += "After binding, you can get the information of your website (member registration, recharge, withdrawal, betting, rebate, etc.).\n";
-                    msg += "https://api.800800.win/Ddd/DAgent to get agentId \n";
-                    msg += "You can also use /help to get help.\n";
+                    msg += "Use /help to see available commands.\n";
+                    msg += "Telegram ChatId must be configured in the admin panel.\n";
                     await DeviceHelper.SendTempMessageAsync(device, msg);
 
-                    //翻译为中文再发送一遍
                     var msg_cn = "欢迎使用800800win Telegram机器人！\n\n";
-                    msg_cn += "请使用正确的格式：\n <code>/bind AgentId</code>\n";
-                    msg_cn += "绑定后，您可以获取到您网站的相关信息（会员注册、充值、提现、下注、返点等）。\n";
-                    msg_cn += "https://api.800800.win/Ddd/DAgent 获取agentId \n";
-                    msg_cn += "您也可以使用 /help 获取帮助。\n";
+                    msg_cn += "发送 /help 查看可用命令。\n";
+                    msg_cn += "Telegram ChatId 请在管理后台代理页面手动配置。\n";
                     await DeviceHelper.SendTempMessageAsync(device, msg_cn);
 
                     return true;
@@ -96,96 +91,30 @@ namespace J9_Admin.TelegramBot
                 if (messageText.StartsWith("/help"))
                 {
                     _logger.LogInformation($"命中指令 /help: ChatId={chatId}, MessageId={messageId}");
-                    // 英文和中文内容对比后，发现英文版有些地方可以更详细、与中文版保持一致，尤其是命令的解释和管理员联系方式的表达方式。
-                    // 下面对中英文内容做了优化，使其表达更一致，且注释详细说明。
 
-                    // 英文帮助信息
                     var msg = "Welcome to the 800800win Telegram bot!\n";
                     msg += "--------------------------------\n";
                     msg += "Examples:\n";
-                    msg += "<code>/bind 1234567890</code> - Bind your agent ID\n";
-                    msg += "<code>/unbind 1234567890</code> - Unbind your agent ID\n";
                     msg += "<code>/id</code> - Get your agent information\n";
-                    msg += "<code>/ip 127.0.0.1</code> - Set IP whitelist\n";
+                    msg += "<code>/ip 127.0.0.1</code> - Set login IP\n";
                     msg += "--------------------------------\n";
+                    msg += "ChatId must be configured in admin panel first.\n";
                     msg += "If you have any questions, please contact the administrator: @yoyoyo241026\n";
 
                     await DeviceHelper.SendTempMessageAsync(device, msg);
 
-                    // 中文帮助信息
                     var msg_cn = "欢迎使用800800win Telegram机器人！\n";
                     msg_cn += "--------------------------------\n";
                     msg_cn += "示例：\n";
-                    msg_cn += "<code>/bind 1234567890</code> - 绑定代理ID\n";
-                    msg_cn += "<code>/unbind 1234567890</code> - 解绑代理ID\n";
                     msg_cn += "<code>/id</code> - 获取代理信息\n";
-                    msg_cn += "<code>/ip 127.0.0.1</code> - 设置IP白名单\n";
+                    msg_cn += "<code>/ip 127.0.0.1</code> - 设置登录IP\n";
                     msg_cn += "--------------------------------\n";
+                    msg_cn += "请先在管理后台配置 Telegram ChatId。\n";
                     msg_cn += "如果您有任何问题，请联系管理员：@yoyoyo241026\n";
 
                     await DeviceHelper.SendTempMessageAsync(device, msg_cn);
 
-                    // 说明：
-                    // 1. 英文和中文命令说明都加上了“-”和简短解释，便于新手理解。
-                    // 2. 管理员联系方式格式统一，去掉了中文多余的句号。
-                    // 3. 去掉了重复的 /id 命令，保持中英文一致。
-                    // 4. 注释说明了优化点，便于维护。
-
                     return true;
-                }
-
-                // 处理绑定指令
-                if (messageText.StartsWith("/bind"))
-                {
-                    _logger.LogInformation($"命中指令 /bind: ChatId={chatId}, MessageId={messageId}, Text={messageText}");
-                    // 获取绑定参数
-                    var bindParams = messageText.Split(' ');
-                    if (bindParams.Length < 2)
-                    {
-                        await DeviceHelper.SendTempMessageAsync(device, "请使用正确的格式: /bind AgentId");
-                        return true;
-                    }
-
-                    var agentId = long.Parse(bindParams[1]);
-                    var agent = await _fsql.Select<DAgent>().Where(a => a.Id == agentId).ToOneAsync();
-
-                    if (agent == null)
-                    {
-                        await DeviceHelper.SendTempMessageAsync(device, $"该代理不存在 {agentId}");
-                        return true;
-                    }
-
-                    if (agent.TelegramChatId.Contains(message.Chat.Id.ToString()))
-                    {
-                        await DeviceHelper.SendTempMessageAsync(device, $"该代理已绑定您的Telegram账号 {agent.HomeUrl}");
-                        return true;
-                    }
-
-                    agent.TelegramChatId = agent.TelegramChatId == "" ? message.Chat.Id.ToString() : agent.TelegramChatId + "," + message.Chat.Id.ToString();
-                    await _fsql.Update<DAgent>().SetSource(agent).ExecuteAffrowsAsync();
-
-                    await DeviceHelper.SendTempMessageAsync(device, $"成功绑定代理 {agent.HomeUrl}");
-                    return true;
-
-                }
-
-                if (messageText.StartsWith("/unbind"))
-                {
-                    _logger.LogInformation($"命中指令 /unbind: ChatId={chatId}, MessageId={messageId}, Text={messageText}");
-                    var agentId = long.Parse(messageText.Split(' ')[1]);
-                    var agent = await _fsql.Select<DAgent>().Where(a => a.Id == agentId && a.TelegramChatId.Contains(message.Chat.Id.ToString())).ToOneAsync();
-                    if (agent != null)
-                    {
-                        agent.TelegramChatId = agent.TelegramChatId.Replace(message.Chat.Id.ToString(), "");
-                        await _fsql.Update<DAgent>().SetSource(agent).ExecuteAffrowsAsync();
-                        await DeviceHelper.SendTempMessageAsync(device, $"成功解绑代理 {agent.HomeUrl}");
-                        return true;
-                    }
-                    else
-                    {
-                        await DeviceHelper.SendTempMessageAsync(device, "该代理未绑定您的Telegram账号");
-                        return true;
-                    }
                 }
 
                 // 设置ip 白名单
@@ -196,7 +125,7 @@ namespace J9_Admin.TelegramBot
 
                     if (agent == null)
                     {
-                        await DeviceHelper.SendTempMessageAsync(device, "您的账号未绑定代理。");
+                        await DeviceHelper.SendTempMessageAsync(device, "未找到与您 ChatId 匹配的代理，请在管理后台配置 Telegram ChatId。");
                         return true;
                     }
 
@@ -293,16 +222,13 @@ namespace J9_Admin.TelegramBot
                 return false;
             }
 
-            var member = await _fsql.Select<DMember>()
-                .Include(m => m.DAgent)
-                .Where(m => m.Id == original.DMemberId.Value)
-                .ToOneAsync();
+            var serviceAgent = await CustomerServiceAgentHelper.GetCustomerServiceAgentAsync(_fsql);
 
-            if (member?.DAgent == null || !HasTelegramChatBinding(member.DAgent.TelegramChatId, chatId))
+            if (serviceAgent == null || !CustomerServiceAgentHelper.HasTelegramChatBinding(serviceAgent.TelegramChatId, chatId))
             {
                 _logger.LogWarning(
-                    $"Telegram 绑定校验失败，消息不写入 App: ChatId={chatId}, ReplyToMessageId={repliedToMessageId}, MemberId={original.DMemberId}, AgentId={member?.DAgent?.Id}");
-                await DeviceHelper.SendTempMessageAsync(device, "⚠️ 该客户当前已不在此 Telegram 绑定下，未同步到 App。");
+                    $"Telegram 绑定校验失败，消息不写入 App: ChatId={chatId}, ReplyToMessageId={repliedToMessageId}, MemberId={original.DMemberId}, ServiceAgentId={serviceAgent?.Id}");
+                await DeviceHelper.SendTempMessageAsync(device, "⚠️ 当前 Telegram 未绑定平台客服代理，未同步到 App。");
                 return true;
             }
 
@@ -328,17 +254,6 @@ namespace J9_Admin.TelegramBot
 
             await DeviceHelper.SendTempMessageAsync(device, "✅ 已同步到 App 消息中心（客户可见）。");
             return true;
-        }
-
-        private static bool HasTelegramChatBinding(string? telegramChatIdsCsv, long chatId)
-        {
-            if (string.IsNullOrWhiteSpace(telegramChatIdsCsv))
-                return false;
-
-            var targetChatId = chatId.ToString();
-            return telegramChatIdsCsv
-                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .Any(id => string.Equals(id, targetChatId, StringComparison.Ordinal));
         }
 
         /// <summary>

@@ -12,8 +12,6 @@
         <th>代理类型</th>
         <th>代理状态</th>
         <th>登录IP</th>
-        <th>会员反水比例</th>
-        <th>代理备注</th>
         <th>创建时间</th>
     </TableHeader>
     <TableRow>
@@ -22,8 +20,6 @@
         <td>@item.AgentType</td>
         <td>@item.IsEnabled</td>
         <td>@item.LoginIp</td>
-        <td>@item.RebateRate</td>
-        <td>@item.Remark</td>
         <td>@item.CreatedTime?.ToString("yyyy-MM-dd HH:mm:ss")</td>
     </TableRow>
     <EditTemplate>
@@ -45,8 +41,10 @@
                 <Switch @bind-Value="item.IsEnabled" OnColor="Color.Success" />
             </div>
             <div class="form-group col-6">
-                <label class="form-label">Telegram机器人ID</label>
-                <input @bind="item.TelegramChatId" type="number" class="form-control" placeholder="">
+                <label class="form-label">Telegram ChatId</label>
+                <input @bind="item.TelegramChatId" type="text" class="form-control"
+                    placeholder="私聊 ChatId，多个用英文逗号分隔" maxlength="100">
+                <small class="form-text text-muted">请在后台手动填写；平台客服消息固定发给 Id 最小的代理。</small>
             </div>
             <div class="form-group col-6">
                 <label class="form-label">代理域名</label>
@@ -68,7 +66,7 @@
                 <label class="form-label">会员反水比例</label>
                 <input @bind="item.RebateRate" type="number" class="form-control" placeholder="">
             </div>
-            <div class="form-group col-6">
+            <div class="form-group col-12">
                 <label class="form-label">代理备注</label>
                 <textarea @bind="item.Remark" class="form-control" placeholder="" maxlength="65535"></textarea>
             </div>
@@ -311,6 +309,15 @@
 
         if (!string.IsNullOrEmpty(item.AgentName))
             item.AgentName = item.AgentName.Trim();
+        if (!string.IsNullOrWhiteSpace(item.TelegramChatId))
+        {
+            item.TelegramChatId = string.Join(",",
+                item.TelegramChatId.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+        }
+        else
+        {
+            item.TelegramChatId = "";
+        }
         if (item.Id > 0 && item.ParentId == item.Id)
             throw new Exception("上级代理不能填写自己");
 

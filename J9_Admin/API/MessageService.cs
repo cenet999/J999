@@ -111,7 +111,7 @@ public class MessageService : BaseService
         {
             return ApiResult.Error.SetMessage("未登录或登录已过期");
         }
-        var member = await _fsql.Select<DMember>().Include(m => m.DAgent).Where(m => m.Id == userId.Value).ToOneAsync();
+        var member = await _fsql.Select<DMember>().Where(m => m.Id == userId.Value).ToOneAsync();
         var now = DateTime.Now;
         var windowStart = now.Subtract(MessageWindow);
 
@@ -146,7 +146,7 @@ public class MessageService : BaseService
 
         await _fsql.Insert(message).ExecuteAffrowsAsync();
 
-        var agent = member.DAgent;
+        var agent = await CustomerServiceAgentHelper.GetCustomerServiceAgentAsync(_fsql);
         if (agent != null && !string.IsNullOrWhiteSpace(agent.TelegramChatId))
         {
             var ip = IpHelper.GetClientIpAddress(HttpContext);
@@ -194,7 +194,7 @@ IP：<code>{TGMessageApi.EscapeHtml(ip)}</code>
         }
         else
         {
-            _logger.LogInformation("会员 {MemberId} 的代理未配置 TelegramChatId，跳过 TG 通知", userId.Value);
+            _logger.LogInformation("平台客服代理未配置 TelegramChatId，跳过 TG 通知，MemberId={MemberId}", userId.Value);
         }
 
         return ApiResult.Success.SetMessage("消息发送成功");
