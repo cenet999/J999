@@ -3,6 +3,7 @@ import { Pg51LucideIconBadge } from '@/components/pg51-clone/original-icons';
 import { Pg51InnerPageTopBar } from '@/components/pg51-clone/inner-page-top-bar';
 import { Pg51InnerPage, Pg51SectionCard, Pg51StatCard } from '@/components/pg51-clone/page-ui';
 import { Icon } from '@/components/ui/icon';
+import { MiddleEllipsisText } from '@/components/ui/middle-ellipsis-text';
 import { Text } from '@/components/ui/text';
 import { Toast } from '@/components/ui/toast';
 import { getInviteCenter, type InviteCenterData } from '@/lib/api/invite';
@@ -171,12 +172,15 @@ export default function InviteFriendsScreen() {
               <View className="flex-row items-center justify-between gap-3 rounded-[22px] border border-[#4f3a80] bg-[#221b35] px-4 py-4">
                 <View className="min-w-0 flex-1">
                   <Text className="text-[11px] font-semibold text-[#9fa8be]">邀请链接</Text>
-                  <Text
-                    className="mt-1 text-[13px] font-semibold leading-[20px] text-white"
-                    numberOfLines={3}
-                    selectable>
-                    {inviteLink || '—'}
-                  </Text>
+                  {inviteLink ? (
+                    <MiddleEllipsisText
+                      className="mt-1 text-[13px] font-semibold leading-[20px] text-white"
+                      selectable>
+                      {inviteLink}
+                    </MiddleEllipsisText>
+                  ) : (
+                    <Text className="mt-1 text-[13px] font-semibold leading-[20px] text-white">—</Text>
+                  )}
                 </View>
 
                 <Pressable
