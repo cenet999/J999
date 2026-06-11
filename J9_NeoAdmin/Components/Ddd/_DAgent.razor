@@ -1,0 +1,394 @@
+@page "/Ddd/DAgent"
+@layout LayoutAdmin
+@using Microsoft.AspNetCore.Http
+@using Microsoft.AspNetCore.Http.Extensions
+@inject IFreeSql FreeSql
+@inject IConfiguration Configuration
+@inject J9_NeoAdmin.Utils.SessionAgent sessionAgent
+@inject NeoAdminAuthService AuthService
+@inject IHttpContextAccessor HttpContextAccessor
+@inject IToastService ToastService
+
+<PageTitle>代理管理</PageTitle>
+
+<div class="flex flex-col flex-1 min-h-0 overflow-hidden">
+    <CrudTable TItem="DAgent"
+               Title="代理管理"
+               PageSize="50"
+               InitQuery="InitQuery"
+               OnQuery="HandleQuery"
+               OnEdit="HandleEdit"
+               DialogContentSize="CrudDialogContentSize.X4l">
+        <Columns>
+            <DataTableColumn TData="CrudGridRow<DAgent>"
+                             TValue="long"
+                             Property="@(row => row.Item.Id)"
+                             Header="ID"
+                             Sortable="false"
+                             Width="180px" />
+            <DataTableColumn TData="CrudGridRow<DAgent>"
+                             TValue="string"
+                             Property="@(row => row.Item.AgentName)"
+                             Header="代理名"
+                             Sortable="false"
+                             Width="160px" />
+            <DataTableColumn TData="CrudGridRow<DAgent>"
+                             TValue="string"
+                             Property="@(_ => string.Empty)"
+                             Header="上级代理"
+                             Sortable="false"
+                             Width="160px">
+                <CellTemplate Context="row">
+                    @GetParentAgentName(row.Item.ParentId)
+                </CellTemplate>
+            </DataTableColumn>
+            <DataTableColumn TData="CrudGridRow<DAgent>"
+                             TValue="string"
+                             Property="@(row => row.Item.AgentType.ToString())"
+                             Header="代理类型"
+                             Sortable="false"
+                             Width="120px" />
+            <DataTableColumn TData="CrudGridRow<DAgent>"
+                             TValue="bool"
+                             Property="@(row => row.Item.IsEnabled)"
+                             Header="代理状态"
+                             Sortable="false"
+                             Width="96px">
+                <CellTemplate Context="row">
+                    <Badge Variant="@(row.Item.IsEnabled ? BadgeVariant.Success : BadgeVariant.Secondary)">
+                        @(row.Item.IsEnabled ? "启用" : "停用")
+                    </Badge>
+                </CellTemplate>
+            </DataTableColumn>
+            <DataTableColumn TData="CrudGridRow<DAgent>"
+                             TValue="string"
+                             Property="@(row => row.Item.LoginIp ?? string.Empty)"
+                             Header="登录IP"
+                             Sortable="false"
+                             Width="140px" />
+            <DataTableColumn TData="CrudGridRow<DAgent>"
+                             TValue="string"
+                             Property="@(_ => string.Empty)"
+                             Header="创建时间"
+                             Sortable="false"
+                             Width="200px">
+                <CellTemplate Context="row">
+                    @(row.Item.CreatedTime?.ToString("yyyy-MM-dd HH:mm:ss") ?? "-")
+                </CellTemplate>
+            </DataTableColumn>
+        </Columns>
+        <EditTemplate Context="item">
+            <div class="grid gap-3 sm:grid-cols-2">
+                <div class="space-y-2">
+                    <Label For="agent-name">代理名</Label>
+                    <Input id="agent-name"
+                           Class="w-full"
+                           MaxLength="100"
+                           Placeholder="推广/注册识别用，建议唯一"
+                           @bind-Value="item.AgentName" />
+                </div>
+                <div class="space-y-2">
+                    <Label For="agent-parent">上级代理名</Label>
+                    <Input id="agent-parent"
+                           Class="w-full"
+                           ReadOnly="true"
+                           Value="@GetParentAgentName(item.ParentId)"
+                           Placeholder="根据上级代理关系自动带出，不可编辑" />
+                </div>
+                <div class="space-y-2">
+                    <Label For="agent-type">代理类型</Label>
+                    <NeoSelectEnum TEnum="AgentType" @bind-Value="item.AgentType" />
+                </div>
+                <div class="flex items-center gap-2 sm:col-span-1">
+                    <Checkbox @bind-Checked="item.IsEnabled" Id="agent-enabled" />
+                    <Label for="agent-enabled">代理状态</Label>
+                </div>
+                <div class="space-y-2">
+                    <Label For="agent-telegram">Telegram ChatId</Label>
+                    <Input id="agent-telegram"
+                           Class="w-full"
+                           MaxLength="100"
+                           Placeholder="私聊 ChatId，多个用英文逗号分隔"
+                           @bind-Value="item.TelegramChatId" />
+                    <p class="text-sm text-muted-foreground">请在后台手动填写；平台客服消息固定发给 Id 最小的代理。</p>
+                </div>
+                <div class="space-y-2">
+                    <Label For="agent-home-url">代理域名</Label>
+                    <Input id="agent-home-url" Class="w-full" MaxLength="200" @bind-Value="item.HomeUrl" />
+                </div>
+                <div class="space-y-2">
+                    <Label For="agent-server-ip">服务器IP</Label>
+                    <Input id="agent-server-ip" Class="w-full" MaxLength="255" @bind-Value="item.ServerIP" />
+                </div>
+                <div class="space-y-2">
+                    <Label For="agent-logo">代理Logo</Label>
+                    <Input id="agent-logo" Class="w-full" MaxLength="200" @bind-Value="item.LogoUrl" />
+                </div>
+                <div class="space-y-2">
+                    <Label For="agent-login-ip">登录IP</Label>
+                    <Input id="agent-login-ip" Class="w-full" MaxLength="200" @bind-Value="item.LoginIp" />
+                </div>
+                <div class="space-y-2">
+                    <Label For="agent-rebate">会员反水比例</Label>
+                    <Input id="agent-rebate" Type="InputType.Number" Class="w-full" Value="@item.RebateRate.ToString()" ValueChanged="@(v => item.RebateRate = decimal.TryParse(v, out var n) ? n : 0)" />
+                </div>
+            </div>
+            <div class="space-y-2 mt-3">
+                <Label For="agent-remark">代理备注</Label>
+                <Textarea id="agent-remark" Class="min-h-24 w-full" MaxLength="65535" @bind-Value="item.Remark" />
+            </div>
+            <div class="space-y-2 mt-3">
+                <Label For="agent-register-link">邀请注册链接</Label>
+                @if (!string.IsNullOrEmpty(BuildRegisterPathAndQuery(item)))
+                {
+                    <p class="text-sm text-muted-foreground">
+                        完整地址结构：<strong>【网站前端域名】</strong><code>@BuildRegisterPathAndQuery(item)</code>
+                        <span class="block mt-1">请将「网站前端域名」替换为实际 H5 / 落地页站点根（含协议，无末尾斜杠），再接上述路径与参数。</span>
+                    </p>
+                }
+                <div class="flex gap-2">
+                    <Input id="agent-register-link"
+                           Class="w-full"
+                           ReadOnly="true"
+                           Value="@GetInviteRegisterLink(item)"
+                           Placeholder="填写代理名并保存后生成；与 App 一致使用 agentId、agentName 参数" />
+                    <Button Variant="ButtonVariant.Outline"
+                            Disabled="@string.IsNullOrEmpty(GetInviteRegisterLink(item))"
+                            OnClick="@(() => CopyInviteRegisterLinkAsync(item))">
+                        复制
+                    </Button>
+                </div>
+                <p class="text-sm text-muted-foreground">与 App 一致（后端以代理名为准）。下方输入框在已配置「代理域名」或 <code>AppRegisterBaseUrl</code> 时显示可复制的完整 URL，否则仅显示路径，请自行补前缀。</p>
+            </div>
+            <div class="space-y-2 mt-3">
+                <Label For="agent-home-link">邀请首页链接</Label>
+                @if (!string.IsNullOrEmpty(BuildHomePathAndQuery(item)))
+                {
+                    <p class="text-sm text-muted-foreground">
+                        完整地址结构：<strong>【网站前端域名】</strong><code>@BuildHomePathAndQuery(item)</code>
+                        <span class="block mt-1">请将「网站前端域名」替换为实际 H5 / 落地页站点根（含协议，无末尾斜杠），再接上述路径与参数。访客打开首页即可带上代理信息（与 App 任意路由捕获参数一致）。</span>
+                    </p>
+                }
+                <div class="flex gap-2">
+                    <Input id="agent-home-link"
+                           Class="w-full"
+                           ReadOnly="true"
+                           Value="@GetInviteHomeLink(item)"
+                           Placeholder="填写代理名并保存后生成；与 App 一致使用 agentId、agentName 参数" />
+                    <Button Variant="ButtonVariant.Outline"
+                            Disabled="@string.IsNullOrEmpty(GetInviteHomeLink(item))"
+                            OnClick="@(() => CopyInviteHomeLinkAsync(item))">
+                        复制
+                    </Button>
+                </div>
+                <p class="text-sm text-muted-foreground">与注册链接使用同一套域名配置（「代理域名」或 <code>AppRegisterBaseUrl</code>）；仅路径为站点首页 <code>/?agentId=…&amp;agentName=…</code>。</p>
+            </div>
+        </EditTemplate>
+    </CrudTable>
+</div>
+
+@code {
+    private Dictionary<long, string> agentNameMap = new();
+    private HashSet<long> visibleAgentIds = [];
+
+    /// <summary>
+    /// 与 App 端 register-link.ts 一致：/register?agentId=&amp;agentName=（可同时存在，后端以代理名为准）。
+    /// </summary>
+    private static string BuildRegisterPathAndQuery(DAgent item)
+    {
+        var name = item.AgentName?.Trim();
+        if (item.Id <= 0 && string.IsNullOrEmpty(name))
+            return "";
+        var qb = new QueryBuilder();
+        if (item.Id > 0)
+            qb.Add("agentId", item.Id.ToString());
+        if (!string.IsNullOrEmpty(name))
+            qb.Add("agentName", name);
+        return "/register" + qb.ToString();
+    }
+
+    /// <summary>
+    /// 站点首页带代理参数：/?agentId=&amp;agentName=（与 App 端 invite-from-url-capture 等一致）。
+    /// </summary>
+    private static string BuildHomePathAndQuery(DAgent item)
+    {
+        var name = item.AgentName?.Trim();
+        if (item.Id <= 0 && string.IsNullOrEmpty(name))
+            return "";
+        var qb = new QueryBuilder();
+        if (item.Id > 0)
+            qb.Add("agentId", item.Id.ToString());
+        if (!string.IsNullOrEmpty(name))
+            qb.Add("agentName", name);
+        var q = qb.ToString();
+        return string.IsNullOrEmpty(q) ? "/" : "/" + q;
+    }
+
+    private static string ResolveRegisterOrigin(DAgent item, IConfiguration configuration)
+    {
+        var h = item.HomeUrl?.Trim();
+        if (!string.IsNullOrEmpty(h) && Uri.TryCreate(h, UriKind.Absolute, out var u) &&
+            (u.Scheme == Uri.UriSchemeHttp || u.Scheme == Uri.UriSchemeHttps))
+            return u.GetLeftPart(UriPartial.Authority).TrimEnd('/');
+        return configuration["AppRegisterBaseUrl"]?.Trim().TrimEnd('/') ?? "";
+    }
+
+    private string GetInviteRegisterLink(DAgent item)
+    {
+        var path = BuildRegisterPathAndQuery(item);
+        if (path == "")
+            return "";
+        var origin = ResolveRegisterOrigin(item, Configuration);
+        return string.IsNullOrEmpty(origin) ? path : origin + path;
+    }
+
+    private string GetInviteHomeLink(DAgent item)
+    {
+        var path = BuildHomePathAndQuery(item);
+        if (path == "")
+            return "";
+        var origin = ResolveRegisterOrigin(item, Configuration);
+        return string.IsNullOrEmpty(origin) ? path : origin + path;
+    }
+
+    private async Task CopyInviteRegisterLinkAsync(DAgent item)
+    {
+        var link = GetInviteRegisterLink(item);
+        if (string.IsNullOrEmpty(link))
+        {
+            ToastService.Error("复制失败", "请先填写代理名；新建代理保存后才会包含 agentId。");
+            return;
+        }
+
+        try
+        {
+            await JS.InvokeVoidAsync("j9CopyToClipboard", link);
+            ToastService.Success("复制成功", "邀请链接已复制");
+        }
+        catch (Exception ex)
+        {
+            ToastService.Error("复制失败", ex.Message);
+        }
+    }
+
+    private async Task CopyInviteHomeLinkAsync(DAgent item)
+    {
+        var link = GetInviteHomeLink(item);
+        if (string.IsNullOrEmpty(link))
+        {
+            ToastService.Error("复制失败", "请先填写代理名；新建代理保存后才会包含 agentId。");
+            return;
+        }
+
+        try
+        {
+            await JS.InvokeVoidAsync("j9CopyToClipboard", link);
+            ToastService.Success("复制成功", "邀请首页链接已复制");
+        }
+        catch (Exception ex)
+        {
+            ToastService.Error("复制失败", ex.Message);
+        }
+    }
+
+    private async Task InitQuery(CrudQueryInfo e)
+    {
+        agentNameMap = (await FreeSql.Select<DAgent>()
+            .ToDictionaryAsync(a => a.Id, a => a.AgentName ?? ""))
+            ?? new Dictionary<long, string>();
+
+        visibleAgentIds.Clear();
+
+        if (await NeoAdminBlazorUser.IsSiteAdminAsync(HttpContextAccessor, AuthService))
+        {
+            e.Filters =
+            [
+                new CrudFilterInfo("代理类型", "AgentType", "General,Direct,Distribution,Premium,VIP", "0,1,2,3,4"),
+            ];
+            return;
+        }
+
+        var currentAgentId = sessionAgent.GetAgentId();
+        if (currentAgentId > 0)
+        {
+            visibleAgentIds.Add(currentAgentId);
+
+            var childAgentIds = await FreeSql.Select<DAgent>()
+                .Where(a => a.ParentId == currentAgentId)
+                .ToListAsync(a => a.Id);
+
+            foreach (var childAgentId in childAgentIds)
+                visibleAgentIds.Add(childAgentId);
+
+            if (childAgentIds.Count > 0)
+            {
+                var grandChildAgentIds = await FreeSql.Select<DAgent>()
+                    .Where(a => childAgentIds.Contains(a.ParentId))
+                    .ToListAsync(a => a.Id);
+
+                foreach (var grandChildAgentId in grandChildAgentIds)
+                    visibleAgentIds.Add(grandChildAgentId);
+            }
+        }
+
+        e.Filters =
+        [
+            new CrudFilterInfo("代理类型", "AgentType", "General,Direct,Distribution,Premium,VIP", "0,1,2,3,4"),
+        ];
+    }
+
+    private string GetParentAgentName(long parentId)
+    {
+        if (parentId <= 0)
+            return "顶级代理";
+
+        if (agentNameMap.TryGetValue(parentId, out var parentName) && !string.IsNullOrWhiteSpace(parentName))
+            return parentName;
+
+        return $"ID: {parentId}";
+    }
+
+    private void HandleQuery(CrudQueryEventArgs<DAgent> e)
+    {
+        e.Select!
+            .WhereIf(e.Filters[0].HasValue, a => a.AgentType == e.Filters[0].Value<AgentType>())
+            .WhereIf(visibleAgentIds.Count > 0, a => visibleAgentIds.Contains(a.Id))
+            .WhereIf(!e.SearchText.IsNull(), a => (a.AgentName ?? "").Contains(e.SearchText!) ||
+                a.HomeUrl.Contains(e.SearchText!) ||
+                a.ServerIP.Contains(e.SearchText!) ||
+                a.LogoUrl.Contains(e.SearchText!) ||
+                a.LoginIp.Contains(e.SearchText!) ||
+                a.Remark.Contains(e.SearchText!) ||
+                a.CreatedUserName.Contains(e.SearchText!) ||
+                a.ModifiedUserName.Contains(e.SearchText!))
+            .OrderByDescending(a => a.Id);
+    }
+
+    private async Task HandleEdit(DAgent item)
+    {
+        if (item.Id == 0)
+        {
+            var currentAgentId = sessionAgent.GetAgentId();
+            if (currentAgentId > 0 && item.ParentId == 0)
+                item.ParentId = currentAgentId;
+        }
+
+        if (!string.IsNullOrEmpty(item.AgentName))
+            item.AgentName = item.AgentName.Trim();
+
+        if (!string.IsNullOrWhiteSpace(item.TelegramChatId))
+        {
+            item.TelegramChatId = string.Join(",",
+                item.TelegramChatId.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+        }
+        else
+        {
+            item.TelegramChatId = "";
+        }
+
+        if (item.Id > 0 && item.ParentId == item.Id)
+            throw new Exception("上级代理不能填写自己");
+
+        await Task.CompletedTask;
+    }
+}

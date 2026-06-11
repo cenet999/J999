@@ -1,0 +1,52 @@
+---
+description: J9_NeoAdmin 移动端 REST API 与定时任务约定
+globs: "{**/API/**/*.cs,**/Services/**/*.cs,Program.cs}"
+alwaysApply: false
+---
+
+# REST API 与定时任务
+
+## 移动端 API（`API/` 目录）
+
+通过 `app.UseAdminOmniApi()` 暴露，供 **J9_APP_103** 调用。服务类继承 `BaseService`：
+
+```csharp
+[ApiController]
+[Route("api/login")]
+[Tags("会员系统")]
+public class LoginService : BaseService
+{
+    [HttpPost($"@{nameof(Register)}")]
+    [AllowAnonymous]
+    public async Task<ApiResult> Register([FromBody] RegisterRequest request) { ... }
+}
+```
+
+- 路由约定：`[HttpGet/Post($"@{{nameof(MethodName)}}")]`
+- 基类提供 `_fsql`、`_scheduler`、`_adminContext`、`_configuration` 等
+- DTO 放 `API/DTOs/`
+- 模型验证在 Service 方法内手动执行（已 `SuppressModelStateInvalidFilter`）
+
+主要服务：`LoginService`、`GameService`、`DTransActionService`、`MessageService`、`NoticeService`、`EventService`、`BannerService`、`TaskProgressService`
+
+## 定时任务
+
+任务注册在 `Program.cs` 的 `OnSchedulerExecuting` 中按 `task.Topic` 分发，或使用 `[Scheduler]` 特性。
+
+业务后台服务示例：
+
+- `GameBetHistorySyncHostedService` — 注单同步
+- `AgentWeeklySettlementService` — 代理周结算
+
+管理界面：`/admin/task-scheduler`
+
+## 常用注入
+
+| 服务 | 用途 |
+|------|------|
+| `FreeSqlCloud` / `IFreeSql` | 数据访问 |
+| `NovaAdminContext` | 当前管理员上下文 |
+| `ToastService` / `MessageService` | BootstrapBlazor 提示 |
+| `TGMessageApi` | Telegram 通知 |
+
+Swagger（开发）：`/api`

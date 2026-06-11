@@ -1,0 +1,73 @@
+@namespace J9_NeoAdmin.Components.Shared
+@inject LocalFileUploadService UploadService
+@inject IToastService ToastService
+
+<div class="@RootClass">
+    @if (!string.IsNullOrEmpty(Label))
+    {
+        <Label For="@InputId">@Label</Label>
+    }
+    @if (ShowUrlInput)
+    {
+        <Input id="@InputId" Class="@InputClass" MaxLength="@MaxLength" @bind-Value="Url" />
+    }
+    <FileUpload @bind-Files="_uploadedFiles"
+                @bind-Files:after="HandleFilesChangedAsync"
+                Multiple="false"
+                Accept="image/*"
+                MaxFileSize="@MaxFileSize"
+                MaxFiles="1"
+                ShowPreview="true"
+                Class="@UploadClass" />
+    @if (ShowExistingPreview && !string.IsNullOrEmpty(Url) && _uploadedFiles.Count == 0)
+    {
+        <img src="@Url" class="@PreviewClass" alt="" />
+    }
+</div>
+
+@code {
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public string InputId { get; set; } = "image-url";
+    [Parameter] public int MaxLength { get; set; } = 500;
+    [Parameter] public long MaxFileSize { get; set; } = 10 * 1024 * 1024;
+    [Parameter] public string? Url { get; set; }
+    [Parameter] public EventCallback<string?> UrlChanged { get; set; }
+    [Parameter] public EventCallback<string> OnUploadedAsync { get; set; }
+    [Parameter] public bool ShowUrlInput { get; set; } = true;
+    [Parameter] public bool ShowExistingPreview { get; set; } = true;
+    [Parameter] public string RootClass { get; set; } = "space-y-2";
+    [Parameter] public string InputClass { get; set; } = "w-full";
+    [Parameter] public string UploadClass { get; set; } = "";
+    [Parameter] public string PreviewClass { get; set; } = "mt-2 h-16 rounded";
+
+    private List<IBrowserFile> _uploadedFiles = [];
+
+    private async Task HandleFilesChangedAsync()
+    {
+        if (_uploadedFiles.Count == 0)
+        {
+            return;
+        }
+
+        IBrowserFile file = _uploadedFiles[0];
+        if (file.Size > MaxFileSize)
+        {
+            var limitMb = MaxFileSize / (1024 * 1024);
+            ToastService.Error("上传失败", $"文件大于 {limitMb}M 请重新选择");
+            _uploadedFiles = [];
+            return;
+        }
+
+        LocalFileUploadResult? result = await UploadService.SaveImageAsync(file, MaxFileSize);
+        if (result == null)
+        {
+            ToastService.Error("上传失败", "文件保存失败");
+            return;
+        }
+
+        Url = result.PublicUrl;
+        await UrlChanged.InvokeAsync(Url);
+        await OnUploadedAsync.InvokeAsync(Url);
+        ToastService.Success("上传成功", file.Name);
+    }
+}

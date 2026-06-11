@@ -1,0 +1,11 @@
+/bin
+/obj
+/Logs
+/buyu.db
+/wwwroot/game
+/backend.log
+/node_modules
+/keys
+
+# macOS
+.DS_Store

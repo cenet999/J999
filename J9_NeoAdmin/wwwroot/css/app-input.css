@@ -1,0 +1,9 @@
+/**
+ * Tailwind v4 入口（J9_NeoAdmin 宿主）
+ * 构建：npm run build:css → wwwroot/css/tailwind.css
+ */
+@config "../../tailwind.config.js";
+
+@import 'tailwindcss';
+
+@theme inline;

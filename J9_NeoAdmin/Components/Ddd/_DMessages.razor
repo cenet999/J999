@@ -1,0 +1,210 @@
+@page "/Ddd/DMessages"
+@layout LayoutAdmin
+@using System
+@inject IFreeSql FreeSql
+@inject IToastService ToastService
+
+<PageTitle>客服系统</PageTitle>
+
+<div class="flex flex-col flex-1 min-h-0 overflow-hidden">
+    <CrudTable @ref="adminTable"
+               TItem="DMessage"
+               Title="客服系统"
+               PageSize="50"
+               SearchPlaceholder="内容 / IP / 操作人.."
+               InitQuery="InitQuery"
+               OnQuery="HandleQuery"
+               OnEdit="HandleEdit"
+               DialogContentSize="CrudDialogContentSize.Lg">
+        <Columns>
+            <DataTableColumn TData="CrudGridRow<DMessage>"
+                             TValue="MessageSenderRole"
+                             Property="@(row => row.Item.SenderRole)"
+                             Header="发送方角色"
+                             Sortable="false"
+                             Width="120px" />
+            <DataTableColumn TData="CrudGridRow<DMessage>"
+                             TValue="string"
+                             Property="@(row => row.Item.Content ?? "")"
+                             Header="文本内容"
+                             Sortable="false">
+                <CellTemplate Context="row">
+                    <span class="block truncate" title="@row.Item.Content">@row.Item.Content</span>
+                </CellTemplate>
+            </DataTableColumn>
+            <DataTableColumn TData="CrudGridRow<DMessage>"
+                             TValue="string"
+                             Property="@(_ => string.Empty)"
+                             Header="发送时间"
+                             Sortable="false"
+                             Width="160px">
+                <CellTemplate Context="row">
+                    @row.Item.SentAt.ToString("yyyy-MM-dd HH:mm:ss")
+                </CellTemplate>
+            </DataTableColumn>
+            <DataTableColumn TData="CrudGridRow<DMessage>"
+                             TValue="MessageStatus"
+                             Property="@(row => row.Item.Status)"
+                             Header="消息状态"
+                             Sortable="false"
+                             Width="100px" />
+            <DataTableColumn TData="CrudGridRow<DMessage>"
+                             TValue="string"
+                             Property="@(row => row.Item.SenderIp ?? "")"
+                             Header="发送方IP"
+                             Sortable="false"
+                             Width="140px" />
+            <DataTableColumn TData="CrudGridRow<DMessage>"
+                             TValue="string"
+                             Property="@(row => row.Item.DMember?.Username ?? "")"
+                             Header="会员"
+                             Sortable="false"
+                             Width="120px" />
+        </Columns>
+        <RowActionsContent Context="row">
+            @if (row.Item.SenderRole == MessageSenderRole.Customer && row.Item.Status != MessageStatus.已回复)
+            {
+                <Button Variant="ButtonVariant.Outline"
+                        Size="ButtonSize.Small"
+                        OnClick="@(() => ShowSendMessage(row.Item))">
+                    回复
+                </Button>
+            }
+        </RowActionsContent>
+        <EditTemplate Context="item">
+            <div class="grid gap-3 sm:grid-cols-2">
+                <div class="space-y-2">
+                    <Label>发送方角色</Label>
+                    <NeoSelectEnum TEnum="MessageSenderRole" @bind-Value="item.SenderRole" />
+                </div>
+                <div class="space-y-2 sm:col-span-2">
+                    <Label For="msg-content">文本内容</Label>
+                    <Textarea id="msg-content" Class="min-h-24 w-full" MaxLength="65535" @bind-Value="item.Content" />
+                </div>
+                <div class="space-y-2">
+                    <Label For="msg-sent-at">发送时间</Label>
+                    <Input id="msg-sent-at" Class="w-full" Value="@item.SentAt.ToString("yyyy-MM-ddTHH:mm")" ValueChanged="@(v => item.SentAt = DateTime.TryParse(v, out var d) ? d : item.SentAt)" />
+                </div>
+                <div class="space-y-2">
+                    <Label>消息状态</Label>
+                    <NeoSelectEnum TEnum="MessageStatus" @bind-Value="item.Status" />
+                </div>
+                <div class="space-y-2">
+                    <Label For="msg-sender-ip">发送方IP</Label>
+                    <Input id="msg-sender-ip" Class="w-full" MaxLength="64" @bind-Value="item.SenderIp" />
+                </div>
+                <div class="space-y-2">
+                    <Label>会员</Label>
+                    <NeoSelectEntity TItem="DMember" TKey="long?" @bind-Value="item.DMemberId" DisplayText="e => e.Username" />
+                </div>
+            </div>
+        </EditTemplate>
+    </CrudTable>
+</div>
+
+<Dialog @bind-Open="replyOpen">
+    <DialogContent Variant="DialogContentVariant.Form" Class="sm:max-w-lg">
+        <DialogHeader>
+            <DialogTitle>发送消息</DialogTitle>
+            <DialogDescription>回复会员客服消息。</DialogDescription>
+        </DialogHeader>
+        <div class="space-y-4">
+            <div class="space-y-2">
+                <Label>会员</Label>
+                <Input Value="@(replyItem.DMember?.Username)" Disabled="true" />
+            </div>
+            <div class="space-y-2">
+                <Label>消息内容</Label>
+                <Input Value="@replyItem.Content" Disabled="true" />
+            </div>
+            <div class="space-y-2">
+                <Label For="reply-text">客服回复</Label>
+                <Textarea id="reply-text"
+                          Class="min-h-32 w-full"
+                          Placeholder="请输入消息内容"
+                          MaxLength="65535"
+                          @bind-Value="replyMessage" />
+            </div>
+        </div>
+        <DialogFooter Class="mt-4">
+            <Button Variant="ButtonVariant.Outline" OnClick="CloseReply">取消</Button>
+            <Button Variant="ButtonVariant.Outline" OnClick="HandleSendMessage">发送</Button>
+        </DialogFooter>
+    </DialogContent>
+</Dialog>
+
+@code {
+    private CrudTable<DMessage> adminTable = default!;
+    private bool replyOpen;
+    private DMessage replyItem = new();
+    private string replyMessage = "";
+
+    private void ShowSendMessage(DMessage selectedItem)
+    {
+        replyItem = selectedItem;
+        replyMessage = "";
+        replyOpen = true;
+    }
+
+    private async Task HandleSendMessage()
+    {
+        if (string.IsNullOrWhiteSpace(replyMessage))
+        {
+            ToastService.Error("发送失败", "请输入回复内容");
+            return;
+        }
+
+        await FreeSql.Update<DMessage>()
+            .Set(a => a.Status, MessageStatus.已回复)
+            .Where(a => a.Id == replyItem.Id)
+            .ExecuteAffrowsAsync();
+
+        var newMessage = new DMessage
+        {
+            DMemberId = replyItem.DMemberId,
+            Content = replyMessage,
+            SentAt = DateTime.Now,
+            SenderRole = MessageSenderRole.Agent,
+            Status = MessageStatus.未读,
+            SenderIp = "",
+        };
+
+        await FreeSql.Insert(newMessage).ExecuteAffrowsAsync();
+
+        ToastService.Success("客服回复", "消息已发送");
+        CloseReply();
+        await adminTable.ReloadAsync();
+    }
+
+    private void CloseReply()
+    {
+        replyOpen = false;
+        replyMessage = "";
+    }
+
+    private async Task InitQuery(CrudQueryInfo e)
+    {
+        e.Filters =
+        [
+            new CrudFilterInfo("发送角色", "SenderRole", "Customer,Agent,System", "0,1,2"),
+            new CrudFilterInfo("消息状态", "Status", "未读,已读,已回复,已撤回", "0,1,2,3"),
+        ];
+        await Task.Yield();
+    }
+
+    private void HandleQuery(CrudQueryEventArgs<DMessage> e)
+    {
+        e.Select!
+            .Include(a => a.DMember)
+            .WhereIf(e.Filters[0].HasValue, a => a.SenderRole == e.Filters[0].Value<MessageSenderRole>())
+            .WhereIf(e.Filters[1].HasValue, a => a.Status == e.Filters[1].Value<MessageStatus>())
+            .WhereIf(!e.SearchText.IsNull(), a => a.Content.Contains(e.SearchText!) ||
+                a.SenderIp.Contains(e.SearchText!) ||
+                a.CreatedUserName.Contains(e.SearchText!) ||
+                a.ModifiedUserName.Contains(e.SearchText!))
+            .OrderByDescending(a => a.Id)
+            .Limit(500);
+    }
+
+    private Task HandleEdit(DMessage item) => Task.CompletedTask;
+}

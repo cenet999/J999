@@ -1,0 +1,87 @@
+{
+  "success": "1",
+  "request_id": "f11651b87b4e4bd580e0ecb7934f67c2",
+  "count": 6,
+  "page": 1,
+  "limit": 500,
+  "data": [
+    {
+      "sid": "1945339690673149529",
+      "merchant_id": 100255,
+      "player_id": "703725129556037",
+      "player_name": "xinyi789-CNYadmin",
+      "gid": 1451122,
+      "currency": "人民币",
+      "bet_amount": 5,
+      "win_amount": 0,
+      "net_amount": -5,
+      "betted_at": "2025-08-16T10:21:30.000000Z",
+      "data": []
+    },
+    {
+      "sid": "1945339712376870161",
+      "merchant_id": 100255,
+      "player_id": "703725129556037",
+      "player_name": "xinyi789-CNYadmin",
+      "gid": 1451122,
+      "currency": "人民币",
+      "bet_amount": 0.5,
+      "win_amount": 0.55,
+      "net_amount": 0.05,
+      "betted_at": "2025-08-16T10:21:42.000000Z",
+      "data": []
+    },
+    {
+      "sid": "1945339712654120939",
+      "merchant_id": 100255,
+      "player_id": "703725129556037",
+      "player_name": "xinyi789-CNYadmin",
+      "gid": 1451122,
+      "currency": "人民币",
+      "bet_amount": 0.5,
+      "win_amount": 0,
+      "net_amount": -0.5,
+      "betted_at": "2025-08-16T10:21:50.000000Z",
+      "data": []
+    },
+    {
+      "sid": "1945339725510126283",
+      "merchant_id": 100255,
+      "player_id": "703725129556037",
+      "player_name": "xinyi789-CNYadmin",
+      "gid": 1451122,
+      "currency": "人民币",
+      "bet_amount": 0.5,
+      "win_amount": 0,
+      "net_amount": -0.5,
+      "betted_at": "2025-08-16T10:21:57.000000Z",
+      "data": []
+    },
+    {
+      "sid": "1945339727540191464",
+      "merchant_id": 100255,
+      "player_id": "703725129556037",
+      "player_name": "xinyi789-CNYadmin",
+      "gid": 1451122,
+      "currency": "人民币",
+      "bet_amount": 0.5,
+      "win_amount": 0.05,
+      "net_amount": -0.45,
+      "betted_at": "2025-08-16T10:22:00.000000Z",
+      "data": []
+    },
+    {
+      "sid": "1945339738800750959",
+      "merchant_id": 100255,
+      "player_id": "703725129556037",
+      "player_name": "xinyi789-CNYadmin",
+      "gid": 1451122,
+      "currency": "人民币",
+      "bet_amount": 0.5,
+      "win_amount": 0,
+      "net_amount": -0.5,
+      "betted_at": "2025-08-16T10:22:07.000000Z",
+      "data": []
+    }
+  ]
+}

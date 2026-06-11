@@ -1,0 +1,65 @@
+---
+description: J9_NeoAdmin 实体定义与 FreeSql 数据访问约定
+globs: "**/Entities/**/*.cs"
+alwaysApply: false
+---
+
+# 实体与 FreeSql
+
+## 基类继承链（`NoAdmin.Blazor.Entities`）
+
+```
+Entity → EntityCreated → EntityModified → EntityAudited
+```
+
+| 基类 | 场景 |
+|------|------|
+| `EntityModified` | J9 常规业务表（`DMember`、`DGame` 等，默认首选） |
+| `EntityAudited` | 需审批流（配合 `NovaAdminTable IsAudit="true"`） |
+| `Entity` / `EntityCreated` | 简单关联表、日志 |
+
+## 实体位置
+
+- J9 核心业务：`Entities/Ddd/`（`DMember`、`DTransAction`、`DAgent`、`DGame` 等）
+- 博客示例：`Entities/Blog/`（框架演示，可参照）
+
+```csharp
+using FreeSql.DataAnnotations;
+
+namespace J9_NeoAdmin.Entities.Ddd;
+
+[Table(Name = "d_member")]
+public class DMember : EntityModified
+{
+    [Column(StringLength = 50)]
+    public string Username { get; set; } = string.Empty;
+    // ...
+}
+```
+
+## FreeSql 常用写法
+
+```csharp
+// API 服务中通过 BaseService._fsql 访问
+var list = await _fsql.Select<DMember>()
+    .Include(a => a.DAgent)
+    .Where(a => a.IsEnabled)
+    .OrderByDescending(a => a.Id)
+    .ToListAsync();
+```
+
+Blazor 页可 `@inject IFreeSql` 或通过 `NovaAdminContext` 获取。
+
+## 表结构同步
+
+本项目在 `AddNovaAdmin` 中配置 `UseAutoSyncStructure(true)`，实体首次访问时自动建表/改表。无需单独的 `DataSetup.SyncStructure`（与 NeoAdmin 模板不同）。
+
+## 框架特性
+
+| 特性 | 用途 |
+|------|------|
+| `[Snowflake]` | 雪花主键 |
+| `[Scheduler("id", "cron")]` | 定时任务（在 `Program.OnSchedulerExecuting` 分发） |
+| `[Transactional]` | 方法级事务 |
+
+`NovaAdminTable` 未指定自定义回调时，默认用 `IFreeSql` 自动 CRUD。

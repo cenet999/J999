@@ -1,0 +1,40 @@
+---
+description: J9_NeoAdmin 菜单种子与初始化数据约定
+globs: "**/SeedData/**/*.cs"
+alwaysApply: false
+---
+
+# SeedData 约定
+
+宿主 `SeedData/` 负责菜单与演示数据，与 `Entities/`、`Components/` 同步维护。
+
+## 启动时初始化（Program.cs）
+
+```csharp
+var fsql = app.Services.GetService<FreeSqlCloud>();
+if (fsql != null)
+{
+    J9_NeoAdmin.SeedData.MenuSeedData.Initialize(fsql);
+    J9_NeoAdmin.SeedData.Ddd.GamePlatformSeedData.Initialize(fsql);
+    // 其他 Ddd/*SeedData...
+}
+```
+
+## MenuSeedData
+
+`MenuSeedData.Initialize` 递归补齐菜单树（已存在则跳过），定义在 `CreateUserAgentMenu`、`CreateGameActivityMenu` 等方法中。
+
+新增业务页时：
+
+1. 在对应 `CreateXxxMenu()` 中增加 `SysMenu` 子节点
+2. `Path` 必须与 Blazor `@page` 路由完全一致（如 `/Ddd/DMember`）
+3. `Type` 为增删改查类型时，框架自动创建 add/edit/remove 按钮权限
+
+## Ddd 业务种子
+
+`SeedData/Ddd/` 下各 `*SeedData.cs` 负责游戏平台、活动、任务、公告等演示/初始数据。
+
+## 注意
+
+- 新菜单需为角色分配后侧边栏才可见
+- 勿随意提交 `buyu.db` 的本地变更到 git

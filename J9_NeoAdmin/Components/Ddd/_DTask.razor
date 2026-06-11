@@ -1,0 +1,139 @@
+@page "/Ddd/DTask"
+@layout LayoutAdmin
+@using J9_NeoAdmin.Entities
+@inject IFreeSql FreeSql
+
+<PageTitle>每日任务管理</PageTitle>
+
+<div class="flex flex-col flex-1 min-h-0 overflow-hidden">
+    <CrudTable TItem="DTask"
+               Title="每日任务管理"
+               PageSize="50"
+               InitQuery="InitQuery"
+               OnQuery="HandleQuery"
+               OnEdit="HandleEdit"
+               DialogContentSize="CrudDialogContentSize.Lg">
+        <Columns>
+            <DataTableColumn TData="CrudGridRow<DTask>"
+                             TValue="string"
+                             Property="@(row => row.Item.TaskType)"
+                             Header="任务类型"
+                             Sortable="false"
+                             Width="120px" />
+            <DataTableColumn TData="CrudGridRow<DTask>"
+                             TValue="string"
+                             Property="@(row => row.Item.Title)"
+                             Header="任务名称"
+                             Sortable="false" />
+            <DataTableColumn TData="CrudGridRow<DTask>"
+                             TValue="int"
+                             Property="@(row => row.Item.TargetValue)"
+                             Header="目标值"
+                             Sortable="false"
+                             Width="88px" />
+            <DataTableColumn TData="CrudGridRow<DTask>"
+                             TValue="decimal"
+                             Property="@(row => row.Item.RewardAmount)"
+                             Header="奖励金额"
+                             Sortable="false"
+                             Width="96px" />
+            <DataTableColumn TData="CrudGridRow<DTask>"
+                             TValue="int"
+                             Property="@(row => row.Item.ActivityPoint)"
+                             Header="活跃度"
+                             Sortable="false"
+                             Width="88px" />
+            <DataTableColumn TData="CrudGridRow<DTask>"
+                             TValue="bool"
+                             Property="@(row => row.Item.IsEnabled)"
+                             Header="状态"
+                             Sortable="false"
+                             Width="72px">
+                <CellTemplate Context="row">
+                    @(row.Item.IsEnabled ? "启用" : "停用")
+                </CellTemplate>
+            </DataTableColumn>
+            <DataTableColumn TData="CrudGridRow<DTask>"
+                             TValue="int"
+                             Property="@(row => row.Item.Sort)"
+                             Header="排序"
+                             Sortable="false"
+                             Width="72px" />
+            <DataTableColumn TData="CrudGridRow<DTask>"
+                             TValue="string"
+                             Property="@(_ => string.Empty)"
+                             Header="创建时间"
+                             Sortable="false"
+                             Width="200px">
+                <CellTemplate Context="row">
+                    @(row.Item.CreatedTime?.ToString("yyyy-MM-dd HH:mm:ss") ?? "-")
+                </CellTemplate>
+            </DataTableColumn>
+        </Columns>
+        <EditTemplate Context="item">
+            <div class="space-y-2">
+                <Label For="task-title">任务名称</Label>
+                <Input id="task-title" Class="w-full" MaxLength="255" @bind-Value="item.Title" />
+            </div>
+            <div class="space-y-2">
+                <Label For="task-type">任务类型</Label>
+                <Input id="task-type" Class="w-full" MaxLength="255" Placeholder="如 Login, Bet, Recharge" @bind-Value="item.TaskType" />
+            </div>
+            <div class="space-y-2">
+                <Label For="task-desc">任务描述</Label>
+                <Textarea id="task-desc" Class="min-h-24 w-full" MaxLength="65535" @bind-Value="item.Description" />
+            </div>
+            <div class="grid gap-3 sm:grid-cols-3">
+                <div class="space-y-2">
+                    <Label For="task-target">目标值</Label>
+                    <Input id="task-target" Type="InputType.Number" Class="w-full" Value="@item.TargetValue.ToString()" ValueChanged="@(v => item.TargetValue = int.TryParse(v, out var n) ? n : 0)" />
+                </div>
+                <div class="space-y-2">
+                    <Label For="task-reward">奖励金额</Label>
+                    <Input id="task-reward" Type="InputType.Number" Class="w-full" Value="@item.RewardAmount.ToString()" ValueChanged="@(v => item.RewardAmount = decimal.TryParse(v, out var n) ? n : 0)" />
+                </div>
+                <div class="space-y-2">
+                    <Label For="task-activity">活跃度</Label>
+                    <Input id="task-activity" Type="InputType.Number" Class="w-full" Value="@item.ActivityPoint.ToString()" ValueChanged="@(v => item.ActivityPoint = int.TryParse(v, out var n) ? n : 0)" />
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <Checkbox @bind-Checked="item.IsEnabled" Id="task-enabled" />
+                <Label for="task-enabled">任务状态</Label>
+            </div>
+            <div class="grid gap-3 sm:grid-cols-2">
+                <div class="space-y-2">
+                    <Label For="task-sort">排序</Label>
+                    <Input id="task-sort" Type="InputType.Number" Class="w-full" Value="@item.Sort.ToString()" ValueChanged="@(v => item.Sort = int.TryParse(v, out var n) ? n : 0)" />
+                </div>
+                <div class="space-y-2">
+                    <Label For="task-icon">图标</Label>
+                    <Input id="task-icon" Class="w-full" @bind-Value="item.Icon" />
+                </div>
+            </div>
+            <div class="space-y-2">
+                <Label For="task-jump">跳转路径</Label>
+                <Input id="task-jump" Class="w-full" @bind-Value="item.JumpPath" />
+            </div>
+        </EditTemplate>
+    </CrudTable>
+</div>
+
+@code {
+    private Task InitQuery(CrudQueryInfo e)
+    {
+        e.Filters = [];
+        return Task.CompletedTask;
+    }
+
+    private void HandleQuery(CrudQueryEventArgs<DTask> e)
+    {
+        e.Select!
+            .WhereIf(!e.SearchText.IsNull(), a => a.Title.Contains(e.SearchText!) ||
+                a.Description.Contains(e.SearchText!) ||
+                a.TaskType.Contains(e.SearchText!))
+            .OrderByDescending(a => a.Id);
+    }
+
+    private Task HandleEdit(DTask item) => Task.CompletedTask;
+}

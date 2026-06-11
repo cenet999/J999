@@ -1,0 +1,149 @@
+@page "/Ddd/DEvent"
+@layout LayoutAdmin
+@inject IFreeSql FreeSql
+
+<PageTitle>公告管理</PageTitle>
+
+<div class="flex flex-col flex-1 min-h-0 overflow-hidden">
+    <CrudTable TItem="DEvent"
+               Title="公告管理"
+               PageSize="50"
+               InitQuery="InitQuery"
+               OnQuery="HandleQuery"
+               OnEdit="HandleEdit"
+               DialogContentSize="CrudDialogContentSize.Lg">
+        <Columns>
+            <DataTableColumn TData="CrudGridRow<DEvent>"
+                             TValue="string"
+                             Property="@(row => row.Item.Title)"
+                             Header="公告名称"
+                             Sortable="false" />
+            <DataTableColumn TData="CrudGridRow<DEvent>"
+                             TValue="int"
+                             Property="@(row => row.Item.Count)"
+                             Header="发放数量"
+                             Sortable="false"
+                             Width="96px" />
+            <DataTableColumn TData="CrudGridRow<DEvent>"
+                             TValue="string"
+                             Property="@(row => row.Item.StartTime.ToString("yyyy-MM-dd HH:mm:ss"))"
+                             Header="公告时间"
+                             Sortable="false"
+                             Width="160px" />
+            <DataTableColumn TData="CrudGridRow<DEvent>"
+                             TValue="string"
+                             Property="@(row => row.Item.EndTime.ToString("yyyy-MM-dd HH:mm:ss"))"
+                             Header="展示结束时间"
+                             Sortable="false"
+                             Width="160px" />
+            <DataTableColumn TData="CrudGridRow<DEvent>"
+                             TValue="bool"
+                             Property="@(row => row.Item.IsEnabled)"
+                             Header="公告状态"
+                             Sortable="false"
+                             Width="96px">
+                <CellTemplate Context="row">
+                    @(row.Item.IsEnabled ? "启用" : "停用")
+                </CellTemplate>
+            </DataTableColumn>
+            <DataTableColumn TData="CrudGridRow<DEvent>"
+                             TValue="int"
+                             Property="@(row => row.Item.Sort)"
+                             Header="排序"
+                             Sortable="false"
+                             Width="72px" />
+            <DataTableColumn TData="CrudGridRow<DEvent>"
+                             TValue="string"
+                             Property="@(_ => string.Empty)"
+                             Header="图片"
+                             Sortable="false"
+                             Width="100px">
+                <CellTemplate Context="row">
+                    @if (!string.IsNullOrEmpty(row.Item.BannerUrl))
+                    {
+                        <img src="@row.Item.BannerUrl" class="h-12 rounded" alt="" />
+                    }
+                </CellTemplate>
+            </DataTableColumn>
+        </Columns>
+        <EditTemplate Context="item">
+            <div class="space-y-2">
+                <Label For="event-title">公告名称</Label>
+                <Input id="event-title" Class="w-full" MaxLength="255" @bind-Value="item.Title" />
+            </div>
+            <div class="space-y-2">
+                <Label For="event-summary">公告描述</Label>
+                <Textarea id="event-summary" Class="min-h-24 w-full" MaxLength="65535" @bind-Value="item.Summary" />
+            </div>
+            <div class="grid gap-3 sm:grid-cols-2">
+                <div class="space-y-2">
+                    <Label For="event-count">发放数量</Label>
+                    <Input id="event-count" Type="InputType.Number" Class="w-full" Value="@item.Count.ToString()" ValueChanged="@(v => item.Count = int.TryParse(v, out var n) ? n : 0)" />
+                </div>
+                <div class="space-y-2">
+                    <Label For="event-type">公告类型</Label>
+                    <Input id="event-type" Class="w-full" MaxLength="255" @bind-Value="item.Type" />
+                </div>
+            </div>
+            <div class="grid gap-3 sm:grid-cols-2">
+                <div class="space-y-2">
+                    <Label For="event-start">开始时间</Label>
+                    <Input id="event-start" Class="w-full" Value="@item.StartTime.ToString("yyyy-MM-ddTHH:mm")" ValueChanged="@(v => item.StartTime = DateTime.TryParse(v, out var d) ? d : item.StartTime)" />
+                </div>
+                <div class="space-y-2">
+                    <Label For="event-end">结束时间</Label>
+                    <Input id="event-end" Class="w-full" Value="@item.EndTime.ToString("yyyy-MM-ddTHH:mm")" ValueChanged="@(v => item.EndTime = DateTime.TryParse(v, out var d) ? d : item.EndTime)" />
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <Checkbox @bind-Checked="item.IsEnabled" Id="event-enabled" />
+                <Label for="event-enabled">公告状态</Label>
+            </div>
+            <div class="space-y-2">
+                <Label For="event-sort">排序</Label>
+                <Input id="event-sort" Type="InputType.Number" Class="w-full" Value="@item.Sort.ToString()" ValueChanged="@(v => item.Sort = int.TryParse(v, out var n) ? n : 0)" />
+            </div>
+            <ImageUrlUploadField @key="editSessionKey"
+                                 Label="图片地址"
+                                 InputId="event-banner-url"
+                                 @bind-Url="item.BannerUrl" />
+        </EditTemplate>
+    </CrudTable>
+</div>
+
+@code {
+    private int editSessionKey;
+
+    private Task InitQuery(CrudQueryInfo e)
+    {
+        e.Filters = [];
+        return Task.CompletedTask;
+    }
+
+    private void HandleQuery(CrudQueryEventArgs<DEvent> e)
+    {
+        e.Select!
+            .WhereIf(!e.SearchText.IsNull(), a => a.Title.Contains(e.SearchText!) ||
+                a.Summary.Contains(e.SearchText!) ||
+                a.Type.Contains(e.SearchText!) ||
+                a.BannerUrl.Contains(e.SearchText!) ||
+                a.CreatedUserName.Contains(e.SearchText!) ||
+                a.ModifiedUserName.Contains(e.SearchText!))
+            .OrderByDescending(a => a.Id);
+    }
+
+    private async Task HandleEdit(DEvent item)
+    {
+        editSessionKey++;
+        if (item.DAgentId <= 0)
+        {
+            DAgent? firstAgent = await FreeSql.Select<DAgent>().OrderBy(a => a.Id).FirstAsync();
+            if (firstAgent != null)
+            {
+                item.DAgentId = firstAgent.Id;
+            }
+        }
+
+        await Task.CompletedTask;
+    }
+}

@@ -1,0 +1,137 @@
+@page "/Ddd/DMemberTask"
+@layout LayoutAdmin
+@using J9_NeoAdmin.Entities
+@inject IFreeSql FreeSql
+
+<PageTitle>会员任务记录</PageTitle>
+
+<div class="flex flex-col flex-1 min-h-0 overflow-hidden">
+    <CrudTable TItem="DMemberTask"
+               Title="会员任务记录"
+               PageSize="50"
+               InitQuery="InitQuery"
+               OnQuery="HandleQuery"
+               OnEdit="HandleEdit"
+               DialogContentSize="CrudDialogContentSize.Lg">
+        <Columns>
+            <DataTableColumn TData="CrudGridRow<DMemberTask>"
+                             TValue="string"
+                             Property="@(row => GetMemberDisplayName(row.Item.DMember, row.Item.DMemberId))"
+                             Header="会员名称"
+                             Sortable="false"
+                             Width="140px">
+                <CellTemplate Context="row">
+                    <span class="block truncate" title="@GetMemberDisplayName(row.Item.DMember, row.Item.DMemberId)">
+                        @GetMemberDisplayName(row.Item.DMember, row.Item.DMemberId)
+                    </span>
+                </CellTemplate>
+            </DataTableColumn>
+            <DataTableColumn TData="CrudGridRow<DMemberTask>"
+                             TValue="string"
+                             Property="@(row => row.Item.DTask?.Title ?? "-")"
+                             Header="任务名称"
+                             Sortable="false" />
+            <DataTableColumn TData="CrudGridRow<DMemberTask>"
+                             TValue="string"
+                             Property="@(row => row.Item.TaskDate.ToString("yyyy-MM-dd"))"
+                             Header="日期"
+                             Sortable="false"
+                             Width="120px" />
+            <DataTableColumn TData="CrudGridRow<DMemberTask>"
+                             TValue="int"
+                             Property="@(row => row.Item.CurrentValue)"
+                             Header="当前进度"
+                             Sortable="false"
+                             Width="96px" />
+            <DataTableColumn TData="CrudGridRow<DMemberTask>"
+                             TValue="int"
+                             Property="@(row => row.Item.Status)"
+                             Header="状态"
+                             Sortable="false"
+                             Width="100px">
+                <CellTemplate Context="row">
+                    @switch (row.Item.Status)
+                    {
+                        case 0:
+                            <Badge Variant="BadgeVariant.Secondary">未完成</Badge>
+                            break;
+                        case 1:
+                            <Badge Variant="BadgeVariant.Warning">可领取</Badge>
+                            break;
+                        case 2:
+                            <Badge Variant="BadgeVariant.Success">已领取</Badge>
+                            break;
+                        default:
+                            @row.Item.Status
+                            break;
+                    }
+                </CellTemplate>
+            </DataTableColumn>
+            <DataTableColumn TData="CrudGridRow<DMemberTask>"
+                             TValue="string"
+                             Property="@(_ => string.Empty)"
+                             Header="创建时间"
+                             Sortable="false"
+                             Width="200px">
+                <CellTemplate Context="row">
+                    @(row.Item.CreatedTime?.ToString("yyyy-MM-dd HH:mm:ss") ?? "-")
+                </CellTemplate>
+            </DataTableColumn>
+            <DataTableColumn TData="CrudGridRow<DMemberTask>"
+                             TValue="string"
+                             Property="@(_ => string.Empty)"
+                             Header="更新时间"
+                             Sortable="false"
+                             Width="200px">
+                <CellTemplate Context="row">
+                    @(row.Item.ModifiedTime?.ToString("yyyy-MM-dd HH:mm:ss") ?? "-")
+                </CellTemplate>
+            </DataTableColumn>
+        </Columns>
+        <EditTemplate Context="item">
+            <div class="space-y-2">
+                <Label>会员名称</Label>
+                <Input Class="w-full" Value="@GetMemberDisplayName(item.DMember, item.DMemberId)" Disabled="true" />
+            </div>
+            <div class="space-y-2">
+                <Label For="mt-task-id">任务ID</Label>
+                <Input id="mt-task-id" Type="InputType.Number" Class="w-full" Value="@item.DTaskId.ToString()" ValueChanged="@(v => item.DTaskId = long.TryParse(v, out var n) ? n : 0)" />
+            </div>
+            <div class="space-y-2">
+                <Label For="mt-task-date">任务日期</Label>
+                <Input id="mt-task-date" Class="w-full" Value="@item.TaskDate.ToString("yyyy-MM-dd")" ValueChanged="@(v => item.TaskDate = DateTime.TryParse(v, out var d) ? d.Date : item.TaskDate)" />
+            </div>
+            <div class="space-y-2">
+                <Label For="mt-current">当前进度</Label>
+                <Input id="mt-current" Type="InputType.Number" Class="w-full" Value="@item.CurrentValue.ToString()" ValueChanged="@(v => item.CurrentValue = int.TryParse(v, out var n) ? n : 0)" />
+            </div>
+            <div class="space-y-2">
+                <Label For="mt-status">状态 (0未完成, 1可领取, 2已领取)</Label>
+                <Input id="mt-status" Type="InputType.Number" Class="w-full" Value="@item.Status.ToString()" ValueChanged="@(v => item.Status = int.TryParse(v, out var n) ? n : 0)" />
+            </div>
+        </EditTemplate>
+    </CrudTable>
+</div>
+
+@code {
+    private Task InitQuery(CrudQueryInfo e)
+    {
+        e.Filters = [];
+        return Task.CompletedTask;
+    }
+
+    private void HandleQuery(CrudQueryEventArgs<DMemberTask> e)
+    {
+        e.Select!.Include(x => x.DMember).Include(x => x.DTask).OrderByDescending(a => a.Id);
+    }
+
+    private Task HandleEdit(DMemberTask item) => Task.CompletedTask;
+
+    private static string GetMemberDisplayName(DMember? member, long memberId)
+    {
+        if (!string.IsNullOrWhiteSpace(member?.Username))
+            return member.Username;
+
+        return $"会员ID:{memberId}";
+    }
+}

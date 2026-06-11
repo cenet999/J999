@@ -1,0 +1,30 @@
+---
+description: J9_NeoAdmin 审批流（EntityAudited + NovaAdminTable）
+globs: "{**/Entities/**/*.cs,**/*.razor}"
+alwaysApply: false
+---
+
+# 审批流
+
+NoAdmin 审批基于 `EntityAudited` 实体 + 菜单 audit 按钮权限，**无** NeoAdmin 的 `IsWorkflowAudit` 参数。
+
+## 启用步骤
+
+1. 实体继承 `EntityAudited`（见 `Entities/Blog/` 演示）
+2. `NovaAdminTable` 设置 `IsAudit="true"`
+3. 菜单种子为对应 Path 注册 audit 按钮（`audit_00` ~ `audit_99`、`edit_version` 等）
+
+```razor
+<NovaAdminTable TItem="AuditDemo" Context="item" IsAudit="true"
+    Title="审计演示" OnQuery="OnQuery" InitQuery="InitQuery">
+```
+
+## 状态字段
+
+- `AuditStatus`、`AuditStep`、`AuditVersion` 由框架维护
+- `NovaAdminTable` 对 `EntityAudited` 自动显示审批相关列与按钮
+- 已锁定/审批中的记录有并发控制（`LockResources`）
+
+参考实现：`NoAdmin/NoAdmin.Templates/content/NoAdminApp/Components/Blog/_AuditDemo.razor`
+
+J9 核心业务（`Entities/Ddd/`）目前多为 `EntityModified`，一般无需审批流。

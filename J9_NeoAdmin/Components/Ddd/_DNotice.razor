@@ -1,0 +1,110 @@
+@page "/Ddd/DNotice"
+@layout LayoutAdmin
+@inject IFreeSql FreeSql
+
+<PageTitle>平台公告</PageTitle>
+
+<div class="flex flex-col flex-1 min-h-0 overflow-hidden">
+    <CrudTable @ref="table"
+               TItem="DNotice"
+               Title="平台公告"
+               PageSize="50"
+               InitQuery="InitQuery"
+               OnQuery="HandleQuery"
+               OnEdit="HandleEdit"
+               DialogContentSize="CrudDialogContentSize.Lg">
+        <Columns>
+            <DataTableColumn TData="CrudGridRow<DNotice>"
+                             TValue="long"
+                             Property="@(row => row.Item.Id)"
+                             Header="ID"
+                             Sortable="false"
+                             Width="180px" />
+            <DataTableColumn TData="CrudGridRow<DNotice>"
+                             TValue="string"
+                             Property="@(row => row.Item.Title)"
+                             Header="标题"
+                             Sortable="false" />
+            <DataTableColumn TData="CrudGridRow<DNotice>"
+                             TValue="int"
+                             Property="@(row => row.Item.Sort)"
+                             Header="排序"
+                             Sortable="false"
+                             Width="80px" />
+            <DataTableColumn TData="CrudGridRow<DNotice>"
+                             TValue="bool"
+                             Property="@(row => row.Item.IsEnabled)"
+                             Header="状态"
+                             Sortable="false"
+                             Width="88px">
+                <CellTemplate Context="row">
+                    <Badge Variant="@(row.Item.IsEnabled ? BadgeVariant.Success : BadgeVariant.Destructive)">
+                        @(row.Item.IsEnabled ? "启用" : "禁用")
+                    </Badge>
+                </CellTemplate>
+            </DataTableColumn>
+            <DataTableColumn TData="CrudGridRow<DNotice>"
+                             TValue="string"
+                             Property="@(_ => string.Empty)"
+                             Header="创建时间"
+                             Sortable="false"
+                             Width="200px">
+                <CellTemplate Context="row">
+                    @(row.Item.CreatedTime?.ToString("yyyy-MM-dd HH:mm:ss") ?? "-")
+                </CellTemplate>
+            </DataTableColumn>
+            <DataTableColumn TData="CrudGridRow<DNotice>"
+                             TValue="string"
+                             Property="@(_ => string.Empty)"
+                             Header="最后修改时间"
+                             Sortable="false"
+                             Width="200px">
+                <CellTemplate Context="row">
+                    @(row.Item.ModifiedTime?.ToString("yyyy-MM-dd HH:mm:ss") ?? "-")
+                </CellTemplate>
+            </DataTableColumn>
+        </Columns>
+        <EditTemplate Context="item">
+            <div class="space-y-2">
+                <Label For="notice-title">标题</Label>
+                <Input id="notice-title" Class="w-full" MaxLength="200" @bind-Value="item.Title" />
+            </div>
+            <div class="space-y-2">
+                <Label For="notice-sort">排序</Label>
+                <Input id="notice-sort"
+                       Type="InputType.Number"
+                       Class="w-full"
+                       Value="@item.Sort.ToString()"
+                       ValueChanged="@(v => item.Sort = int.TryParse(v, out var n) ? n : 0)" />
+            </div>
+            <div class="flex items-center gap-2">
+                <Checkbox @bind-Checked="item.IsEnabled" Id="notice-enabled" />
+                <Label for="notice-enabled">是否启用</Label>
+            </div>
+            <div class="space-y-2">
+                <Label For="notice-content">内容</Label>
+                <Textarea id="notice-content" Class="min-h-40 w-full" @bind-Value="item.Content" />
+            </div>
+        </EditTemplate>
+    </CrudTable>
+</div>
+
+@code {
+    private CrudTable<DNotice> table = default!;
+
+    private Task InitQuery(CrudQueryInfo e)
+    {
+        e.Filters = [];
+        return Task.CompletedTask;
+    }
+
+    private void HandleQuery(CrudQueryEventArgs<DNotice> e)
+    {
+        e.Select!
+            .WhereIf(!e.SearchText.IsNull(), a => a.Title.Contains(e.SearchText!) ||
+                a.Content.Contains(e.SearchText!))
+            .OrderByDescending(a => a.Id);
+    }
+
+    private Task HandleEdit(DNotice item) => Task.CompletedTask;
+}

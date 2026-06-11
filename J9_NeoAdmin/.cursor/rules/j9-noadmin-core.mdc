@@ -1,0 +1,69 @@
+---
+description: J9_NeoAdmin 项目架构、职责划分与核心开发约定
+alwaysApply: true
+---
+
+# J9_NeoAdmin 核心约定
+
+**J9_NeoAdmin** 是九游俱乐部（J9 Club）的后台宿主项目：基于 **NoAdmin.Blazor**（`../NoAdmin/NoAdmin.Blazor/`）+ **BootstrapBlazor**，为 **J9_APP_103** 移动端提供 REST API 与管理端 UI。
+
+- 程序集 / 命名空间：`J9_NeoAdmin`
+- 框架类库：`NoAdmin.Blazor`（非 NuGet 的 NeoAdmin.Blazor）
+- UI 组件库：**BootstrapBlazor**（非 NeoUI.Blazor）
+
+## 三层职责
+
+| 层 | 路径 | 职责 |
+|----|------|------|
+| 宿主 `J9_NeoAdmin` | `Entities/`、`Components/`、`SeedData/`、`API/`、`Services/`、`Program.cs` | J9 业务实体、Blazor 页、菜单种子、移动端 API、游戏/支付/Telegram 等 |
+| 框架 `NoAdmin.Blazor` | `../NoAdmin/NoAdmin.Blazor/` | `NovaAdminTable`、`LayoutAdmin`、系统 `/admin/*`、身份与权限 |
+| UI | BootstrapBlazor | `Switch`、`DateTimePicker`、`Table` 等，文档 https://www.blazor.zone/ |
+
+**扩展业务时，必须同步维护 `Entities/`、`Components/`、`SeedData/` 三处。**
+
+旧项目对照：`AdminBlazor.dll` → `NoAdmin.Blazor`；`NovaSelect*` 组件名保持不变；`Component` → `Components/`。
+
+## Program.cs 要点
+
+```csharp
+builder.AddNovaAdmin(new NovaAdminOptionsItem
+{
+    Assemblies = [typeof(Program).Assembly],
+    FreeSqlBuilder = a => a.UseConnectionString(dbType, dbConnStr).UseAutoSyncStructure(true),
+    SchedulerExecuting = OnSchedulerExecuting
+});
+// ...
+app.UseBootstrapBlazor();
+app.MapRazorComponents<J9_NeoAdmin.Components.App>()
+    .AddAdditionalAssemblies(typeof(NovaAdminOptionsItem).Assembly)
+    .AddInteractiveServerRenderMode();
+app.UseAdminOmniApi();  // 暴露 API/* 下的服务类
+```
+
+## 配置注意
+
+- 数据库默认 SQLite `buyu.db`；`ConnectionStrings:ActiveProvider` 可切换 PostgreSQL
+- `UseAutoSyncStructure(true)` 自动同步实体表结构（含业务实体）
+- 开发端口 `5231`（`launchSettings.json`）；Docker 映射 `8015`
+- 本地开发默认**不启动** TelegramBot（见 `Program.cs` 环境判断）
+- 框架深度文档见 `../NoAdmin/docs/tutorials/` 与 `../NoAdmin/README.md`
+
+## 新增 J9 业务模块流程
+
+1. `Entities/Ddd/`（或 `Entities/Blog/`）定义实体，继承 `EntityModified` 等基类
+2. `Components/Ddd/` 建 `@page` + `NovaAdminTable`（文件名惯例 `_DEntity.razor`）
+3. `SeedData/MenuSeedData.cs` 注册菜单（`Path` 必须与 `@page` 路由一致）
+4. 移动端接口：在 `API/` 新增继承 `BaseService` 的服务类
+5. 可选：`Services/` 放跨 API 复用逻辑；定时任务在 `Program.cs` 的 `OnSchedulerExecuting` 分发
+
+## 常见坑
+
+| 问题 | 解决 |
+|------|------|
+| 框架页 404 | `AddAdditionalAssemblies(typeof(NovaAdminOptionsItem).Assembly)` |
+| 菜单不显示 | `MenuSeedData.Initialize` + 角色分配菜单 |
+| 按钮不可用 | 菜单类型为增删改查时自动有 add/edit/remove，检查角色权限 |
+| API 404 | 类须 `[ApiController]` + `[Route("api/...")]`，且 `UseAdminOmniApi()` 已注册 |
+| 移动端跨域 | `AllowedOrigins` 配置 + `UseCors("CorsPolicy")` |
+
+完整文档见本项目 `NEOADMIN开发上手.md`。

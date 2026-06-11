@@ -1,0 +1,71 @@
+---
+description: J9_NeoAdmin Blazor 页面、NovaAdminTable 与路由菜单约定
+globs: "**/*.razor"
+alwaysApply: false
+---
+
+# Blazor 页面与 NovaAdminTable
+
+## 页面骨架（参考 `Components/Ddd/_DMember.razor`）
+
+```razor
+@page "/Ddd/DMember"
+@using BootstrapBlazor.Components
+
+<PageTitle>玩家管理</PageTitle>
+
+<NovaAdminTable TItem="DMember" Context="item" PageSize="50" Title="玩家管理"
+    DialogClassName="modal-xl" InitQuery="InitQuery" OnQuery="OnQuery" OnEdit="OnEdit">
+    <TableHeader>
+        <th>用户名</th>
+    </TableHeader>
+    <TableRow>
+        <td>@item.Username</td>
+    </TableRow>
+    <EditTemplate>
+        <div class="form-group col-4">
+            <label class="form-label">用户名</label>
+            <input @bind="item.Username" class="form-control" maxlength="50">
+        </div>
+    </EditTemplate>
+</NovaAdminTable>
+
+@code {
+    async Task InitQuery(NovaAdminQueryInfo e) { ... }
+    void OnQuery(NovaAdminQueryEventArgs<DMember> e) =>
+        e.Select.Include(a => a.DAgent).OrderByDescending(a => a.Id);
+}
+```
+
+- 业务页路由惯例：`/Ddd/DMember`、`/Blog/Article`
+- 全局引用已在 `Components/_Imports.razor`（`NoAdmin.Blazor`、`BootstrapBlazor.Components`）
+- **菜单 `SysMenu.Path` = `@page` 路由**
+
+## NovaAdminTable 关键参数
+
+| 参数 | 说明 |
+|------|------|
+| `InitQuery` / `OnQuery` | 筛选器配置与 FreeSql 条件（`NovaAdminQueryInfo` / `NovaAdminQueryEventArgs<T>`） |
+| `OnEdit` / `OnSaving` / `OnSaved` | 编辑前、保存前校验、保存后 |
+| `DialogClassName` | Bootstrap 弹窗尺寸，如 `modal-xl`、`modal-xxl` |
+| `IsAudit` | 实体继承 `EntityAudited` 时启用审批按钮 |
+| `IsMultiSelect` / `IsSingleSelect` | 多选 / 单选模式 |
+
+默认 CRUD 由 `NovaAdminTable` + `IFreeSql` 完成；复杂保存用 `OnSaving` 拦截。
+
+## 框架组件选型
+
+| 场景 | 组件 |
+|------|------|
+| 标准 CRUD | `NovaAdminTable` |
+| 字典下拉 | `NovaSelectDict` |
+| 枚举下拉 | `NovaSelectEnum<T>` |
+| 实体下拉 | `NovaSelectEntity<TItem,TKey>` |
+| 弹窗选实体 | `NovaInputTable` |
+| 列排序 | `NovaAdminSort` |
+
+## BootstrapBlazor 表单
+
+编辑区常用 Bootstrap 栅格 + `form-control`；布尔用 `<Switch @bind-Value="item.Flag" />`；日期用 `DateTimePicker`。
+
+框架教程：`../NoAdmin/docs/tutorials/01-novaadmintable.md`

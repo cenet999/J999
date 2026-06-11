@@ -1,0 +1,241 @@
+@page "/Ddd/DGameReviewed"
+@layout LayoutAdmin
+@using System.Linq
+@inject IFreeSql FreeSql
+@inject IToastService ToastService
+
+<PageTitle>已审游戏</PageTitle>
+
+<div class="flex flex-col flex-1 min-h-0 overflow-hidden">
+    <CrudTable @ref="adminTable"
+               TItem="DGame"
+               Title="已审游戏"
+               PageSize="50"
+               InitQuery="InitQuery"
+               OnQuery="HandleQuery"
+               OnEdit="HandleEdit"
+               OnSaving="HandleSaving"
+               DialogContentSize="CrudDialogContentSize.X4l">
+        <Columns>
+            <DataTableColumn TData="CrudGridRow<DGame>"
+                             TValue="long"
+                             Property="@(row => row.Item.Id)"
+                             Header="游戏ID"
+                             Sortable="false"
+                             Width="180px" />
+            <DataTableColumn TData="CrudGridRow<DGame>"
+                             TValue="string"
+                             Property="@(row => row.Item.GameCnName)"
+                             Header="游戏中文名"
+                             Sortable="false" />
+            <DataTableColumn TData="CrudGridRow<DGame>"
+                             TValue="string"
+                             Property="@(row => row.Item.GameUID)"
+                             Header="游戏UID"
+                             Sortable="false"
+                             Width="140px" />
+            <DataTableColumn TData="CrudGridRow<DGame>"
+                             TValue="string"
+                             Property="@(row => row.Item.GameCode)"
+                             Header="游戏Code"
+                             Sortable="false"
+                             Width="120px" />
+            <DataTableColumn TData="CrudGridRow<DGame>"
+                             TValue="string"
+                             Property="@(row => row.Item.GameType.ToString())"
+                             Header="游戏类型"
+                             Sortable="false"
+                             Width="96px" />
+            <DataTableColumn TData="CrudGridRow<DGame>"
+                             TValue="string"
+                             Property="@(row => row.Item.ApiCode)"
+                             Header="接口代码"
+                             Sortable="false"
+                             Width="96px" />
+            <DataTableColumn TData="CrudGridRow<DGame>"
+                             TValue="string"
+                             Property="@(row => row.Item.DGamePlatform?.Name ?? "")"
+                             Header="平台"
+                             Sortable="false"
+                             Width="120px" />
+            <DataTableColumn TData="CrudGridRow<DGame>"
+                             TValue="bool"
+                             Property="@(row => row.Item.IsRecommended)"
+                             Header="是否推荐"
+                             Sortable="false"
+                             Width="96px">
+                <CellTemplate Context="row">
+                    <Badge Variant="@(row.Item.IsRecommended ? BadgeVariant.Warning : BadgeVariant.Secondary)">
+                        @(row.Item.IsRecommended ? "推荐" : "普通")
+                    </Badge>
+                </CellTemplate>
+            </DataTableColumn>
+            <DataTableColumn TData="CrudGridRow<DGame>"
+                             TValue="string"
+                             Property="@(_ => string.Empty)"
+                             Header="创建时间"
+                             Sortable="false"
+                             Width="200px">
+                <CellTemplate Context="row">
+                    @(row.Item.CreatedTime?.ToString("yyyy-MM-dd HH:mm:ss") ?? "-")
+                </CellTemplate>
+            </DataTableColumn>
+        </Columns>
+        <EditTemplate Context="item">
+            <div class="grid gap-3 sm:grid-cols-3">
+                <div class="space-y-2">
+                    <Label For="game-uid">游戏UID</Label>
+                    <Input id="game-uid" Class="w-full" MaxLength="255" @bind-Value="item.GameUID" @oninput="OnGameUIDChange" />
+                </div>
+                <div class="space-y-2">
+                    <Label For="game-name">游戏名称</Label>
+                    <Input id="game-name" Class="w-full" MaxLength="255" @bind-Value="item.GameName" />
+                </div>
+                <div class="space-y-2">
+                    <Label For="game-cn-name">游戏中文名</Label>
+                    <Input id="game-cn-name" Class="w-full" MaxLength="255" @bind-Value="item.GameCnName" />
+                </div>
+            </div>
+            <div class="grid gap-3 sm:grid-cols-4 mt-3">
+                <div class="space-y-2">
+                    <Label>游戏类型</Label>
+                    <NeoSelectEnum TEnum="GameType" @bind-Value="item.GameType" />
+                </div>
+                <div class="space-y-2">
+                    <Label For="game-code">游戏Code</Label>
+                    <Input id="game-code" Class="w-full" MaxLength="255" @bind-Value="item.GameCode" />
+                </div>
+                <div class="space-y-2">
+                    <Label For="game-api">接口代码</Label>
+                    <Input id="game-api" Class="w-full" MaxLength="50" @bind-Value="item.ApiCode" />
+                </div>
+                <div class="space-y-2">
+                    <Label>游戏平台</Label>
+                    <NeoSelectEntity TItem="DGamePlatform" TKey="long" @bind-Value="item.DGamePlatformId" DisplayText="e => e.Name" />
+                </div>
+            </div>
+            <div class="grid gap-3 sm:grid-cols-4 mt-3">
+                <div class="flex items-center gap-2">
+                    <Checkbox @bind-Checked="item.IsRecommended" Id="game-recommended" />
+                    <Label for="game-recommended">是否推荐</Label>
+                </div>
+                <div class="space-y-2">
+                    <Label For="game-sort">排序</Label>
+                    <Input id="game-sort" Type="InputType.Number" Class="w-full" Value="@item.Sort.ToString()" ValueChanged="@(v => item.Sort = int.TryParse(v, out var n) ? n : 0)" />
+                </div>
+                <div class="space-y-2">
+                    <Label For="game-players">在玩人数</Label>
+                    <Input id="game-players" Type="InputType.Number" Class="w-full" Value="@item.PlayerCount.ToString()" ValueChanged="@(v => item.PlayerCount = int.TryParse(v, out var n) ? n : 0)" />
+                </div>
+                <div class="space-y-2">
+                    <Label For="game-rating">游戏评分</Label>
+                    <Input id="game-rating" Type="InputType.Number" Class="w-full" Value="@item.Rating.ToString()" ValueChanged="@(v => item.Rating = decimal.TryParse(v, out var n) ? n : 0)" />
+                </div>
+            </div>
+            <div class="space-y-2 mt-3">
+                <Label>已启用</Label>
+                <Input Class="w-full" Value="是" Disabled="true" />
+            </div>
+            <div class="space-y-2 mt-3">
+                <Label For="game-icon">图标</Label>
+                <Input id="game-icon" Class="w-full" MaxLength="255" @bind-Value="item.Icon" />
+            </div>
+            <div class="space-y-2 mt-3">
+                <Label For="game-desc">游戏描述</Label>
+                <Textarea id="game-desc" Class="min-h-24 w-full" @bind-Value="item.Description" />
+            </div>
+        </EditTemplate>
+    </CrudTable>
+</div>
+
+@code {
+    private CrudTable<DGame> adminTable = default!;
+    private DGame currentEditItem = new();
+
+    private async Task InitQuery(CrudQueryInfo e)
+    {
+        List<DGamePlatform> allDGamePlatforms = await FreeSql.Select<DGamePlatform>().Where(a => a.IsEnabled).ToListAsync();
+        List<string> apiCodesRaw = await FreeSql.Select<DGame>()
+            .Where(a => a.IsEnabled && !string.IsNullOrEmpty(a.ApiCode))
+            .ToListAsync(a => a.ApiCode);
+        List<string> distinctApiCodes = apiCodesRaw.Distinct().OrderBy(x => x).ToList();
+
+        e.Filters = [
+            new CrudFilterInfo("游戏类型", "GameType", "真人,捕鱼,电子,彩票,体育,棋牌,电竞", "1,2,3,4,5,6,7"),
+            new CrudFilterInfo("游戏平台", "DGamePlatformId", false, 12,
+                string.Join(",", allDGamePlatforms.Select(a => a.Name)),
+                string.Join(",", allDGamePlatforms.Select(a => a.Id))),
+            new CrudFilterInfo("接口代码", "ApiCode", false, 12,
+                string.Join(",", distinctApiCodes),
+                string.Join(",", distinctApiCodes)),
+        ];
+        await Task.Yield();
+    }
+
+    private void HandleQuery(CrudQueryEventArgs<DGame> e)
+    {
+        e.Select!
+            .Include(a => a.DGamePlatform)
+            .Where(a => a.IsEnabled)
+            .WhereIf(e.Filters[0].HasValue, a => a.GameType == e.Filters[0].Value<GameType>())
+            .WhereIf(e.Filters[1].HasValue, a => a.DGamePlatformId == e.Filters[1].Value<long>())
+            .WhereIf(e.Filters[2].HasValue, a => a.ApiCode != null && a.ApiCode == e.Filters[2].Value<string>())
+            .WhereIf(!e.SearchText.IsNull(), a =>
+                a.GameName.Contains(e.SearchText!) ||
+                a.GameCnName.Contains(e.SearchText!) ||
+                a.GameUID.Contains(e.SearchText!) ||
+                (a.GameCode != null && a.GameCode.Contains(e.SearchText!)) ||
+                (a.ApiCode != null && a.ApiCode.Contains(e.SearchText!)))
+            .OrderByDescending(a => a.Id);
+    }
+
+    private async Task HandleEdit(DGame item)
+    {
+        currentEditItem = item;
+        await Task.Yield();
+    }
+
+    private async Task HandleSaving(CrudConfirmEventArgs<DGame> e)
+    {
+        if (string.IsNullOrWhiteSpace(e.Item.GameName))
+        {
+            ToastService.Error("保存失败", "请录入游戏名称！");
+            e.Cancel = true;
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(e.Item.GameUID))
+        {
+            ToastService.Error("保存失败", "请录入游戏UID！");
+            e.Cancel = true;
+            return;
+        }
+
+        if (e.Item.DGamePlatformId == 0)
+        {
+            ToastService.Error("保存失败", "请选择游戏平台！");
+            e.Cancel = true;
+            return;
+        }
+
+        e.Item.IsEnabled = true;
+    }
+
+    private async Task OnGameUIDChange(ChangeEventArgs e)
+    {
+        string? gameUID = e.Value as string;
+        DGame? game = await FreeSql.Select<DGame>().Where(a => a.GameUID == gameUID).FirstAsync();
+        if (game != null)
+        {
+            currentEditItem.GameName = game.GameName;
+            currentEditItem.GameCnName = game.GameCnName;
+            currentEditItem.GameCode = game.GameCode;
+            currentEditItem.ApiCode = game.ApiCode;
+            currentEditItem.Icon = game.Icon;
+            currentEditItem.DGamePlatformId = game.DGamePlatformId;
+            currentEditItem.GameType = game.GameType;
+            currentEditItem.IsEnabled = true;
+            currentEditItem.IsRecommended = game.IsRecommended;
+        }
+    }
+}

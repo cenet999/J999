@@ -1,0 +1,135 @@
+@page "/Ddd/DBanner"
+@layout LayoutAdmin
+@inject IFreeSql FreeSql
+
+<PageTitle>轮播图管理</PageTitle>
+
+<div class="flex flex-col flex-1 min-h-0 overflow-hidden">
+    <CrudTable TItem="DBanner"
+               Title="轮播图管理"
+               PageSize="50"
+               InitQuery="InitQuery"
+               OnQuery="HandleQuery"
+               OnEdit="HandleEdit"
+               DialogContentSize="CrudDialogContentSize.Lg">
+        <Columns>
+            <DataTableColumn TData="CrudGridRow<DBanner>"
+                             TValue="long"
+                             Property="@(row => row.Item.Id)"
+                             Header="ID"
+                             Sortable="false"
+                             Width="180px" />
+            <DataTableColumn TData="CrudGridRow<DBanner>"
+                             TValue="string"
+                             Property="@(_ => string.Empty)"
+                             Header="图片"
+                             Sortable="false"
+                             Width="100px">
+                <CellTemplate Context="row">
+                    <img src="@row.Item.ImageUrl" class="h-12 rounded" alt="" />
+                </CellTemplate>
+            </DataTableColumn>
+            <DataTableColumn TData="CrudGridRow<DBanner>"
+                             TValue="string"
+                             Property="@(row => row.Item.Title)"
+                             Header="标题"
+                             Sortable="false" />
+            <DataTableColumn TData="CrudGridRow<DBanner>"
+                             TValue="string"
+                             Property="@(row => row.Item.Tag ?? string.Empty)"
+                             Header="标签"
+                             Sortable="false"
+                             Width="120px" />
+            <DataTableColumn TData="CrudGridRow<DBanner>"
+                             TValue="int"
+                             Property="@(row => row.Item.Sort)"
+                             Header="排序"
+                             Sortable="false"
+                             Width="72px" />
+            <DataTableColumn TData="CrudGridRow<DBanner>"
+                             TValue="bool"
+                             Property="@(row => row.Item.IsEnabled)"
+                             Header="状态"
+                             Sortable="false"
+                             Width="88px">
+                <CellTemplate Context="row">
+                    <Badge Variant="@(row.Item.IsEnabled ? BadgeVariant.Success : BadgeVariant.Destructive)">
+                        @(row.Item.IsEnabled ? "启用" : "禁用")
+                    </Badge>
+                </CellTemplate>
+            </DataTableColumn>
+            <DataTableColumn TData="CrudGridRow<DBanner>"
+                             TValue="string"
+                             Property="@(_ => string.Empty)"
+                             Header="创建时间"
+                             Sortable="false"
+                             Width="200px">
+                <CellTemplate Context="row">
+                    @(row.Item.CreatedTime?.ToString("yyyy-MM-dd HH:mm:ss") ?? "-")
+                </CellTemplate>
+            </DataTableColumn>
+        </Columns>
+        <EditTemplate Context="item">
+            <div class="space-y-2">
+                <Label For="banner-title">标题</Label>
+                <Input id="banner-title" Class="w-full" MaxLength="200" @bind-Value="item.Title" />
+            </div>
+            <ImageUrlUploadField @key="editSessionKey"
+                                 Label="图片地址"
+                                 InputId="banner-image"
+                                 MaxLength="500"
+                                 @bind-Url="item.ImageUrl" />
+            <div class="space-y-2">
+                <Label For="banner-desc">描述</Label>
+                <Input id="banner-desc" Class="w-full" MaxLength="500" @bind-Value="item.Description" />
+            </div>
+            <div class="space-y-2">
+                <Label For="banner-tag">标签</Label>
+                <Input id="banner-tag" Class="w-full" MaxLength="50" Placeholder="如：⭐ 本周推荐" @bind-Value="item.Tag" />
+            </div>
+            <div class="space-y-2">
+                <Label For="banner-cta">按钮文字</Label>
+                <Input id="banner-cta" Class="w-full" MaxLength="50" Placeholder="如：马上开玩" @bind-Value="item.CtaText" />
+            </div>
+            <div class="space-y-2">
+                <Label For="banner-colors">颜色主题</Label>
+                <Input id="banner-colors" Class="w-full" MaxLength="500" Placeholder="用逗号隔开，如 #7B5CFF,#FF5FA2" @bind-Value="item.GradientColors" />
+            </div>
+            <div class="space-y-2">
+                <Label For="banner-link">跳转链接</Label>
+                <Input id="banner-link" Class="w-full" MaxLength="500" @bind-Value="item.LinkUrl" />
+            </div>
+            <div class="space-y-2">
+                <Label For="banner-sort">排序</Label>
+                <Input id="banner-sort" Type="InputType.Number" Class="w-full" Value="@item.Sort.ToString()" ValueChanged="@(v => item.Sort = int.TryParse(v, out var n) ? n : 0)" />
+            </div>
+            <div class="flex items-center gap-2">
+                <Checkbox @bind-Checked="item.IsEnabled" Id="banner-enabled" />
+                <Label for="banner-enabled">是否启用</Label>
+            </div>
+        </EditTemplate>
+    </CrudTable>
+</div>
+
+@code {
+    private int editSessionKey;
+
+    private Task InitQuery(CrudQueryInfo e)
+    {
+        e.Filters = [];
+        return Task.CompletedTask;
+    }
+
+    private void HandleQuery(CrudQueryEventArgs<DBanner> e)
+    {
+        e.Select!
+            .WhereIf(!e.SearchText.IsNull(), a => a.Title.Contains(e.SearchText!))
+            .OrderByDescending(a => a.Id);
+    }
+
+    private Task HandleEdit(DBanner item)
+    {
+        editSessionKey++;
+        return Task.CompletedTask;
+    }
+}

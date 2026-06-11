@@ -1,0 +1,165 @@
+@page "/Ddd/DPayApi"
+@layout LayoutAdmin
+@inject IFreeSql FreeSql
+
+<PageTitle>支付通道</PageTitle>
+
+<div class="flex flex-col flex-1 min-h-0 overflow-hidden">
+    <CrudTable TItem="DPayApi"
+               Title="支付通道"
+               PageSize="50"
+               InitQuery="InitQuery"
+               OnQuery="HandleQuery"
+               OnEdit="HandleEdit"
+               DialogContentSize="CrudDialogContentSize.Lg">
+        <Columns>
+            <DataTableColumn TData="CrudGridRow<DPayApi>"
+                             TValue="string"
+                             Property="@(row => row.Item.IP.ToString())"
+                             Header="IP标识"
+                             Sortable="false"
+                             Width="88px" />
+            <DataTableColumn TData="CrudGridRow<DPayApi>"
+                             TValue="string"
+                             Property="@(row => row.Item.PayMethodName)"
+                             Header="支付方式名称"
+                             Sortable="false" />
+            <DataTableColumn TData="CrudGridRow<DPayApi>"
+                             TValue="string"
+                             Property="@(row => row.Item.ChannelCode)"
+                             Header="通道编码"
+                             Sortable="false"
+                             Width="120px" />
+            <DataTableColumn TData="CrudGridRow<DPayApi>"
+                             TValue="string"
+                             Property="@(row => row.Item.PayMethod.ToString())"
+                             Header="支付方式"
+                             Sortable="false"
+                             Width="100px" />
+            <DataTableColumn TData="CrudGridRow<DPayApi>"
+                             TValue="bool"
+                             Property="@(row => row.Item.IsUserInput)"
+                             Header="是否用户输入"
+                             Sortable="false"
+                             Width="100px" />
+            <DataTableColumn TData="CrudGridRow<DPayApi>"
+                             TValue="decimal"
+                             Property="@(row => row.Item.MinAmount)"
+                             Header="最小金额"
+                             Sortable="false"
+                             Width="96px" />
+            <DataTableColumn TData="CrudGridRow<DPayApi>"
+                             TValue="decimal"
+                             Property="@(row => row.Item.MaxAmount)"
+                             Header="最大金额"
+                             Sortable="false"
+                             Width="96px" />
+            <DataTableColumn TData="CrudGridRow<DPayApi>"
+                             TValue="bool"
+                             Property="@(row => row.Item.IsEnabled)"
+                             Header="是否启用"
+                             Sortable="false"
+                             Width="88px" />
+            <DataTableColumn TData="CrudGridRow<DPayApi>"
+                             TValue="int"
+                             Property="@(row => row.Item.Sort)"
+                             Header="排序"
+                             Sortable="false"
+                             Width="72px" />
+            <DataTableColumn TData="CrudGridRow<DPayApi>"
+                             TValue="decimal"
+                             Property="@(row => row.Item.SuccessRate)"
+                             Header="成功率"
+                             Sortable="false"
+                             Width="88px" />
+            <DataTableColumn TData="CrudGridRow<DPayApi>"
+                             TValue="string"
+                             Property="@(_ => string.Empty)"
+                             Header="创建时间"
+                             Sortable="false"
+                             Width="200px">
+                <CellTemplate Context="row">
+                    @(row.Item.CreatedTime?.ToString("yyyy-MM-dd HH:mm:ss") ?? "-")
+                </CellTemplate>
+            </DataTableColumn>
+        </Columns>
+        <EditTemplate Context="item">
+            <div class="grid gap-3 sm:grid-cols-2">
+                <div class="space-y-2">
+                    <Label>IP标识</Label>
+                    <NeoSelectEnum TEnum="ServerIP" @bind-Value="item.IP" />
+                </div>
+                <div class="space-y-2">
+                    <Label For="pay-name">支付方式名称</Label>
+                    <Input id="pay-name" Class="w-full" MaxLength="255" @bind-Value="item.PayMethodName" />
+                </div>
+                <div class="space-y-2">
+                    <Label For="pay-channel">通道编码</Label>
+                    <Input id="pay-channel" Class="w-full" MaxLength="255" @bind-Value="item.ChannelCode" />
+                </div>
+                <div class="space-y-2">
+                    <Label>支付方式</Label>
+                    <NeoSelectEnum TEnum="PayMethod" @bind-Value="item.PayMethod" />
+                </div>
+            </div>
+            <div class="flex items-center gap-2 mt-3">
+                <Checkbox @bind-Checked="item.IsUserInput" Id="pay-user-input" />
+                <Label for="pay-user-input">用户输入</Label>
+            </div>
+            <div class="space-y-2 mt-3">
+                <Label For="pay-default">默认值</Label>
+                <Input id="pay-default" Class="w-full" MaxLength="255" @bind-Value="item.DefaultValue" />
+            </div>
+            <div class="grid gap-3 sm:grid-cols-3 mt-3">
+                <div class="space-y-2">
+                    <Label For="pay-min">最小金额</Label>
+                    <Input id="pay-min" Type="InputType.Number" Class="w-full" Value="@item.MinAmount.ToString()" ValueChanged="@(v => item.MinAmount = decimal.TryParse(v, out var n) ? n : 0)" />
+                </div>
+                <div class="space-y-2">
+                    <Label For="pay-max">最大金额</Label>
+                    <Input id="pay-max" Type="InputType.Number" Class="w-full" Value="@item.MaxAmount.ToString()" ValueChanged="@(v => item.MaxAmount = decimal.TryParse(v, out var n) ? n : 0)" />
+                </div>
+                <div class="space-y-2">
+                    <Label For="pay-rate">成功率</Label>
+                    <Input id="pay-rate" Type="InputType.Number" Class="w-full" Value="@item.SuccessRate.ToString()" ValueChanged="@(v => item.SuccessRate = decimal.TryParse(v, out var n) ? n : 0)" />
+                </div>
+            </div>
+            <div class="flex items-center gap-2 mt-3">
+                <Checkbox @bind-Checked="item.IsEnabled" Id="pay-enabled" />
+                <Label for="pay-enabled">是否启用</Label>
+            </div>
+            <div class="space-y-2 mt-3">
+                <Label For="pay-sort">排序</Label>
+                <Input id="pay-sort" Type="InputType.Number" Class="w-full" Value="@item.Sort.ToString()" ValueChanged="@(v => item.Sort = int.TryParse(v, out var n) ? n : 0)" />
+            </div>
+        </EditTemplate>
+    </CrudTable>
+</div>
+
+@code {
+    private Task InitQuery(CrudQueryInfo e)
+    {
+        e.Filters = [
+            new CrudFilterInfo("IP标识", "IP", "USDT,POPO", "0,1"),
+            new CrudFilterInfo("支付方式", "PayMethod", "Alipay,Wechat,BankCard,USDT,Other", "0,1,2,3,4"),
+            new CrudFilterInfo("是否启用", "IsEnabled", "停用,启用", "0,1"),
+        ];
+        return Task.CompletedTask;
+    }
+
+    private void HandleQuery(CrudQueryEventArgs<DPayApi> e)
+    {
+        e.Select!
+            .WhereIf(e.Filters[0].HasValue, a => a.IP == e.Filters[0].Value<ServerIP>())
+            .WhereIf(e.Filters[1].HasValue, a => a.PayMethod == e.Filters[1].Value<PayMethod>())
+            .WhereIf(e.Filters[2].HasValue, a => a.IsEnabled == e.Filters[2].Value<bool>())
+            .WhereIf(!e.SearchText.IsNull(), a => a.PayMethodName.Contains(e.SearchText!) ||
+                a.ChannelCode.Contains(e.SearchText!) ||
+                a.DefaultValue.Contains(e.SearchText!) ||
+                a.CreatedUserName.Contains(e.SearchText!) ||
+                a.ModifiedUserName.Contains(e.SearchText!))
+            .OrderBy(a => a.Sort);
+    }
+
+    private Task HandleEdit(DPayApi item) => Task.CompletedTask;
+}

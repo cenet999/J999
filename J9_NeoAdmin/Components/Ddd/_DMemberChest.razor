@@ -1,0 +1,94 @@
+@page "/Ddd/DMemberChest"
+@layout LayoutAdmin
+@using J9_NeoAdmin.Entities
+@inject IFreeSql FreeSql
+
+<PageTitle>会员宝箱记录</PageTitle>
+
+<div class="flex flex-col flex-1 min-h-0 overflow-hidden">
+    <CrudTable TItem="DMemberChest"
+               Title="会员宝箱记录"
+               PageSize="50"
+               InitQuery="InitQuery"
+               OnQuery="HandleQuery"
+               OnEdit="HandleEdit"
+               DialogContentSize="CrudDialogContentSize.Lg">
+        <Columns>
+            <DataTableColumn TData="CrudGridRow<DMemberChest>"
+                             TValue="string"
+                             Property="@(row => GetMemberDisplayName(row.Item.DMember, row.Item.DMemberId))"
+                             Header="会员名称"
+                             Sortable="false"
+                             Width="140px" />
+            <DataTableColumn TData="CrudGridRow<DMemberChest>"
+                             TValue="int"
+                             Property="@(row => row.Item.ActivityPointTarget)"
+                             Header="活跃度档位"
+                             Sortable="false"
+                             Width="100px" />
+            <DataTableColumn TData="CrudGridRow<DMemberChest>"
+                             TValue="decimal"
+                             Property="@(row => row.Item.RewardAmount)"
+                             Header="领取的奖励金(元)"
+                             Sortable="false"
+                             Width="120px" />
+            <DataTableColumn TData="CrudGridRow<DMemberChest>"
+                             TValue="string"
+                             Property="@(row => row.Item.ChestDate.ToString("yyyy-MM-dd"))"
+                             Header="领取日期"
+                             Sortable="false"
+                             Width="120px" />
+            <DataTableColumn TData="CrudGridRow<DMemberChest>"
+                             TValue="string"
+                             Property="@(_ => string.Empty)"
+                             Header="创建时间"
+                             Sortable="false"
+                             Width="200px">
+                <CellTemplate Context="row">
+                    @(row.Item.CreatedTime?.ToString("yyyy-MM-dd HH:mm:ss") ?? "-")
+                </CellTemplate>
+            </DataTableColumn>
+        </Columns>
+        <EditTemplate Context="item">
+            <div class="space-y-2">
+                <Label>会员名称</Label>
+                <Input Class="w-full" Value="@GetMemberDisplayName(item.DMember, item.DMemberId)" Disabled="true" />
+            </div>
+            <div class="space-y-2">
+                <Label For="chest-target">活跃度档位</Label>
+                <Input id="chest-target" Type="InputType.Number" Class="w-full" Value="@item.ActivityPointTarget.ToString()" ValueChanged="@(v => item.ActivityPointTarget = int.TryParse(v, out var n) ? n : 0)" />
+            </div>
+            <div class="space-y-2">
+                <Label For="chest-reward">领取的奖励金额</Label>
+                <Input id="chest-reward" Type="InputType.Number" Class="w-full" Value="@item.RewardAmount.ToString()" ValueChanged="@(v => item.RewardAmount = decimal.TryParse(v, out var n) ? n : 0)" />
+            </div>
+            <div class="space-y-2">
+                <Label For="chest-date">领取日期</Label>
+                <Input id="chest-date" Class="w-full" Value="@item.ChestDate.ToString("yyyy-MM-dd")" ValueChanged="@(v => item.ChestDate = DateTime.TryParse(v, out var d) ? d.Date : item.ChestDate)" />
+            </div>
+        </EditTemplate>
+    </CrudTable>
+</div>
+
+@code {
+    private Task InitQuery(CrudQueryInfo e)
+    {
+        e.Filters = [];
+        return Task.CompletedTask;
+    }
+
+    private void HandleQuery(CrudQueryEventArgs<DMemberChest> e)
+    {
+        e.Select!.Include(x => x.DMember).OrderByDescending(a => a.Id);
+    }
+
+    private Task HandleEdit(DMemberChest item) => Task.CompletedTask;
+
+    private static string GetMemberDisplayName(DMember? member, long memberId)
+    {
+        if (!string.IsNullOrWhiteSpace(member?.Username))
+            return member.Username;
+
+        return $"会员ID:{memberId}";
+    }
+}

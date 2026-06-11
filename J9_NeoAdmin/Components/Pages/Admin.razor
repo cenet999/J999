@@ -1,0 +1,160 @@
+@page "/Admin"
+@layout LayoutAdmin
+@inject IFreeSql FreeSql
+
+<PageTitle>系统概览</PageTitle>
+
+<div class="flex flex-col gap-6 p-1">
+    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div class="space-y-1">
+            <h1 class="text-2xl font-semibold tracking-tight">系统概览</h1>
+            <p class="text-sm text-muted-foreground">实时查看九游俱乐部关键业务指标</p>
+        </div>
+        <Button Variant="ButtonVariant.Outline" Size="ButtonSize.Small" Disabled="@loading" OnClick="RefreshData">
+            @if (loading)
+            {
+                <span class="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent mr-1" />
+            }
+            else
+            {
+                <LucideIcon Name="refresh-cw" Size="14" Class="mr-1" />
+            }
+            刷新数据
+        </Button>
+    </div>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <Card Class="border-destructive/40">
+            <CardContent Class="pt-6">
+                <p class="text-sm text-destructive">@errorMessage</p>
+            </CardContent>
+        </Card>
+    }
+
+    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        @foreach (var stat in statCards)
+        {
+            <Card>
+                <CardHeader Class="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle Class="text-sm font-medium">@stat.Title</CardTitle>
+                    <LucideIcon Name="@stat.Icon" Size="16" Class="text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div class="text-2xl font-bold">@stat.Value</div>
+                    <CardDescription Class="mt-1">@stat.Description</CardDescription>
+                    @if (!string.IsNullOrEmpty(stat.Badge))
+                    {
+                        <Badge Variant="@stat.BadgeVariant" Class="mt-3">@stat.Badge</Badge>
+                    }
+                </CardContent>
+            </Card>
+        }
+    </div>
+
+    <Card>
+        <CardHeader>
+            <CardTitle>快速入口</CardTitle>
+            <CardDescription>常用管理页面快捷跳转</CardDescription>
+        </CardHeader>
+        <CardContent>
+            <div class="flex flex-wrap gap-2">
+                <Button Variant="ButtonVariant.Outline" Size="ButtonSize.Small" Href="/Ddd/DMember">
+                    <LucideIcon Name="users" Size="14" Class="mr-1" />
+                    玩家管理
+                </Button>
+                <Button Variant="ButtonVariant.Outline" Size="ButtonSize.Small" Href="/Ddd/DTransAction">
+                    <LucideIcon Name="receipt" Size="14" Class="mr-1" />
+                    流水管理
+                </Button>
+                <Button Variant="ButtonVariant.Outline" Size="ButtonSize.Small" Href="/Ddd/DGame">
+                    <LucideIcon Name="gamepad-2" Size="14" Class="mr-1" />
+                    游戏管理
+                </Button>
+                <Button Variant="ButtonVariant.Outline" Size="ButtonSize.Small" Href="/Ddd/DNotice">
+                    <LucideIcon Name="megaphone" Size="14" Class="mr-1" />
+                    公告管理
+                </Button>
+            </div>
+        </CardContent>
+        <CardFooter Class="text-xs text-muted-foreground">
+            数据更新时间：@(lastUpdated?.ToString("yyyy-MM-dd HH:mm:ss") ?? "—") · 编译时间：@buildTimeText
+        </CardFooter>
+    </Card>
+</div>
+
+@code {
+    private bool loading = true;
+    private string? errorMessage;
+    private DateTime? lastUpdated;
+    private string buildTimeText = "";
+    private List<StatCard> statCards = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        buildTimeText = File.GetLastWriteTime(typeof(Program).Assembly.Location).ToString("yyyy-MM-dd HH:mm:ss");
+        await LoadStatisticsData();
+    }
+
+    private async Task RefreshData()
+    {
+        await LoadStatisticsData();
+    }
+
+    private async Task LoadStatisticsData()
+    {
+        loading = true;
+        errorMessage = null;
+
+        try
+        {
+            var today = DateTime.Today;
+            var tomorrow = today.AddDays(1);
+
+            var memberTotal = await FreeSql.Select<DMember>().CountAsync();
+            var todayNewMembers = await FreeSql.Select<DMember>()
+                .Where(m => m.CreatedTime >= today && m.CreatedTime < tomorrow)
+                .CountAsync();
+            var gameCount = await FreeSql.Select<DGame>().CountAsync();
+            var enabledGameCount = await FreeSql.Select<DGame>().Where(g => g.IsEnabled).CountAsync();
+            var pendingTransactions = await FreeSql.Select<DTransAction>()
+                .Where(t => t.Status == TransactionStatus.Pending)
+                .CountAsync();
+            var todayValidBet = await FreeSql.Select<DTransAction>()
+                .Where(t => t.CreatedTime >= today && t.CreatedTime < tomorrow && t.Status == TransactionStatus.Success)
+                .SumAsync(t => t.ValidBetAmount);
+            var todayRecharge = await FreeSql.Select<DTransAction>()
+                .Where(t => t.CreatedTime >= today && t.CreatedTime < tomorrow
+                    && t.TransactionType == TransactionType.Recharge
+                    && t.Status == TransactionStatus.Success)
+                .SumAsync(t => t.ActualAmount);
+            statCards =
+            [
+                new StatCard("users", "会员总数", memberTotal.ToString("N0"), "平台注册会员总量"),
+                new StatCard("user-plus", "今日新增会员", todayNewMembers.ToString("N0"), "今日新注册会员数"),
+                new StatCard("gamepad-2", "游戏数量", gameCount.ToString("N0"), $"已启用 {enabledGameCount:N0} 款", $"{enabledGameCount} 已启用", BadgeVariant.Secondary),
+                new StatCard("clock", "待处理交易", pendingTransactions.ToString("N0"), "状态为待处理的交易笔数", pendingTransactions > 0 ? "需关注" : "正常", pendingTransactions > 0 ? BadgeVariant.Warning : BadgeVariant.Success),
+                new StatCard("trending-up", "今日有效投注", $"¥{todayValidBet:N2}", "今日成功交易的有效投注合计"),
+                new StatCard("wallet", "今日充值", $"¥{todayRecharge:N2}", "今日成功充值金额合计"),
+            ];
+
+            lastUpdated = DateTime.Now;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"加载统计数据失败：{ex.Message}";
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private sealed record StatCard(
+        string Icon,
+        string Title,
+        string Value,
+        string Description,
+        string? Badge = null,
+        BadgeVariant BadgeVariant = BadgeVariant.Default);
+}

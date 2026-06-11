@@ -1,0 +1,820 @@
+@page "/Ddd/DGame"
+@layout LayoutAdmin
+@using System
+@using System.Linq
+@using System.Text.Json
+@using Microsoft.AspNetCore.Http
+@using J9_NeoAdmin.Services
+@using J9_NeoAdmin.Services.GameApi
+@using NeoUI.Blazor
+@inject IFreeSql FreeSql
+@inject IHttpContextAccessor HttpContextAccessor
+@inject NeoAdminAuthService AuthService
+@inject ILogger<DGame> Logger
+@inject J9_NeoAdmin.Utils.SessionAgent sessionAgent
+@inject J9_NeoAdmin.API.GameService GameService
+@inject GameIconLocalizationService GameIconLocalizationService
+@inject MSGameApi MsGameApi
+@inject XHGameApi XhGameApi
+@inject IToastService ToastService
+
+<PageTitle>Game Management</PageTitle>
+
+<div class="flex flex-col flex-1 min-h-0 overflow-hidden">
+    <CrudTable @ref="adminTable"
+               TItem="DGame"
+               Title="Game Management"
+               PageSize="50"
+               InitQuery="InitQuery"
+               OnQuery="HandleQuery"
+               OnEdit="HandleEdit"
+               OnSaving="HandleSaving"
+               IsMultiSelect="true"
+               OnSelectChanged="OnSelectChanged"
+               DialogContentSize="CrudDialogContentSize.X4l">
+        <ToolbarContent>
+            <Button Variant="ButtonVariant.Default"
+                    Size="ButtonSize.Small"
+                    Disabled="@(selectedItems.Count == 0)"
+                    OnClick="@(() => BatchSetEnabledAsync(true))">
+                批量启用
+            </Button>
+            <Button Variant="ButtonVariant.Secondary"
+                    Size="ButtonSize.Small"
+                    Disabled="@(selectedItems.Count == 0)"
+                    OnClick="@(() => BatchSetEnabledAsync(false))">
+                批量禁用
+            </Button>
+            <Button Variant="ButtonVariant.Default"
+                    Size="ButtonSize.Small"
+                    Disabled="@localizingGameIcons"
+                    OnClick="BatchDownloadImagesAsync">
+                @if (localizingGameIcons)
+                {
+                    <span class="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent mr-1" />
+                }
+                批量下载图片
+            </Button>
+        </ToolbarContent>
+        <HeaderContent>
+            <div class="flex flex-wrap items-center gap-2 py-2">
+                <div class="flex items-center gap-2">
+                    <Label class="text-sm whitespace-nowrap">同步平台</Label>
+                    <NativeSelect TValue="string" Class="h-8" @bind-Value="selectedSyncPlatform" Disabled="@syncingGames">
+                        @foreach (var platform in syncPlatformOptions)
+                        {
+                            <NativeSelectOption Value="@platform.Code">@platform.DisplayName</NativeSelectOption>
+                        }
+                    </NativeSelect>
+                </div>
+                <div class="flex items-center gap-2">
+                    <Label class="text-sm whitespace-nowrap">接口代码</Label>
+                    <Input Class="w-32" @bind-Value="syncApiCode" Placeholder="如 PG、AG" MaxLength="50" />
+                    @if (selectedSyncPlatform == "MS")
+                    {
+                        <Button Size="ButtonSize.Small" Disabled="@syncingGames" OnClick="SyncMsGamesAsync">
+                            @if (syncingGames)
+                            {
+                                <span class="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent mr-1" />
+                            }
+                            同步 MS 游戏
+                        </Button>
+                    }
+                    else if (selectedSyncPlatform == "XH")
+                    {
+                        <Button Size="ButtonSize.Small" Disabled="@syncingGames" OnClick="SyncXhGamesAsync">
+                            @if (syncingGames)
+                            {
+                                <span class="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent mr-1" />
+                            }
+                            同步 XH 游戏
+                        </Button>
+                    }
+                </div>
+            </div>
+            @if (lastSync != null)
+            {
+                @if (lastSync.Success)
+                {
+                    <div class="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-900 mb-2">
+                        <div><strong>同步结果</strong>（平台：@lastSyncPlatform，接口代码：@lastSyncApiCode）</div>
+                        <div class="mt-1">
+                            远程共 <strong>@lastSync.RemoteTotal</strong> 条 ·
+                            新增 <strong class="text-green-700">@lastSync.Inserted</strong> 条 ·
+                            已存在跳过 <strong>@lastSync.SkippedExisting</strong> 条
+                        </div>
+                        @if (lastSync.NewByGameType.Count > 0)
+                        {
+                            <div class="mt-2 mb-0"><strong>新增 · 按游戏类型</strong></div>
+                            <ul class="mb-0 mt-1 list-disc pl-5">
+                                @foreach (var kv in lastSync.NewByGameType.OrderBy(x => (int)x.Key))
+                                {
+                                    <li>@EnumDescriptionHelper.GetDescription(kv.Key)：@kv.Value 条</li>
+                                }
+                            </ul>
+                        }
+                        @if (lastSync.NewByApiCode.Count > 0)
+                        {
+                            <div class="mt-2 mb-0"><strong>新增 · 按子游戏接口代码</strong></div>
+                            <ul class="mb-0 mt-1 list-disc pl-5">
+                                @foreach (var kv in lastSync.NewByApiCode.OrderBy(x => x.Key))
+                                {
+                                    <li>@kv.Key：@kv.Value 条</li>
+                                }
+                            </ul>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900 mb-2">
+                        <strong>同步失败</strong>（平台：@lastSyncPlatform，接口代码：@lastSyncApiCode）：@(lastSync.Message ?? "未知错误")
+                    </div>
+                }
+            }
+        </HeaderContent>
+        <Columns>
+            <DataTableColumn TData="CrudGridRow<DGame>"
+                             TValue="long"
+                             Property="@(row => row.Item.Id)"
+                             Header="游戏ID"
+                             Sortable="false"
+                             Width="180px" />
+            <DataTableColumn TData="CrudGridRow<DGame>"
+                             TValue="string"
+                             Property="@(row => row.Item.GameCnName)"
+                             Header="游戏中文名"
+                             Sortable="false" />
+            <DataTableColumn TData="CrudGridRow<DGame>"
+                             TValue="string"
+                             Property="@(row => row.Item.GameUID)"
+                             Header="游戏UID"
+                             Sortable="false"
+                             Width="120px" />
+            <DataTableColumn TData="CrudGridRow<DGame>"
+                             TValue="string"
+                             Property="@(row => row.Item.GameCode ?? "")"
+                             Header="游戏Code"
+                             Sortable="false"
+                             Width="100px" />
+            <DataTableColumn TData="CrudGridRow<DGame>"
+                             TValue="string"
+                             Property="@(row => row.Item.GameType.ToString())"
+                             Header="游戏类型"
+                             Sortable="false"
+                             Width="88px" />
+            <DataTableColumn TData="CrudGridRow<DGame>"
+                             TValue="bool"
+                             Property="@(row => row.Item.IsEnabled)"
+                             Header="是否启用"
+                             Sortable="false"
+                             Width="88px">
+                <CellTemplate Context="row">
+                    <Badge Variant="@(row.Item.IsEnabled ? BadgeVariant.Success : BadgeVariant.Secondary)">
+                        @(row.Item.IsEnabled ? "启用" : "停用")
+                    </Badge>
+                </CellTemplate>
+            </DataTableColumn>
+            <DataTableColumn TData="CrudGridRow<DGame>"
+                             TValue="bool"
+                             Property="@(row => row.Item.IsRecommended)"
+                             Header="是否推荐"
+                             Sortable="false"
+                             Width="88px">
+                <CellTemplate Context="row">
+                    <Badge Variant="@(row.Item.IsRecommended ? BadgeVariant.Warning : BadgeVariant.Secondary)">
+                        @(row.Item.IsRecommended ? "推荐" : "普通")
+                    </Badge>
+                </CellTemplate>
+            </DataTableColumn>
+            <DataTableColumn TData="CrudGridRow<DGame>"
+                             TValue="int"
+                             Property="@(row => row.Item.Sort)"
+                             Header="排序"
+                             Sortable="false"
+                             Width="64px" />
+            <DataTableColumn TData="CrudGridRow<DGame>"
+                             TValue="bool"
+                             Property="@(row => row.Item.IsTestPassed)"
+                             Header="测试通过"
+                             Visible="false"
+                             Sortable="false"
+                             Width="88px">
+                <CellTemplate Context="row">
+                    <Badge Variant="@(row.Item.IsTestPassed ? BadgeVariant.Success : BadgeVariant.Secondary)">
+                        @(row.Item.IsTestPassed ? "已通过" : "待测试")
+                    </Badge>
+                </CellTemplate>
+            </DataTableColumn>
+            <DataTableColumn TData="CrudGridRow<DGame>"
+                             TValue="string"
+                             Property="@(_ => string.Empty)"
+                             Header="测试时间"
+                             Visible="false"
+                             Sortable="false"
+                             Width="140px">
+                <CellTemplate Context="row">
+                    @(row.Item.TestTime.HasValue ? row.Item.TestTime.Value.ToString("yyyy-MM-dd HH:mm") : "—")
+                </CellTemplate>
+            </DataTableColumn>
+            <DataTableColumn TData="CrudGridRow<DGame>"
+                             TValue="string"
+                             Property="@(row => row.Item.ApiCode ?? "")"
+                             Header="接口代码"
+                             Sortable="false"
+                             Width="88px" />
+            <DataTableColumn TData="CrudGridRow<DGame>"
+                             TValue="string"
+                             Property="@(row => row.Item.DGamePlatform?.Name ?? "")"
+                             Header="平台"
+                             Visible="false"
+                             Sortable="false"
+                             Width="100px" />
+            <DataTableColumn TData="CrudGridRow<DGame>"
+                             TValue="decimal"
+                             Property="@(row => row.Item.Rating)"
+                             Header="评分"
+                             Visible="false"
+                             Sortable="false"
+                             Width="72px" />
+            <DataTableColumn TData="CrudGridRow<DGame>"
+                             TValue="int"
+                             Property="@(row => row.Item.PlayerCount)"
+                             Header="在玩人数"
+                             Visible="false"
+                             Sortable="false"
+                             Width="88px" />
+            <DataTableColumn TData="CrudGridRow<DGame>"
+                             TValue="int"
+                             Property="@(row => row.Item.ClickCount)"
+                             Header="点击次数"
+                             Visible="false"
+                             Sortable="false"
+                             Width="88px" />
+            <DataTableColumn TData="CrudGridRow<DGame>"
+                             TValue="string"
+                             Property="@(_ => string.Empty)"
+                             Header="创建时间"
+                             Sortable="false"
+                             Width="200px">
+                <CellTemplate Context="row">
+                    @(row.Item.CreatedTime?.ToString("yyyy-MM-dd HH:mm:ss") ?? "-")
+                </CellTemplate>
+            </DataTableColumn>
+        </Columns>
+        <RowActionsContent Context="row">
+            <Button Variant="ButtonVariant.Ghost"
+                    Size="ButtonSize.Small"
+                    Title="测试启动"
+                    OnClick="@(() => LanuchGame(row.Item))">
+                <LucideIcon Name="flask-conical" Size="16" />
+                <span class="sr-only">测试启动</span>
+            </Button>
+        </RowActionsContent>
+        <EditTemplate Context="item">
+            <div class="grid gap-3 sm:grid-cols-12">
+                <div class="space-y-2 sm:col-span-5">
+                    <Label For="game-uid">游戏UID</Label>
+                    <Input id="game-uid" Class="w-full" MaxLength="255" @bind-Value="item.GameUID" @oninput="OnGameUIDChange" />
+                </div>
+                <div class="space-y-2 sm:col-span-3">
+                    <Label For="game-name">游戏名称</Label>
+                    <Input id="game-name" Class="w-full" MaxLength="255" @bind-Value="item.GameName" />
+                </div>
+                <div class="space-y-2 sm:col-span-2">
+                    <Label For="game-cn-name">游戏中文名</Label>
+                    <Input id="game-cn-name" Class="w-full" MaxLength="255" @bind-Value="item.GameCnName" />
+                </div>
+                <div class="space-y-2 sm:col-span-2">
+                    <Label>游戏类型</Label>
+                    <NeoSelectEnum TEnum="GameType" @bind-Value="item.GameType" />
+                </div>
+                <div class="space-y-2 sm:col-span-2">
+                    <Label For="game-code">游戏Code</Label>
+                    <Input id="game-code" Class="w-full" MaxLength="255" Placeholder="子游戏代码" @bind-Value="item.GameCode" />
+                </div>
+                <div class="space-y-2 sm:col-span-2">
+                    <Label For="game-api">接口代码</Label>
+                    <Input id="game-api" Class="w-full" MaxLength="50" Placeholder="如 AG, BBIN" @bind-Value="item.ApiCode" />
+                </div>
+                <div class="space-y-2 sm:col-span-4">
+                    <Label>游戏平台ID</Label>
+                    <NeoSelectEntity TItem="DGamePlatform" TKey="long" @bind-Value="item.DGamePlatformId" DisplayText="e => e.Name" />
+                </div>
+                <div class="flex items-center gap-2 sm:col-span-2">
+                    <Checkbox @bind-Checked="item.IsEnabled" Id="game-enabled" />
+                    <Label for="game-enabled">是否启用</Label>
+                </div>
+                <div class="flex items-center gap-2 sm:col-span-2">
+                    <Checkbox @bind-Checked="item.IsRecommended" Id="game-recommended" />
+                    <Label for="game-recommended">是否推荐</Label>
+                </div>
+                <div class="space-y-2 sm:col-span-2">
+                    <Label For="game-sort">排序</Label>
+                    <Input id="game-sort" Type="InputType.Number" Class="w-full" Value="@item.Sort.ToString()" ValueChanged="@(v => item.Sort = int.TryParse(v, out var n) ? n : 0)" />
+                </div>
+                <div class="space-y-2 sm:col-span-2">
+                    <Label For="game-players">在玩人数</Label>
+                    <Input id="game-players" Type="InputType.Number" Class="w-full" Value="@item.PlayerCount.ToString()" ValueChanged="@(v => item.PlayerCount = int.TryParse(v, out var n) ? n : 0)" />
+                </div>
+                <div class="space-y-2 sm:col-span-2">
+                    <Label For="game-rating">游戏评分</Label>
+                    <Input id="game-rating" Type="InputType.Number" Class="w-full" Value="@item.Rating.ToString()" ValueChanged="@(v => item.Rating = decimal.TryParse(v, out var n) ? n : 0)" />
+                </div>
+                <div class="flex items-center gap-2 sm:col-span-2">
+                    <Checkbox @bind-Checked="item.IsTestPassed" Id="game-test-passed" />
+                    <Label for="game-test-passed">测试通过</Label>
+                </div>
+                <div class="space-y-2 sm:col-span-4">
+                    <Label For="game-test-time">测试时间</Label>
+                    <Input id="game-test-time" Class="w-full" Value="@(item.TestTime?.ToString("yyyy-MM-ddTHH:mm") ?? "")" ValueChanged="@(v => item.TestTime = DateTime.TryParse(v, out var d) ? d : item.TestTime)" />
+                </div>
+                <div class="space-y-2 sm:col-span-12">
+                    <Label For="game-desc">游戏描述</Label>
+                    <Textarea id="game-desc" Class="min-h-24 w-full" @bind-Value="item.Description" />
+                </div>
+                <div class="sm:col-span-12">
+                    <ImageUrlUploadField @key="editSessionKey"
+                                         Label="图标"
+                                         InputId="game-icon"
+                                         MaxLength="255"
+                                         MaxFileSize="1048576"
+                                         InputClass="w-full mb-2"
+                                         @bind-Url="item.Icon"
+                                         OnUploadedAsync="PersistGameIconAsync" />
+                </div>
+            </div>
+        </EditTemplate>
+    </CrudTable>
+</div>
+
+@code {
+    private CrudTable<DGame> adminTable = default!;
+    private List<CrudGridRow<DGame>> selectedItems = [];
+    private DGame currentEditItem = new();
+    private int editSessionKey;
+
+    private sealed class SyncPlatformOption
+    {
+        public string Code { get; init; } = "";
+        public string DisplayName { get; init; } = "";
+    }
+
+    private static readonly IReadOnlyList<SyncPlatformOption> DefaultSyncPlatformOptions =
+    [
+        new() { Code = "MS", DisplayName = "美盛游戏" },
+        new() { Code = "XH", DisplayName = "星汇游戏" }
+    ];
+
+    private List<SyncPlatformOption> syncPlatformOptions = [];
+    private string syncApiCode = "PG";
+    private string selectedSyncPlatform = "MS";
+    private bool syncingGames;
+    private bool localizingGameIcons;
+    private GameListSyncViewModel? lastSync;
+    private string lastSyncPlatform = "MS";
+    private string lastSyncApiCode = "";
+
+    private sealed class GameListSyncViewModel
+    {
+        public bool Success { get; set; }
+        public string? Message { get; set; }
+        public int RemoteTotal { get; set; }
+        public int Inserted { get; set; }
+        public int SkippedExisting { get; set; }
+        public Dictionary<GameType, int> NewByGameType { get; set; } = new();
+        public Dictionary<string, int> NewByApiCode { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private Task OnSelectChanged(IReadOnlyList<CrudGridRow<DGame>> items)
+    {
+        try
+        {
+            selectedItems = items?.ToList() ?? [];
+        }
+        catch
+        {
+            selectedItems = [];
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private async Task BatchSetEnabledAsync(bool isEnabled)
+    {
+        var selectedIds = selectedItems
+            .Where(a => a.Item != null)
+            .Select(a => a.Item.Id)
+            .Distinct()
+            .ToList();
+
+        if (selectedIds.Count == 0)
+        {
+            ToastService.Warning("批量操作", "请先选择要操作的游戏");
+            return;
+        }
+
+        var affectedRows = await FreeSql.Update<DGame>()
+            .Set(a => a.IsEnabled, isEnabled)
+            .Where(a => selectedIds.Contains(a.Id))
+            .ExecuteAffrowsAsync();
+
+        selectedItems = [];
+        await adminTable.ReloadAsync();
+        ToastService.Success("批量操作", $"已{(isEnabled ? "启用" : "禁用")} {affectedRows} 个游戏");
+    }
+
+    private async Task BatchDownloadImagesAsync()
+    {
+        if (localizingGameIcons)
+        {
+            return;
+        }
+
+        localizingGameIcons = true;
+        try
+        {
+            var result = await GameIconLocalizationService.LocalizeExternalIconsAsync();
+            await adminTable.ReloadAsync();
+            ToastService.Success("批量下载",
+                $"处理完成：扫描 {result.Scanned} 条，下载 {result.Downloaded} 张，更新 {result.Updated} 条，已存在 {result.AlreadyExists} 条，失败 {result.Failed} 条");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "批量下载游戏图片失败");
+            ToastService.Error("批量下载", "批量下载图片失败，请稍后重试");
+        }
+        finally
+        {
+            localizingGameIcons = false;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSyncPlatformOptionsAsync();
+    }
+
+    private async Task LoadSyncPlatformOptionsAsync()
+    {
+        var dbPlatforms = await FreeSql.Select<DGamePlatform>()
+            .Where(p => p.IsEnabled)
+            .OrderBy(p => p.Sort)
+            .OrderBy(p => p.Id)
+            .ToListAsync();
+
+        syncPlatformOptions = dbPlatforms
+            .Select(MapSyncPlatformOption)
+            .Where(p => p != null)
+            .Select(p => p!)
+            .GroupBy(p => p.Code, StringComparer.OrdinalIgnoreCase)
+            .Select(g => g.First())
+            .ToList();
+
+        if (syncPlatformOptions.Count == 0)
+        {
+            syncPlatformOptions = DefaultSyncPlatformOptions.ToList();
+        }
+
+        if (!syncPlatformOptions.Any(p => p.Code == selectedSyncPlatform))
+        {
+            selectedSyncPlatform = syncPlatformOptions[0].Code;
+        }
+    }
+
+    private static SyncPlatformOption? MapSyncPlatformOption(DGamePlatform platform)
+    {
+        var code = ResolveSyncPlatformCode(platform.Name);
+        if (string.IsNullOrWhiteSpace(code))
+        {
+            return null;
+        }
+
+        var name = platform.Name?.Trim();
+        return new SyncPlatformOption
+        {
+            Code = code,
+            DisplayName = string.IsNullOrWhiteSpace(name) ? code : name
+        };
+    }
+
+    private static string? ResolveSyncPlatformCode(string? platformName)
+    {
+        if (string.IsNullOrWhiteSpace(platformName))
+        {
+            return null;
+        }
+
+        var normalized = platformName.Trim();
+        if (normalized.Contains("MS", StringComparison.OrdinalIgnoreCase) ||
+            normalized.Contains("美盛", StringComparison.OrdinalIgnoreCase))
+        {
+            return "MS";
+        }
+
+        if (normalized.Contains("XH", StringComparison.OrdinalIgnoreCase) ||
+            normalized.Contains("星汇", StringComparison.OrdinalIgnoreCase))
+        {
+            return "XH";
+        }
+
+        return null;
+    }
+
+    private async Task SyncMsGamesAsync()
+    {
+        var code = syncApiCode?.Trim() ?? "";
+        if (string.IsNullOrEmpty(code))
+        {
+            ToastService.Warning("同步", "请先填写接口代码");
+            return;
+        }
+
+        syncingGames = true;
+        lastSyncPlatform = "MS";
+        lastSyncApiCode = code;
+        try
+        {
+            lastSync = MapSyncResult(await MsGameApi.GetGameList(code));
+            if (lastSync.Success)
+            {
+                ToastService.Success("同步",
+                    $"MS 同步完成：远程 {lastSync.RemoteTotal} 条，新增 {lastSync.Inserted} 条，跳过 {lastSync.SkippedExisting} 条");
+            }
+            else
+            {
+                ToastService.Error("同步", lastSync.Message ?? "同步失败");
+            }
+        }
+        finally
+        {
+            syncingGames = false;
+        }
+    }
+
+    private async Task SyncXhGamesAsync()
+    {
+        var code = syncApiCode?.Trim() ?? "";
+        if (string.IsNullOrEmpty(code))
+        {
+            ToastService.Warning("同步", "请先填写接口代码");
+            return;
+        }
+
+        syncingGames = true;
+        lastSyncPlatform = "XH";
+        lastSyncApiCode = code;
+        try
+        {
+            lastSync = MapSyncResult(await XhGameApi.GetGameList(code));
+            if (lastSync.Success)
+            {
+                ToastService.Success("同步",
+                    $"XH 同步完成：远程 {lastSync.RemoteTotal} 条，新增 {lastSync.Inserted} 条，跳过 {lastSync.SkippedExisting} 条");
+            }
+            else
+            {
+                ToastService.Error("同步", lastSync.Message ?? "同步失败");
+            }
+        }
+        finally
+        {
+            syncingGames = false;
+        }
+    }
+
+    private static GameListSyncViewModel MapSyncResult(MSGameListSyncResult syncResult) => new()
+    {
+        Success = syncResult.Success,
+        Message = syncResult.Message,
+        RemoteTotal = syncResult.RemoteTotal,
+        Inserted = syncResult.Inserted,
+        SkippedExisting = syncResult.SkippedExisting,
+        NewByGameType = new Dictionary<GameType, int>(syncResult.NewByGameType),
+        NewByApiCode = new Dictionary<string, int>(syncResult.NewByApiCode, StringComparer.OrdinalIgnoreCase)
+    };
+
+    private static GameListSyncViewModel MapSyncResult(XHGameListSyncResult syncResult) => new()
+    {
+        Success = syncResult.Success,
+        Message = syncResult.Message,
+        RemoteTotal = syncResult.RemoteTotal,
+        Inserted = syncResult.Inserted,
+        SkippedExisting = syncResult.SkippedExisting,
+        NewByGameType = new Dictionary<GameType, int>(syncResult.NewByGameType),
+        NewByApiCode = new Dictionary<string, int>(syncResult.NewByApiCode, StringComparer.OrdinalIgnoreCase)
+    };
+
+    private static string? TryGetMsLaunchGameUrl(object? data)
+    {
+        if (data is null) return null;
+        if (data is string s) return s;
+        try
+        {
+            var json = JsonSerializer.Serialize(data);
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+            if (root.TryGetProperty("gameUrl", out var el))
+                return el.GetString();
+            if (root.TryGetProperty("GameUrl", out el))
+                return el.GetString();
+        }
+        catch { }
+        return null;
+    }
+
+    private async Task LanuchGame(DGame item)
+    {
+        try
+        {
+            ToastService.Success("启动游戏", "接口调用中...");
+
+            var user = await NeoAdminBlazorUser.GetCurrentUserAsync(HttpContextAccessor, AuthService);
+            if (user == null)
+            {
+                ToastService.Error("启动游戏", "未登录或会话已过期");
+                return;
+            }
+
+            var dmember = await FreeSql.Select<DMember>().Where(a => a.Id == user.Id).FirstAsync();
+            var platformCode = ResolveSyncPlatformCode(item.DGamePlatform?.Name);
+            if (string.IsNullOrEmpty(platformCode))
+            {
+                Logger.LogWarning("启动游戏失败：无法识别游戏平台 - 玩家ID: {PlayerId}, 游戏Code: {GameCode}, 平台名称: {PlatformName}",
+                    dmember.Id, item.GameCode, item.DGamePlatform?.Name);
+                ToastService.Error("启动游戏", $"暂不支持该平台的游戏启动：{item.DGamePlatform?.Name}");
+                return;
+            }
+
+            Logger.LogInformation("开始启动{Platform}游戏，玩家ID: {PlayerId}, 游戏Code: {GameCode}",
+                platformCode, dmember.Id, item.GameCode);
+
+            global::ApiResult? result = platformCode switch
+            {
+                "MS" => await GameService.StartMSGameAdminTestAsync(dmember.Id.ToString(), item.Id.ToString()),
+                "XH" => await GameService.StartXHGameAdminTestAsync(dmember.Id.ToString(), item.Id.ToString()),
+                _ => null
+            };
+
+            if (result == null)
+            {
+                Logger.LogInformation("GameService.Start{Platform}Game 返回 null，玩家ID: {PlayerId}, 游戏Code: {GameCode}",
+                    platformCode, dmember.Id, item.GameCode);
+                ToastService.Error("启动游戏", "启动游戏失败：系统返回空结果");
+                return;
+            }
+
+            if (result.Code != 0)
+            {
+                Logger.LogWarning("启动{Platform}游戏失败，玩家ID: {PlayerId}, 游戏Code: {GameCode}, 错误: {Error}",
+                    platformCode, dmember.Id, item.GameCode, result.Message);
+                ToastService.Error("启动游戏", result.Message);
+                return;
+            }
+
+            var url = TryGetMsLaunchGameUrl(result.Data);
+            var testTime = DateTime.Now;
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                Logger.LogWarning("启动{Platform}游戏成功但 Data 中无有效 gameUrl，玩家ID: {PlayerId}, 游戏Code: {GameCode}",
+                    platformCode, dmember.Id, item.GameCode);
+                ToastService.Error("启动游戏", "启动游戏失败：未解析到游戏链接");
+                item.IsTestPassed = false;
+                item.TestTime = testTime;
+                return;
+            }
+
+            item.IsTestPassed = true;
+            item.TestTime = testTime;
+
+            await FreeSql.Update<DGame>()
+                .Set(a => a.IsTestPassed, item.IsTestPassed)
+                .Set(a => a.TestTime, item.TestTime)
+                .SetIf(!item.IsTestPassed, a => a.IsEnabled, false)
+                .Where(a => a.Id == item.Id)
+                .ExecuteAffrowsAsync();
+
+            await adminTable.ReloadAsync();
+
+            Logger.LogInformation("{Platform}游戏启动成功，玩家ID: {PlayerId}, 游戏Code: {GameCode}, URL: {Url}",
+                platformCode, dmember.Id, item.GameCode, url);
+            await JS.InvokeVoidAsync("open", url, "_blank");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogInformation(ex, "启动游戏时发生异常，游戏Code: {GameCode}", item.GameCode);
+            ToastService.Error("启动游戏", "启动游戏时发生系统错误，请稍后重试");
+        }
+    }
+
+    private async Task InitQuery(CrudQueryInfo e)
+    {
+        var allDGamePlatforms = await FreeSql.Select<DGamePlatform>().ToListAsync();
+        var apiCodesRaw = await FreeSql.Select<DGame>()
+            .Where(a => !string.IsNullOrEmpty(a.ApiCode))
+            .ToListAsync(a => a.ApiCode);
+        var distinctApiCodes = apiCodesRaw.Distinct().OrderBy(x => x).ToList();
+
+        e.Filters =
+        [
+            new CrudFilterInfo("游戏类型", "GameType", "真人,捕鱼,电子,彩票,体育,棋牌,电竞", "1,2,3,4,5,6,7"),
+            new CrudFilterInfo("游戏平台", "DGamePlatformId", false, 12,
+                string.Join(",", allDGamePlatforms.Select(a => a.Name)),
+                string.Join(",", allDGamePlatforms.Select(a => a.Id))),
+            new CrudFilterInfo("是否启用", "IsEnabled", "停用,启用", "0,1"),
+            new CrudFilterInfo("是否推荐", "IsRecommended", "普通,推荐", "0,1"),
+            new CrudFilterInfo("测试通过", "IsTestPassed", "待测试,已通过", "0,1"),
+            new CrudFilterInfo("接口代码", "ApiCode", false, 12,
+                string.Join(",", distinctApiCodes),
+                string.Join(",", distinctApiCodes)),
+        ];
+        await Task.Yield();
+    }
+
+    private void HandleQuery(CrudQueryEventArgs<DGame> e)
+    {
+        e.Select!
+            .Include(a => a.DGamePlatform)
+            .WhereIf(e.Filters[0].HasValue, a => a.GameType == e.Filters[0].Value<GameType>())
+            .WhereIf(e.Filters[1].HasValue, a => a.DGamePlatformId == e.Filters[1].Value<long>())
+            .WhereIf(e.Filters[2].HasValue, a => a.IsEnabled == e.Filters[2].Value<bool>())
+            .WhereIf(e.Filters[3].HasValue, a => a.IsRecommended == e.Filters[3].Value<bool>())
+            .WhereIf(e.Filters[4].HasValue, a => a.IsTestPassed == e.Filters[4].Value<bool>())
+            .WhereIf(e.Filters[5].HasValue, a => a.ApiCode != null && a.ApiCode == e.Filters[5].Value<string>())
+            .WhereIf(!e.SearchText.IsNull(), a =>
+                a.Id.ToString().Contains(e.SearchText!) ||
+                a.GameName.Contains(e.SearchText!) ||
+                a.GameCnName.Contains(e.SearchText!) ||
+                a.GameUID.Contains(e.SearchText!) ||
+                (a.GameCode != null && a.GameCode.Contains(e.SearchText!)) ||
+                (a.ApiCode != null && a.ApiCode.Contains(e.SearchText!)) ||
+                a.Icon.Contains(e.SearchText!) ||
+                a.CreatedUserName.Contains(e.SearchText!) ||
+                a.ModifiedUserName.Contains(e.SearchText!))
+            .OrderByDescending(a => a.Id);
+    }
+
+    private async Task HandleEdit(DGame item)
+    {
+        currentEditItem = item;
+        editSessionKey++;
+        await Task.Yield();
+    }
+
+    private async Task HandleSaving(CrudConfirmEventArgs<DGame> e)
+    {
+        if (string.IsNullOrWhiteSpace(e.Item.GameName))
+        {
+            ToastService.Error("保存失败", "请录入游戏名称！");
+            e.Cancel = true;
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(e.Item.GameUID))
+        {
+            ToastService.Error("保存失败", "请录入游戏UID！");
+            e.Cancel = true;
+            return;
+        }
+
+        if (e.Item.DGamePlatformId == 0)
+        {
+            ToastService.Error("保存失败", "请选择游戏平台！");
+            e.Cancel = true;
+            return;
+        }
+
+        await Task.CompletedTask;
+    }
+
+    private async Task PersistGameIconAsync(string iconUrl)
+    {
+        if (currentEditItem.Id <= 0)
+        {
+            return;
+        }
+
+        await FreeSql.Update<DGame>()
+            .Set(a => a.Icon, iconUrl)
+            .Where(a => a.Id == currentEditItem.Id)
+            .ExecuteAffrowsAsync();
+    }
+
+    private async Task OnGameUIDChange(ChangeEventArgs e)
+    {
+        var gameUID = e.Value as string;
+        var game = await FreeSql.Select<DGame>().Where(a => a.GameUID == gameUID).FirstAsync();
+        if (game != null)
+        {
+            currentEditItem.GameName = game.GameName;
+            currentEditItem.GameCnName = game.GameCnName;
+            currentEditItem.GameCode = game.GameCode;
+            currentEditItem.ApiCode = game.ApiCode;
+            currentEditItem.Icon = game.Icon;
+            currentEditItem.DGamePlatformId = game.DGamePlatformId;
+            currentEditItem.GameType = game.GameType;
+            currentEditItem.IsEnabled = true;
+            currentEditItem.IsRecommended = false;
+        }
+    }
+}

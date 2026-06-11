@@ -1,0 +1,395 @@
+@page "/Ddd/DMember"
+@layout LayoutAdmin
+@using Microsoft.AspNetCore.Http
+@inject IFreeSql FreeSql
+@inject J9_NeoAdmin.Utils.SessionAgent sessionAgent
+@inject NeoAdminAuthService AuthService
+@inject IHttpContextAccessor HttpContextAccessor
+@inject IJSRuntime JS
+
+<PageTitle>玩家管理</PageTitle>
+
+<div class="flex flex-col flex-1 min-h-0 overflow-hidden">
+    <CrudTable TItem="DMember"
+               Title="玩家管理"
+               PageSize="50"
+               InitQuery="InitQuery"
+               OnQuery="HandleQuery"
+               OnEdit="HandleEdit"
+               DialogContentSize="CrudDialogContentSize.X4l">
+        <Columns>
+            <DataTableColumn TData="CrudGridRow<DMember>"
+                             TValue="long"
+                             Property="@(row => row.Item.Id)"
+                             Header="ID"
+                             Sortable="false"
+                             Width="180px" />
+            <DataTableColumn TData="CrudGridRow<DMember>"
+                             TValue="string"
+                             Property="@(row => row.Item.Username)"
+                             Header="用户名"
+                             Sortable="false"
+                             Width="160px" />
+            <DataTableColumn TData="CrudGridRow<DMember>"
+                             TValue="string"
+                             Property="@(row => row.Item.Password)"
+                             Header="密码"
+                             Sortable="false"
+                             Width="100px" />
+            <DataTableColumn TData="CrudGridRow<DMember>"
+                             TValue="bool"
+                             Property="@(row => row.Item.IsEnabled)"
+                             Header="是否启用"
+                             Sortable="false"
+                             Width="96px">
+                <CellTemplate Context="row">
+                    <Badge Variant="@(row.Item.IsEnabled ? BadgeVariant.Success : BadgeVariant.Secondary)">
+                        @(row.Item.IsEnabled ? "启用" : "停用")
+                    </Badge>
+                </CellTemplate>
+            </DataTableColumn>
+            <DataTableColumn TData="CrudGridRow<DMember>"
+                             TValue="long"
+                             Property="@(row => row.Item.ParentId)"
+                             Header="父ID"
+                             Visible="false"
+                             Sortable="false"
+                             Width="180px" />
+            <DataTableColumn TData="CrudGridRow<DMember>"
+                             TValue="string"
+                             Property="@(row => row.Item.InviteCode ?? "")"
+                             Header="邀请码"
+                             Visible="false"
+                             Sortable="false"
+                             Width="96px" />
+            <DataTableColumn TData="CrudGridRow<DMember>"
+                             TValue="decimal"
+                             Property="@(row => row.Item.CreditAmount)"
+                             Header="余额"
+                             Sortable="false"
+                             Width="110px">
+                <CellTemplate Context="row">
+                    <Badge Variant="@(row.Item.CreditAmount >= 0 ? BadgeVariant.Success : BadgeVariant.Destructive)">
+                        @row.Item.CreditAmount.ToString("N2")
+                    </Badge>
+                </CellTemplate>
+            </DataTableColumn>
+            <DataTableColumn TData="CrudGridRow<DMember>"
+                             TValue="bool"
+                             Property="@(row => row.Item.IsRebateSwitch)"
+                             Header="反水开关"
+                             Visible="false"
+                             Sortable="false"
+                             Width="96px">
+                <CellTemplate Context="row">
+                    @(row.Item.IsRebateSwitch ? "开" : "关")
+                </CellTemplate>
+            </DataTableColumn>
+            <DataTableColumn TData="CrudGridRow<DMember>"
+                             TValue="string"
+                             Property="@(row => row.Item.RegisterIp)"
+                             Header="注册IP"
+                             Sortable="false"
+                             Width="140px">
+                <CellTemplate Context="row">
+                    @if (string.IsNullOrWhiteSpace(row.Item.RegisterIp))
+                    {
+                        <Badge Variant="BadgeVariant.Secondary">未记录</Badge>
+                    }
+                    else
+                    {
+                        <Badge Variant="BadgeVariant.Outline" Class="font-mono">
+                            @row.Item.RegisterIp.Trim()
+                        </Badge>
+                    }
+                </CellTemplate>
+            </DataTableColumn>
+            <DataTableColumn TData="CrudGridRow<DMember>"
+                             TValue="string"
+                             Property="@(row => row.Item.DAgent?.AgentName ?? "")"
+                             Header="代理名"
+                             Sortable="false"
+                             Width="120px" />
+            <DataTableColumn TData="CrudGridRow<DMember>"
+                             TValue="string"
+                             Property="@(_ => string.Empty)"
+                             Header="上级代理"
+                             Sortable="false"
+                             Width="120px">
+                <CellTemplate Context="row">
+                    @GetParentAgentName(row.Item.DAgent?.ParentId ?? 0)
+                </CellTemplate>
+            </DataTableColumn>
+            <DataTableColumn TData="CrudGridRow<DMember>"
+                             TValue="string"
+                             Property="@(_ => string.Empty)"
+                             Header="最后签到"
+                             Visible="false"
+                             Sortable="false"
+                             Width="160px">
+                <CellTemplate Context="row">
+                    @(row.Item.LastCheckInDate?.ToString("yyyy-MM-dd HH:mm:ss") ?? "-")
+                </CellTemplate>
+            </DataTableColumn>
+            <DataTableColumn TData="CrudGridRow<DMember>"
+                             TValue="int"
+                             Property="@(row => row.Item.ContinuousCheckInDays)"
+                             Header="连续签到"
+                             Visible="false"
+                             Sortable="false"
+                             Width="96px" />
+            <DataTableColumn TData="CrudGridRow<DMember>"
+                             TValue="string"
+                             Property="@(row => row.Item.LoginTime.ToString("yyyy-MM-dd HH:mm:ss"))"
+                             Header="登录时间"
+                             Sortable="false"
+                             Width="160px" />
+        </Columns>
+        <EditTemplate Context="item">
+            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <div class="space-y-2">
+                    <Label For="member-username">用户名</Label>
+                    <Input id="member-username" Class="w-full" MaxLength="50" @bind-Value="item.Username" />
+                </div>
+                <div class="space-y-2">
+                    <Label For="member-nickname">昵称</Label>
+                    <Input id="member-nickname" Class="w-full" MaxLength="50" @bind-Value="item.Nickname" />
+                </div>
+                <div class="space-y-2">
+                    <Label For="member-password">密码</Label>
+                    <Input id="member-password" Class="w-full" MaxLength="50" @bind-Value="item.Password" />
+                </div>
+                <div class="flex items-center gap-2">
+                    <Checkbox @bind-Checked="item.IsEnabled" Id="member-enabled" />
+                    <Label for="member-enabled">是否启用</Label>
+                </div>
+                <div class="space-y-2">
+                    <Label For="member-login-time">登录时间</Label>
+                    <Input id="member-login-time" Class="w-full"
+                           Value="@item.LoginTime.ToString("yyyy-MM-ddTHH:mm")"
+                           ValueChanged="@(v => item.LoginTime = DateTime.TryParse(v, out var d) ? d : item.LoginTime)" />
+                </div>
+                <div class="space-y-2 sm:col-span-2 lg:col-span-3">
+                    <Label For="member-description">描述</Label>
+                    <Textarea id="member-description" Class="min-h-20 w-full" MaxLength="500" @bind-Value="item.Description" />
+                </div>
+                <div class="flex items-center gap-2">
+                    <Checkbox @bind-Checked="item.IsSystem" Id="member-system" />
+                    <Label for="member-system">是否系统</Label>
+                </div>
+                <div class="space-y-2">
+                    <Label For="member-parent-id">父ID</Label>
+                    <Input id="member-parent-id" Type="InputType.Number" Class="w-full"
+                           Value="@item.ParentId.ToString()"
+                           ValueChanged="@(v => item.ParentId = long.TryParse(v, out var n) ? n : 0)" />
+                </div>
+                <div class="space-y-2">
+                    <Label For="member-fingerprint">浏览器指纹</Label>
+                    <Input id="member-fingerprint" Class="w-full" MaxLength="255" @bind-Value="item.BrowserFingerprint" />
+                </div>
+                <div class="space-y-2">
+                    <Label For="member-invite-code">邀请码</Label>
+                    <Input id="member-invite-code" Class="w-full" MaxLength="255" @bind-Value="item.InviteCode" />
+                </div>
+                <div class="space-y-2">
+                    <Label For="member-credit">余额</Label>
+                    <Input id="member-credit" Type="InputType.Number" Class="w-full"
+                           Value="@item.CreditAmount.ToString()"
+                           ValueChanged="@(v => item.CreditAmount = decimal.TryParse(v, out var n) ? n : 0)" />
+                </div>
+                <div class="flex items-center gap-2">
+                    <Checkbox @bind-Checked="item.IsRebateSwitch" Id="member-rebate" />
+                    <Label for="member-rebate">反水开关</Label>
+                </div>
+                <div class="space-y-2">
+                    <Label For="member-updated-time">更新时间</Label>
+                    <Input id="member-updated-time" Class="w-full"
+                           Value="@item.UpdatedTime.ToString("yyyy-MM-ddTHH:mm")"
+                           ValueChanged="@(v => item.UpdatedTime = DateTime.TryParse(v, out var d) ? d : item.UpdatedTime)" />
+                </div>
+                <div class="space-y-2">
+                    <Label For="member-telegram">会员Telegram</Label>
+                    <Input id="member-telegram" Class="w-full" MaxLength="255" @bind-Value="item.Telegram" />
+                </div>
+                <div class="space-y-2">
+                    <Label For="member-email">邮箱地址</Label>
+                    <Input id="member-email" Class="w-full" MaxLength="255" @bind-Value="item.Email" />
+                </div>
+                <div class="space-y-2">
+                    <Label For="member-real-name">真实姓名</Label>
+                    <Input id="member-real-name" Class="w-full" MaxLength="50" @bind-Value="item.RealName" />
+                </div>
+                <div class="space-y-2">
+                    <Label For="member-withdraw-password">取款密码</Label>
+                    <Input id="member-withdraw-password" Class="w-full" MaxLength="255" @bind-Value="item.WithdrawPassword" />
+                </div>
+                <div class="space-y-2">
+                    <Label For="member-usdt">USDT地址</Label>
+                    <Input id="member-usdt" Class="w-full" MaxLength="255" @bind-Value="item.USDTAddress" />
+                </div>
+                <div class="space-y-2">
+                    <Label For="member-bank-name">银行名称</Label>
+                    <Input id="member-bank-name" Class="w-full" MaxLength="100" @bind-Value="item.BankName" />
+                </div>
+                <div class="space-y-2">
+                    <Label For="member-bank-account">银行账号</Label>
+                    <Input id="member-bank-account" Class="w-full" MaxLength="100" @bind-Value="item.BankAccount" />
+                </div>
+                <div class="space-y-2">
+                    <Label For="member-alipay">支付宝账号</Label>
+                    <Input id="member-alipay" Class="w-full" MaxLength="100" @bind-Value="item.AlipayAccount" />
+                </div>
+                <div class="space-y-2">
+                    <Label For="member-register-ip">注册IP</Label>
+                    <Input id="member-register-ip" Class="w-full" MaxLength="255" @bind-Value="item.RegisterIp" />
+                </div>
+                <div class="space-y-2">
+                    <Label For="member-avatar">头像</Label>
+                    <Input id="member-avatar" Class="w-full" MaxLength="255" @bind-Value="item.Avatar" />
+                </div>
+                <div class="space-y-2">
+                    <Label For="member-agent">代理名</Label>
+                    <NativeSelect TValue="string" Id="member-agent" Class="w-full"
+                                  Value="@item.DAgentId.ToString()"
+                                  ValueChanged="@(v => item.DAgentId = long.TryParse(v, out var n) ? n : 0)">
+                        @foreach (var opt in memberAgentSelectItems)
+                        {
+                            <NativeSelectOption Value="@opt.Value.ToString()">@opt.Text</NativeSelectOption>
+                        }
+                    </NativeSelect>
+                </div>
+                <div class="space-y-2">
+                    <Label For="member-last-checkin">最后签到时间</Label>
+                    <Input id="member-last-checkin" Class="w-full"
+                           Value="@(item.LastCheckInDate?.ToString("yyyy-MM-ddTHH:mm") ?? "")"
+                           ValueChanged="@(v => item.LastCheckInDate = DateTime.TryParse(v, out var d) ? d : null)" />
+                </div>
+                <div class="space-y-2">
+                    <Label For="member-checkin-days">连续签到天数</Label>
+                    <Input id="member-checkin-days" Type="InputType.Number" Class="w-full"
+                           Value="@item.ContinuousCheckInDays.ToString()"
+                           ValueChanged="@(v => item.ContinuousCheckInDays = int.TryParse(v, out var n) ? n : 0)" />
+                </div>
+            </div>
+        </EditTemplate>
+    </CrudTable>
+</div>
+
+@code {
+    private HashSet<long> visibleAgentIds = [];
+    private bool showAllMembers;
+    private List<DAgent> allAgents = [];
+    private Dictionary<long, string> agentNameMap = [];
+    private List<(long Value, string Text)> memberAgentSelectItems = [];
+
+    private async Task InitQuery(CrudQueryInfo e)
+    {
+        showAllMembers = await NeoAdminBlazorUser.IsSiteAdminAsync(HttpContextAccessor, AuthService, JS, FreeSql);
+        allAgents = await FreeSql.Select<DAgent>().OrderByDescending(a => a.Id).ToListAsync();
+        agentNameMap = allAgents.ToDictionary(a => a.Id, a => a.AgentName ?? "");
+        visibleAgentIds = VisibleAgentIdsHelper.Build(allAgents, showAllMembers, sessionAgent.GetAgentId());
+
+        var agents = showAllMembers
+            ? allAgents
+            : visibleAgentIds.Count > 0
+                ? allAgents.Where(a => visibleAgentIds.Contains(a.Id)).ToList()
+                : [];
+
+        static string NoComma(string? s) => (s ?? "").Replace(",", " ");
+        string AgentLabel(DAgent a)
+        {
+            if (!string.IsNullOrWhiteSpace(a.AgentName))
+                return $"{NoComma(a.AgentName.Trim())} ({a.Id})";
+            return $"(未填写代理名) ({a.Id})";
+        }
+
+        memberAgentSelectItems = [(0L, "（未指定代理）")];
+        memberAgentSelectItems.AddRange(agents.Select(a => (a.Id, AgentLabel(a))));
+
+        e.Filters =
+        [
+            new CrudFilterInfo("代理名", "DAgentId", false, 12,
+                string.Join(",", agents.Select(AgentLabel)),
+                string.Join(",", agents.Select(a => a.Id))),
+        ];
+    }
+
+    private void HandleQuery(CrudQueryEventArgs<DMember> e)
+    {
+        var select = e.Select!.Include(a => a.DAgent);
+
+        // 与交易流水页一致：空 visibleAgentIds 时不能用 Contains，否则 FreeSql 会生成 DAgentId IN (NULL) 导致永远 0 条。
+        if (!showAllMembers)
+        {
+            select = visibleAgentIds.Count > 0
+                ? select.Where(a => visibleAgentIds.Contains(a.DAgentId))
+                : select.Where(a => a.Id == 0);
+        }
+
+        select
+            .WhereIf(e.Filters[0].HasValue, a => e.Filters[0].Values<long>().Contains(a.DAgentId))
+            .WhereIf(!e.SearchText.IsNull(), a => a.Username.Contains(e.SearchText!) ||
+                a.Nickname.Contains(e.SearchText!) ||
+                a.Password.Contains(e.SearchText!) ||
+                a.Description.Contains(e.SearchText!) ||
+                a.BrowserFingerprint.Contains(e.SearchText!) ||
+                a.InviteCode.Contains(e.SearchText!) ||
+                a.Telegram.Contains(e.SearchText!) ||
+                a.Email.Contains(e.SearchText!) ||
+                a.RealName.Contains(e.SearchText!) ||
+                a.WithdrawPassword.Contains(e.SearchText!) ||
+                a.USDTAddress.Contains(e.SearchText!) ||
+                a.BankName.Contains(e.SearchText!) ||
+                a.BankAccount.Contains(e.SearchText!) ||
+                a.AlipayAccount.Contains(e.SearchText!) ||
+                a.RegisterIp.Contains(e.SearchText!) ||
+                a.Avatar.Contains(e.SearchText!))
+            .OrderByDescending(a => a.Id);
+    }
+
+    private async Task HandleEdit(DMember item)
+    {
+        if (item.Id == default || string.IsNullOrWhiteSpace(item.InviteCode))
+            item.InviteCode = new Random().Next(1000, 10000).ToString();
+
+        if (item.DAgentId > 0 && item.DAgent == null)
+        {
+            item.DAgent = await FreeSql.Select<DAgent>()
+                .Where(a => a.Id == item.DAgentId)
+                .FirstAsync();
+        }
+
+        EnsureMemberAgentSelectCoversCurrent(item);
+        await Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// 若当前会员归属代理不在「本级/下级/下下级」下拉数据中，补一条选项避免显示空白（例如历史数据或权限边界）。
+    /// </summary>
+    private void EnsureMemberAgentSelectCoversCurrent(DMember item)
+    {
+        if (item.DAgentId <= 0)
+            return;
+
+        if (memberAgentSelectItems.Any(i => i.Value == item.DAgentId))
+            return;
+
+        static string NoComma(string? s) => (s ?? "").Replace(",", " ");
+        var name = item.DAgent?.AgentName;
+        var text = string.IsNullOrWhiteSpace(name)
+            ? $"(未填写代理名) ({item.DAgentId})"
+            : $"{NoComma(name.Trim())} ({item.DAgentId})";
+        memberAgentSelectItems.Add((item.DAgentId, text));
+    }
+
+    private string GetParentAgentName(long parentId)
+    {
+        if (parentId <= 0)
+            return "-";
+
+        if (agentNameMap.TryGetValue(parentId, out var parentName) && !string.IsNullOrWhiteSpace(parentName))
+            return parentName.Trim();
+
+        return $"(未填写代理名) ({parentId})";
+    }
+}

@@ -1,0 +1,52 @@
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.AspNetCore.Components.Endpoints
+@using Microsoft.AspNetCore.Http
+@using static Microsoft.AspNetCore.Components.Web.RenderMode
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <link rel='stylesheet' href='@Assets["css/tailwind.css"]' />
+    <link rel='stylesheet' href='@Assets["_content/NeoUI.Blazor/components.css"]' />
+    <link rel='stylesheet' href='@Assets["_content/NeoUI.Blazor/css/themes/base/zinc.css"]' />
+    <link rel='stylesheet' href='@Assets["_content/NeoUI.Blazor/css/themes/primary/violet.css"]' />
+    <link rel='stylesheet' href='@Assets["_content/NeoAdmin.Blazor/app.css"]' />
+    <link rel='stylesheet' href='@Assets["_content/NeoAdmin.Blazor/css/layout-shell.css"]' />
+    <link rel='stylesheet' href='@Assets["_content/NeoAdmin.Blazor/css/crud-table.css"]' />
+    <link rel='stylesheet' href='@Assets["_content/NeoAdmin.Blazor/css/dialog-max-width.css"]' />
+    <link rel='stylesheet' href='@Assets["_content/NeoAdmin.Blazor/css/dialog-scroll.css"]' />
+    <link rel='stylesheet' href='@Assets["_content/NeoAdmin.Blazor/css/neo-select.css"]' />
+    <link rel="stylesheet" href="css/home.css" />
+    <link rel="icon" href="logo.png" type="image/png" />
+    <ImportMap />
+    <DataGridImportMap />
+    <HeadOutlet @rendermode="@RenderModeForPage" />
+</head>
+<body>
+    @* 必须用宿主项目的 Routes，避免解析到 NeoAdmin.Blazor.Routes（仅含框架 /admin/* 路由） *@
+    <J9_NeoAdmin.Components.Routes @rendermode="@RenderModeForPage" />
+
+    <script src='@Assets["_content/NeoAdmin.Blazor/js/auth.js"]'></script>
+    <script src='@Assets["_content/NeoUI.Blazor/js/theme.js"]'></script>
+    <script>
+        window.j9CopyToClipboard = (text) => navigator.clipboard.writeText(text);
+    </script>
+    <script src='@Assets["_framework/blazor.web.js"]'></script>
+</body>
+</html>
+
+@code {
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    // 走 SignalR 的交互式渲染模式。
+    private static readonly IComponentRenderMode Interactive =
+        new InteractiveServerRenderMode(prerender: false);
+
+    // 标记了 [ExcludeFromInteractiveRouting] 的页面（如 Home）走静态 SSR，其余走 InteractiveServer。
+    private IComponentRenderMode? RenderModeForPage =>
+        HttpContext.AcceptsInteractiveRouting() ? Interactive : null;
+}
