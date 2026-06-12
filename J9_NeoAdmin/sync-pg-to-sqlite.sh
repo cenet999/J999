@@ -28,11 +28,13 @@ case "${1:-sync}" in
     exit 0
     ;;
   sync)
-    exec dotnet run -- sync-pg-to-sqlite
+    dotnet run -- sync-pg-to-sqlite
+    exec dotnet run -- seed-sysuser-demo
     ;;
   build)
     dotnet build
-    exec dotnet run --no-build -- sync-pg-to-sqlite
+    dotnet run --no-build -- sync-pg-to-sqlite
+    exec dotnet run --no-build -- seed-sysuser-demo
     ;;
   *)
     echo "未知子命令: $1" >&2

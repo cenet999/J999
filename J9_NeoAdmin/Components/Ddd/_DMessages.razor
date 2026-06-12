@@ -25,6 +25,12 @@
                              Width="120px" />
             <DataTableColumn TData="CrudGridRow<DMessage>"
                              TValue="string"
+                             Property="@(row => row.Item.DMember?.Username ?? "")"
+                             Header="会员"
+                             Sortable="false"
+                             Width="120px" />
+            <DataTableColumn TData="CrudGridRow<DMessage>"
+                             TValue="string"
                              Property="@(row => row.Item.Content ?? "")"
                              Header="文本内容"
                              Sortable="false">
@@ -54,17 +60,11 @@
                              Header="发送方IP"
                              Sortable="false"
                              Width="140px" />
-            <DataTableColumn TData="CrudGridRow<DMessage>"
-                             TValue="string"
-                             Property="@(row => row.Item.DMember?.Username ?? "")"
-                             Header="会员"
-                             Sortable="false"
-                             Width="120px" />
         </Columns>
         <RowActionsContent Context="row">
-            @if (row.Item.SenderRole == MessageSenderRole.Customer && row.Item.Status != MessageStatus.已回复)
+            @if (row.Item.SenderRole == MessageSenderRole.Customer)
             {
-                <Button Variant="ButtonVariant.Outline"
+                <Button Variant="@(row.Item.Status == MessageStatus.已回复 ? ButtonVariant.Outline : ButtonVariant.Default)"
                         Size="ButtonSize.Small"
                         OnClick="@(() => ShowSendMessage(row.Item))">
                     回复
@@ -103,7 +103,7 @@
 </div>
 
 <Dialog @bind-Open="replyOpen">
-    <DialogContent Variant="DialogContentVariant.Form" Class="sm:max-w-lg">
+    <DialogContent Variant="DialogContentVariant.Form" Class="sm:max-w-2xl">
         <DialogHeader>
             <DialogTitle>发送消息</DialogTitle>
             <DialogDescription>回复会员客服消息。</DialogDescription>
@@ -114,14 +114,19 @@
                 <Input Value="@(replyItem.DMember?.Username)" Disabled="true" />
             </div>
             <div class="space-y-2">
-                <Label>消息内容</Label>
-                <Input Value="@replyItem.Content" Disabled="true" />
+                <Label For="reply-original">消息内容</Label>
+                <Textarea id="reply-original"
+                          Rows="5"
+                          Class="min-h-28 w-full resize-y"
+                          Value="@replyItem.Content"
+                          Disabled="true" />
             </div>
             <div class="space-y-2">
                 <Label For="reply-text">客服回复</Label>
                 <Textarea id="reply-text"
-                          Class="min-h-32 w-full"
-                          Placeholder="请输入消息内容"
+                          Rows="6"
+                          Class="min-h-36 w-full resize-y"
+                          Placeholder="请输入回复内容，支持多行"
                           MaxLength="65535"
                           @bind-Value="replyMessage" />
             </div>

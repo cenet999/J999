@@ -11,6 +11,7 @@ using NeoAdmin.Blazor.Extensions;
 using NeoUI.Blazor.Extensions;
 using NeoUI.Blazor.Primitives.Extensions;
 using Serilog;
+using J9_NeoAdmin.SeedData;
 using J9_NeoAdmin.Services.DatabaseSync;
 
 var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production";
@@ -38,6 +39,12 @@ try
             .Build();
 
         await PostgreSqlToSqliteSyncRunner.RunAsync(syncConfiguration, environment);
+        return;
+    }
+
+    if (args.Length > 0 && string.Equals(args[0], "seed-sysuser-demo", StringComparison.OrdinalIgnoreCase))
+    {
+        await RunSysUserDemoSeedAsync(environment);
         return;
     }
 
@@ -260,6 +267,45 @@ static bool IsAllowedOrigin(string origin, string[] allowedOrigins)
     }
 
     return false;
+}
+
+static Task RunSysUserDemoSeedAsync(string environment)
+{
+    var configuration = new ConfigurationBuilder()
+        .SetBasePath(Directory.GetCurrentDirectory())
+        .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
+        .AddJsonFile($"appsettings.{environment}.json", optional: true, reloadOnChange: false)
+        .AddEnvironmentVariables()
+        .Build();
+
+    var activeDbProvider = configuration["ConnectionStrings:ActiveProvider"];
+    var dbSection = !string.IsNullOrWhiteSpace(activeDbProvider)
+        ? configuration.GetSection($"ConnectionStrings:{activeDbProvider}")
+        : configuration.GetSection("ConnectionStrings");
+    var dbTypeText = dbSection["DataType"] ?? configuration["ConnectionStrings:DataType"];
+    var dbConnStr = dbSection["Default"] ?? configuration.GetConnectionString("Default") ?? "Data Source=buyu.db";
+
+    if (!string.IsNullOrWhiteSpace(dbTypeText) && Enum.TryParse<DataType>(dbTypeText, true, out var parsedType))
+    {
+        using var fsql = new FreeSqlBuilder()
+            .UseConnectionString(parsedType, dbConnStr)
+            .UseAutoSyncStructure(true)
+            .Build();
+        SysUserDemoSeedData.Initialize(fsql);
+        Log.Information("SysUser demo 种子数据已就绪");
+        return Task.CompletedTask;
+    }
+
+    using (var fsql = new FreeSqlBuilder()
+        .UseConnectionString(DataType.Sqlite, dbConnStr)
+        .UseAutoSyncStructure(true)
+        .Build())
+    {
+        SysUserDemoSeedData.Initialize(fsql);
+    }
+
+    Log.Information("SysUser demo 种子数据已就绪");
+    return Task.CompletedTask;
 }
 
 static bool IsWildcardOriginMatch(Uri originUri, string rule)

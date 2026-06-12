@@ -53,7 +53,8 @@
                              Property="@(row => row.Item.IsEnabled)"
                              Header="代理状态"
                              Sortable="false"
-                             Width="96px">
+                             Width="96px"
+                             Visible="false">
                 <CellTemplate Context="row">
                     <Badge Variant="@(row.Item.IsEnabled ? BadgeVariant.Success : BadgeVariant.Secondary)">
                         @(row.Item.IsEnabled ? "启用" : "停用")
@@ -304,6 +305,7 @@
             e.Filters =
             [
                 new CrudFilterInfo("代理类型", "AgentType", "General,Direct,Distribution,Premium,VIP", "0,1,2,3,4"),
+                new CrudFilterInfo("代理状态", "IsEnabled", multiple: false, 4, "停用,启用", "0,1"),
             ];
             return;
         }
@@ -334,6 +336,7 @@
         e.Filters =
         [
             new CrudFilterInfo("代理类型", "AgentType", "General,Direct,Distribution,Premium,VIP", "0,1,2,3,4"),
+            new CrudFilterInfo("代理状态", "IsEnabled", multiple: false, 4, "停用,启用", "0,1"),
         ];
     }
 
@@ -352,6 +355,7 @@
     {
         e.Select!
             .WhereIf(e.Filters[0].HasValue, a => a.AgentType == e.Filters[0].Value<AgentType>())
+            .WhereIf(e.Filters[1].HasValue, a => a.IsEnabled == e.Filters[1].Value<bool>())
             .WhereIf(visibleAgentIds.Count > 0, a => visibleAgentIds.Contains(a.Id))
             .WhereIf(!e.SearchText.IsNull(), a => (a.AgentName ?? "").Contains(e.SearchText!) ||
                 a.HomeUrl.Contains(e.SearchText!) ||

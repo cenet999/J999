@@ -39,9 +39,9 @@
             <DataTableColumn TData="CrudGridRow<DPayApi>"
                              TValue="bool"
                              Property="@(row => row.Item.IsUserInput)"
-                             Header="是否用户输入"
+                             Header="自定义金额"
                              Sortable="false"
-                             Width="100px" />
+                             Width="140px" />
             <DataTableColumn TData="CrudGridRow<DPayApi>"
                              TValue="decimal"
                              Property="@(row => row.Item.MinAmount)"
@@ -59,29 +59,14 @@
                              Property="@(row => row.Item.IsEnabled)"
                              Header="是否启用"
                              Sortable="false"
-                             Width="88px" />
+                             Width="88px"
+                             Visible="false" />
             <DataTableColumn TData="CrudGridRow<DPayApi>"
                              TValue="int"
                              Property="@(row => row.Item.Sort)"
                              Header="排序"
                              Sortable="false"
                              Width="72px" />
-            <DataTableColumn TData="CrudGridRow<DPayApi>"
-                             TValue="decimal"
-                             Property="@(row => row.Item.SuccessRate)"
-                             Header="成功率"
-                             Sortable="false"
-                             Width="88px" />
-            <DataTableColumn TData="CrudGridRow<DPayApi>"
-                             TValue="string"
-                             Property="@(_ => string.Empty)"
-                             Header="创建时间"
-                             Sortable="false"
-                             Width="200px">
-                <CellTemplate Context="row">
-                    @(row.Item.CreatedTime?.ToString("yyyy-MM-dd HH:mm:ss") ?? "-")
-                </CellTemplate>
-            </DataTableColumn>
         </Columns>
         <EditTemplate Context="item">
             <div class="grid gap-3 sm:grid-cols-2">
@@ -104,7 +89,7 @@
             </div>
             <div class="flex items-center gap-2 mt-3">
                 <Checkbox @bind-Checked="item.IsUserInput" Id="pay-user-input" />
-                <Label for="pay-user-input">用户输入</Label>
+                <Label for="pay-user-input">自定义金额</Label>
             </div>
             <div class="space-y-2 mt-3">
                 <Label For="pay-default">默认值</Label>

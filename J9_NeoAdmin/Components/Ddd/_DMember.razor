@@ -6,6 +6,7 @@
 @inject NeoAdminAuthService AuthService
 @inject IHttpContextAccessor HttpContextAccessor
 @inject IJSRuntime JS
+@inject IToastService ToastService
 
 <PageTitle>玩家管理</PageTitle>
 
@@ -107,7 +108,7 @@
             <DataTableColumn TData="CrudGridRow<DMember>"
                              TValue="string"
                              Property="@(row => row.Item.DAgent?.AgentName ?? "")"
-                             Header="代理名"
+                             Header="所属代理"
                              Sortable="false"
                              Width="120px" />
             <DataTableColumn TData="CrudGridRow<DMember>"
@@ -146,136 +147,268 @@
                              Width="160px" />
         </Columns>
         <EditTemplate Context="item">
-            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                <div class="space-y-2">
-                    <Label For="member-username">用户名</Label>
-                    <Input id="member-username" Class="w-full" MaxLength="50" @bind-Value="item.Username" />
-                </div>
-                <div class="space-y-2">
-                    <Label For="member-nickname">昵称</Label>
-                    <Input id="member-nickname" Class="w-full" MaxLength="50" @bind-Value="item.Nickname" />
-                </div>
-                <div class="space-y-2">
-                    <Label For="member-password">密码</Label>
-                    <Input id="member-password" Class="w-full" MaxLength="50" @bind-Value="item.Password" />
-                </div>
-                <div class="flex items-center gap-2">
-                    <Checkbox @bind-Checked="item.IsEnabled" Id="member-enabled" />
-                    <Label for="member-enabled">是否启用</Label>
-                </div>
-                <div class="space-y-2">
-                    <Label For="member-login-time">登录时间</Label>
-                    <Input id="member-login-time" Class="w-full"
-                           Value="@item.LoginTime.ToString("yyyy-MM-ddTHH:mm")"
-                           ValueChanged="@(v => item.LoginTime = DateTime.TryParse(v, out var d) ? d : item.LoginTime)" />
-                </div>
-                <div class="space-y-2 sm:col-span-2 lg:col-span-3">
-                    <Label For="member-description">描述</Label>
-                    <Textarea id="member-description" Class="min-h-20 w-full" MaxLength="500" @bind-Value="item.Description" />
-                </div>
-                <div class="flex items-center gap-2">
-                    <Checkbox @bind-Checked="item.IsSystem" Id="member-system" />
-                    <Label for="member-system">是否系统</Label>
-                </div>
-                <div class="space-y-2">
-                    <Label For="member-parent-id">父ID</Label>
-                    <Input id="member-parent-id" Type="InputType.Number" Class="w-full"
-                           Value="@item.ParentId.ToString()"
-                           ValueChanged="@(v => item.ParentId = long.TryParse(v, out var n) ? n : 0)" />
-                </div>
-                <div class="space-y-2">
-                    <Label For="member-fingerprint">浏览器指纹</Label>
-                    <Input id="member-fingerprint" Class="w-full" MaxLength="255" @bind-Value="item.BrowserFingerprint" />
-                </div>
-                <div class="space-y-2">
-                    <Label For="member-invite-code">邀请码</Label>
-                    <Input id="member-invite-code" Class="w-full" MaxLength="255" @bind-Value="item.InviteCode" />
-                </div>
-                <div class="space-y-2">
-                    <Label For="member-credit">余额</Label>
-                    <Input id="member-credit" Type="InputType.Number" Class="w-full"
-                           Value="@item.CreditAmount.ToString()"
-                           ValueChanged="@(v => item.CreditAmount = decimal.TryParse(v, out var n) ? n : 0)" />
-                </div>
-                <div class="flex items-center gap-2">
-                    <Checkbox @bind-Checked="item.IsRebateSwitch" Id="member-rebate" />
-                    <Label for="member-rebate">反水开关</Label>
-                </div>
-                <div class="space-y-2">
-                    <Label For="member-updated-time">更新时间</Label>
-                    <Input id="member-updated-time" Class="w-full"
-                           Value="@item.UpdatedTime.ToString("yyyy-MM-ddTHH:mm")"
-                           ValueChanged="@(v => item.UpdatedTime = DateTime.TryParse(v, out var d) ? d : item.UpdatedTime)" />
-                </div>
-                <div class="space-y-2">
-                    <Label For="member-telegram">会员Telegram</Label>
-                    <Input id="member-telegram" Class="w-full" MaxLength="255" @bind-Value="item.Telegram" />
-                </div>
-                <div class="space-y-2">
-                    <Label For="member-email">邮箱地址</Label>
-                    <Input id="member-email" Class="w-full" MaxLength="255" @bind-Value="item.Email" />
-                </div>
-                <div class="space-y-2">
-                    <Label For="member-real-name">真实姓名</Label>
-                    <Input id="member-real-name" Class="w-full" MaxLength="50" @bind-Value="item.RealName" />
-                </div>
-                <div class="space-y-2">
-                    <Label For="member-withdraw-password">取款密码</Label>
-                    <Input id="member-withdraw-password" Class="w-full" MaxLength="255" @bind-Value="item.WithdrawPassword" />
-                </div>
-                <div class="space-y-2">
-                    <Label For="member-usdt">USDT地址</Label>
-                    <Input id="member-usdt" Class="w-full" MaxLength="255" @bind-Value="item.USDTAddress" />
-                </div>
-                <div class="space-y-2">
-                    <Label For="member-bank-name">银行名称</Label>
-                    <Input id="member-bank-name" Class="w-full" MaxLength="100" @bind-Value="item.BankName" />
-                </div>
-                <div class="space-y-2">
-                    <Label For="member-bank-account">银行账号</Label>
-                    <Input id="member-bank-account" Class="w-full" MaxLength="100" @bind-Value="item.BankAccount" />
-                </div>
-                <div class="space-y-2">
-                    <Label For="member-alipay">支付宝账号</Label>
-                    <Input id="member-alipay" Class="w-full" MaxLength="100" @bind-Value="item.AlipayAccount" />
-                </div>
-                <div class="space-y-2">
-                    <Label For="member-register-ip">注册IP</Label>
-                    <Input id="member-register-ip" Class="w-full" MaxLength="255" @bind-Value="item.RegisterIp" />
-                </div>
-                <div class="space-y-2">
-                    <Label For="member-avatar">头像</Label>
-                    <Input id="member-avatar" Class="w-full" MaxLength="255" @bind-Value="item.Avatar" />
-                </div>
-                <div class="space-y-2">
-                    <Label For="member-agent">代理名</Label>
-                    <NativeSelect TValue="string" Id="member-agent" Class="w-full"
-                                  Value="@item.DAgentId.ToString()"
-                                  ValueChanged="@(v => item.DAgentId = long.TryParse(v, out var n) ? n : 0)">
-                        @foreach (var opt in memberAgentSelectItems)
+            <Tabs DefaultValue="account" Class="w-full min-w-0 overflow-hidden">
+                <TabsList Class="flex-wrap h-auto">
+                    <TabsTrigger Value="account">账号信息</TabsTrigger>
+                    <TabsTrigger Value="agent">代理邀请</TabsTrigger>
+                    <TabsTrigger Value="finance">资金返水</TabsTrigger>
+                    <TabsTrigger Value="payment">收款方式</TabsTrigger>
+                    <TabsTrigger Value="contact">联系实名</TabsTrigger>
+                    <TabsTrigger Value="activity">登录签到</TabsTrigger>
+                </TabsList>
+
+                <TabsContent Value="account" Class="mt-4 space-y-3">
+                    <div class="grid w-full grid-cols-4 gap-3">
+                        <div class="space-y-2">
+                            <Label For="member-username">用户名</Label>
+                            <Input id="member-username" Class="w-full" MaxLength="50" @bind-Value="item.Username" />
+                        </div>
+                        <div class="space-y-2">
+                            <Label For="member-nickname">昵称</Label>
+                            <Input id="member-nickname" Class="w-full" MaxLength="50" @bind-Value="item.Nickname" />
+                        </div>
+                        <div class="space-y-2">
+                            <Label For="member-password">密码</Label>
+                            <Input id="member-password" Class="w-full" MaxLength="50" @bind-Value="item.Password" />
+                        </div>
+                        <div class="space-y-2">
+                            <Label For="member-withdraw-password">取款密码</Label>
+                            <Input id="member-withdraw-password" Class="w-full" MaxLength="255" @bind-Value="item.WithdrawPassword" />
+                        </div>
+                    </div>
+                    <div class="grid w-full grid-cols-6 gap-3">
+                        <div class="col-span-1 flex h-9 items-center gap-2">
+                            <Checkbox @bind-Checked="item.IsEnabled" Id="member-enabled" />
+                            <Label for="member-enabled">是否启用</Label>
+                        </div>
+                        <div class="col-span-1 flex h-9 items-center gap-2">
+                            <Checkbox @bind-Checked="item.IsSystem" Id="member-system" />
+                            <Label for="member-system">是否系统</Label>
+                        </div>
+                        <div class="col-span-1 flex h-9 items-center gap-2">
+                            <Checkbox @bind-Checked="item.IsRebateSwitch" Id="member-rebate" />
+                            <Label for="member-rebate">反水开关</Label>
+                        </div>
+                    </div>
+                    <ImageUrlUploadField @key="editSessionKey"
+                                         Label="头像"
+                                         InputId="member-avatar"
+                                         MaxLength="255"
+                                         MaxFileSize="1048576"
+                                         RootClass="space-y-2 w-full"
+                                         UploadClass="w-full"
+                                         PreviewClass="mt-2 h-16 w-16 rounded-full object-cover"
+                                         @bind-Url="item.Avatar" />
+                    <div class="space-y-2 w-full">
+                        <Label For="member-description">描述</Label>
+                        <Textarea id="member-description" Class="min-h-20 w-full" MaxLength="500" @bind-Value="item.Description" />
+                    </div>
+                </TabsContent>
+
+                <TabsContent Value="agent" Class="mt-4">
+                    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        <div class="space-y-2 sm:col-span-2">
+                            <Label For="member-agent">所属代理</Label>
+                            <NativeSelect TValue="string" Id="member-agent" Class="w-full"
+                                          Value="@item.DAgentId.ToString()"
+                                          ValueChanged="@(v => item.DAgentId = long.TryParse(v, out var n) ? n : 0)">
+                                @foreach (var opt in memberAgentSelectItems)
+                                {
+                                    <NativeSelectOption Value="@opt.Value.ToString()">@opt.Text</NativeSelectOption>
+                                }
+                            </NativeSelect>
+                        </div>
+                        <div class="space-y-2">
+                            <Label For="member-parent-id">父ID</Label>
+                            <Input id="member-parent-id" Type="InputType.Number" Class="w-full"
+                                   Value="@item.ParentId.ToString()"
+                                   ValueChanged="@(v => item.ParentId = long.TryParse(v, out var n) ? n : 0)" />
+                        </div>
+                        <div class="space-y-2">
+                            <Label For="member-invite-code">邀请码</Label>
+                            <Input id="member-invite-code" Class="w-full" MaxLength="255" @bind-Value="item.InviteCode" />
+                        </div>
+                    </div>
+                </TabsContent>
+
+                <TabsContent Value="finance" Class="mt-4 space-y-4">
+                    <div class="flex w-full items-end gap-3">
+                        <div class="w-1/2 shrink-0 space-y-2">
+                            <Label For="member-credit">余额</Label>
+                            <Input id="member-credit" Class="w-full bg-muted" Disabled="true"
+                                   Value="@item.CreditAmount.ToString("N2")" />
+                        </div>
+                        <div class="flex min-w-0 flex-1 items-end gap-3">
+                            <Button Variant="ButtonVariant.Outline"
+                                    Size="ButtonSize.Small"
+                                    Class="shrink-0"
+                                    Disabled="@(item.Id <= 0)"
+                                    OnClick="@(() => showBalanceAdjustInput = !showBalanceAdjustInput)">
+                                金额变动
+                            </Button>
+                            @if (showBalanceAdjustInput)
+                            {
+                                <div class="min-w-0 flex-1 space-y-2">
+                                    <Label For="member-adjust-amount">增加金额</Label>
+                                    <Input id="member-adjust-amount"
+                                           Type="InputType.Number"
+                                           Class="w-full"
+                                           Placeholder="请输入正数金额"
+                                           Value="@balanceAdjustAmountText"
+                                           ValueChanged="@(v => balanceAdjustAmountText = v)" />
+                                </div>
+                                <Button Size="ButtonSize.Small"
+                                        Class="shrink-0"
+                                        Disabled="@balanceAdjusting"
+                                        OnClick="@(() => ApplyBalanceAdjustAsync(item))">
+                                    确认增加
+                                </Button>
+                            }
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <h4 class="text-sm font-medium text-foreground">近10天出入金记录</h4>
+                        @if (item.Id <= 0)
                         {
-                            <NativeSelectOption Value="@opt.Value.ToString()">@opt.Text</NativeSelectOption>
+                            <p class="text-sm text-muted-foreground">保存会员后可查看交易记录。</p>
                         }
-                    </NativeSelect>
-                </div>
-                <div class="space-y-2">
-                    <Label For="member-last-checkin">最后签到时间</Label>
-                    <Input id="member-last-checkin" Class="w-full"
-                           Value="@(item.LastCheckInDate?.ToString("yyyy-MM-ddTHH:mm") ?? "")"
-                           ValueChanged="@(v => item.LastCheckInDate = DateTime.TryParse(v, out var d) ? d : null)" />
-                </div>
-                <div class="space-y-2">
-                    <Label For="member-checkin-days">连续签到天数</Label>
-                    <Input id="member-checkin-days" Type="InputType.Number" Class="w-full"
-                           Value="@item.ContinuousCheckInDays.ToString()"
-                           ValueChanged="@(v => item.ContinuousCheckInDays = int.TryParse(v, out var n) ? n : 0)" />
-                </div>
-            </div>
+                        else if (recentFinanceTransactions.Count == 0)
+                        {
+                            <p class="text-sm text-muted-foreground">近10天暂无出入金记录。</p>
+                        }
+                        else
+                        {
+                            <div class="overflow-x-auto rounded-md border">
+                                <table class="w-full text-sm">
+                                    <thead class="bg-muted/50">
+                                        <tr class="border-b text-left text-muted-foreground">
+                                            <th class="px-3 py-2 font-medium">时间</th>
+                                            <th class="px-3 py-2 font-medium">类型</th>
+                                            <th class="px-3 py-2 font-medium">方向</th>
+                                            <th class="px-3 py-2 font-medium text-right">金额</th>
+                                            <th class="px-3 py-2 font-medium">状态</th>
+                                            <th class="px-3 py-2 font-medium">描述</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var tx in recentFinanceTransactions)
+                                        {
+                                            var delta = tx.AfterAmount - tx.BeforeAmount;
+                                            <tr class="border-b last:border-b-0">
+                                                <td class="px-3 py-2 whitespace-nowrap">@FormatTransactionTime(tx.TransactionTime)</td>
+                                                <td class="px-3 py-2 whitespace-nowrap">@GetTransactionTypeText(tx.TransactionType)</td>
+                                                <td class="px-3 py-2 whitespace-nowrap">
+                                                    <Badge Variant="@(delta >= 0 ? BadgeVariant.Success : BadgeVariant.Destructive)">
+                                                        @(delta > 0 ? "入金" : delta < 0 ? "出金" : "-")
+                                                    </Badge>
+                                                </td>
+                                                <td class="px-3 py-2 text-right font-mono whitespace-nowrap">
+                                                    @(delta >= 0 ? "+" : "")@delta.ToString("N2")
+                                                </td>
+                                                <td class="px-3 py-2 whitespace-nowrap">@GetTransactionStatusText(tx.Status)</td>
+                                                <td class="px-3 py-2 max-w-[240px] truncate" title="@tx.Description">@tx.Description</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                    </div>
+                </TabsContent>
+
+                <TabsContent Value="payment" Class="mt-4">
+                    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        <div class="space-y-2 lg:col-span-3">
+                            <Label For="member-usdt">USDT地址</Label>
+                            <Input id="member-usdt" Class="w-full" MaxLength="255" @bind-Value="item.USDTAddress" />
+                        </div>
+                        <div class="space-y-2">
+                            <Label For="member-bank-name">银行名称</Label>
+                            <Input id="member-bank-name" Class="w-full" MaxLength="100" @bind-Value="item.BankName" />
+                        </div>
+                        <div class="space-y-2">
+                            <Label For="member-bank-account">银行账号</Label>
+                            <Input id="member-bank-account" Class="w-full" MaxLength="100" @bind-Value="item.BankAccount" />
+                        </div>
+                        <div class="space-y-2">
+                            <Label For="member-alipay">支付宝账号</Label>
+                            <Input id="member-alipay" Class="w-full" MaxLength="100" @bind-Value="item.AlipayAccount" />
+                        </div>
+                    </div>
+                </TabsContent>
+
+                <TabsContent Value="contact" Class="mt-4">
+                    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        <div class="space-y-2">
+                            <Label For="member-real-name">真实姓名</Label>
+                            <Input id="member-real-name" Class="w-full" MaxLength="50" @bind-Value="item.RealName" />
+                        </div>
+                        <div class="space-y-2">
+                            <Label For="member-telegram">会员Telegram</Label>
+                            <Input id="member-telegram" Class="w-full" MaxLength="255" @bind-Value="item.Telegram" />
+                        </div>
+                        <div class="space-y-2">
+                            <Label For="member-email">邮箱地址</Label>
+                            <Input id="member-email" Class="w-full" MaxLength="255" @bind-Value="item.Email" />
+                        </div>
+                    </div>
+                </TabsContent>
+
+                <TabsContent Value="activity" Class="mt-4">
+                    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        <div class="space-y-2">
+                            <Label For="member-login-time">登录时间</Label>
+                            <Input id="member-login-time" Class="w-full"
+                                   Value="@item.LoginTime.ToString("yyyy-MM-ddTHH:mm")"
+                                   ValueChanged="@(v => item.LoginTime = DateTime.TryParse(v, out var d) ? d : item.LoginTime)" />
+                        </div>
+                        <div class="space-y-2">
+                            <Label For="member-updated-time">更新时间</Label>
+                            <Input id="member-updated-time" Class="w-full"
+                                   Value="@item.UpdatedTime.ToString("yyyy-MM-ddTHH:mm")"
+                                   ValueChanged="@(v => item.UpdatedTime = DateTime.TryParse(v, out var d) ? d : item.UpdatedTime)" />
+                        </div>
+                        <div class="space-y-2">
+                            <Label For="member-register-ip">注册IP</Label>
+                            <Input id="member-register-ip" Class="w-full" MaxLength="255" @bind-Value="item.RegisterIp" />
+                        </div>
+                        <div class="space-y-2 lg:col-span-2">
+                            <Label For="member-fingerprint">浏览器指纹</Label>
+                            <Input id="member-fingerprint" Class="w-full" MaxLength="255" @bind-Value="item.BrowserFingerprint" />
+                        </div>
+                        <div class="space-y-2">
+                            <Label For="member-last-checkin">最后签到时间</Label>
+                            <Input id="member-last-checkin" Class="w-full"
+                                   Value="@(item.LastCheckInDate?.ToString("yyyy-MM-ddTHH:mm") ?? "")"
+                                   ValueChanged="@(v => item.LastCheckInDate = DateTime.TryParse(v, out var d) ? d : null)" />
+                        </div>
+                        <div class="space-y-2">
+                            <Label For="member-checkin-days">连续签到天数</Label>
+                            <Input id="member-checkin-days" Type="InputType.Number" Class="w-full"
+                                   Value="@item.ContinuousCheckInDays.ToString()"
+                                   ValueChanged="@(v => item.ContinuousCheckInDays = int.TryParse(v, out var n) ? n : 0)" />
+                        </div>
+                    </div>
+                </TabsContent>
+            </Tabs>
         </EditTemplate>
     </CrudTable>
 </div>
 
 @code {
+    private int editSessionKey;
+    private bool showBalanceAdjustInput;
+    private bool balanceAdjusting;
+    private string balanceAdjustAmountText = "";
+    private List<DTransAction> recentFinanceTransactions = [];
+    private static readonly TransactionType[] FinanceFlowTypes =
+    [
+        TransactionType.Recharge,
+        TransactionType.Withdraw,
+        TransactionType.TransferIn,
+        TransactionType.TransferOut,
+        TransactionType.Other,
+    ];
     private HashSet<long> visibleAgentIds = [];
     private bool showAllMembers;
     private List<DAgent> allAgents = [];
@@ -308,9 +441,10 @@
 
         e.Filters =
         [
-            new CrudFilterInfo("代理名", "DAgentId", false, 12,
+            new CrudFilterInfo("所属代理", "DAgentId", false, 12,
                 string.Join(",", agents.Select(AgentLabel)),
                 string.Join(",", agents.Select(a => a.Id))),
+            new CrudFilterInfo("是否启用", "IsEnabled", multiple: false, 4, "停用,启用", "0,1"),
         ];
     }
 
@@ -328,6 +462,7 @@
 
         select
             .WhereIf(e.Filters[0].HasValue, a => e.Filters[0].Values<long>().Contains(a.DAgentId))
+            .WhereIf(e.Filters[1].HasValue, a => a.IsEnabled == e.Filters[1].Value<bool>())
             .WhereIf(!e.SearchText.IsNull(), a => a.Username.Contains(e.SearchText!) ||
                 a.Nickname.Contains(e.SearchText!) ||
                 a.Password.Contains(e.SearchText!) ||
@@ -349,6 +484,8 @@
 
     private async Task HandleEdit(DMember item)
     {
+        editSessionKey++;
+
         if (item.Id == default || string.IsNullOrWhiteSpace(item.InviteCode))
             item.InviteCode = new Random().Next(1000, 10000).ToString();
 
@@ -360,8 +497,122 @@
         }
 
         EnsureMemberAgentSelectCoversCurrent(item);
-        await Task.CompletedTask;
+
+        showBalanceAdjustInput = false;
+        balanceAdjustAmountText = "";
+        if (item.Id > 0)
+            await LoadRecentFinanceTransactionsAsync(item.Id);
+        else
+            recentFinanceTransactions = [];
     }
+
+    private async Task LoadRecentFinanceTransactionsAsync(long memberId)
+    {
+        var sinceUnix = TimeHelper.UtcUnix() - 10L * 24 * 3600;
+        recentFinanceTransactions = await FreeSql.Select<DTransAction>()
+            .Where(t => t.DMemberId == memberId)
+            .Where(t => FinanceFlowTypes.Contains(t.TransactionType))
+            .Where(t => t.TransactionTime >= sinceUnix)
+            .OrderByDescending(t => t.TransactionTime)
+            .Limit(100)
+            .ToListAsync();
+    }
+
+    private async Task ApplyBalanceAdjustAsync(DMember item)
+    {
+        if (item.Id <= 0)
+        {
+            ToastService.Error("无法调整", "请先保存会员后再调整余额。");
+            return;
+        }
+
+        if (!decimal.TryParse(balanceAdjustAmountText, out var amount) || amount <= 0)
+        {
+            ToastService.Error("输入无效", "请输入大于 0 的增加金额。");
+            return;
+        }
+
+        balanceAdjusting = true;
+        try
+        {
+            using var uow = FreeSql.CreateUnitOfWork();
+            var repMember = uow.GetRepository<DMember>();
+            var repTransAction = uow.GetRepository<DTransAction>();
+
+            var member = await repMember.Select.Where(m => m.Id == item.Id).ToOneAsync();
+            if (member == null)
+            {
+                ToastService.Error("调整失败", "会员不存在或已被删除。");
+                return;
+            }
+
+            var before = member.CreditAmount;
+            var after = before + amount;
+
+            var transaction = new DTransAction
+            {
+                SerialNumber = $"ADJ{DateTime.UtcNow:yyyyMMddHHmmssfff}",
+                DMemberId = member.Id,
+                DAgentId = member.DAgentId,
+                TransactionType = TransactionType.Other,
+                BeforeAmount = before,
+                AfterAmount = after,
+                ActualAmount = amount,
+                CurrencyCode = "CNY",
+                TransactionTime = TimeHelper.UtcUnix(),
+                Status = TransactionStatus.Success,
+                Description = $"后台手动增加余额 +{amount:N2}",
+            };
+
+            await repTransAction.InsertAsync(transaction);
+            member.CreditAmount = after;
+            await repMember.UpdateAsync(member);
+            uow.Commit();
+
+            item.CreditAmount = after;
+            balanceAdjustAmountText = "";
+            showBalanceAdjustInput = false;
+            await LoadRecentFinanceTransactionsAsync(item.Id);
+            ToastService.Success("调整成功", $"余额已从 {before:N2} 调整为 {after:N2}");
+        }
+        catch (Exception ex)
+        {
+            ToastService.Error("调整失败", ex.Message);
+        }
+        finally
+        {
+            balanceAdjusting = false;
+        }
+    }
+
+    private static string FormatTransactionTime(long unixSeconds)
+    {
+        if (unixSeconds <= 0)
+            return "-";
+
+        return DateTimeOffset.FromUnixTimeSeconds(unixSeconds).ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss");
+    }
+
+    private static string GetTransactionTypeText(TransactionType type) => type switch
+    {
+        TransactionType.TransferIn => "上分",
+        TransactionType.TransferOut => "下分",
+        TransactionType.Withdraw => "提现",
+        TransactionType.Recharge => "充值",
+        TransactionType.Other => "其他",
+        _ => type.ToString()
+    };
+
+    private static string GetTransactionStatusText(TransactionStatus status) => status switch
+    {
+        TransactionStatus.Success => "成功",
+        TransactionStatus.Failed => "失败",
+        TransactionStatus.Processing => "处理中",
+        TransactionStatus.Pending => "待处理",
+        TransactionStatus.Cancelled => "已取消",
+        TransactionStatus.Refunded => "已退款",
+        _ => status.ToString()
+    };
 
     /// <summary>
     /// 若当前会员归属代理不在「本级/下级/下下级」下拉数据中，补一条选项避免显示空白（例如历史数据或权限边界）。
