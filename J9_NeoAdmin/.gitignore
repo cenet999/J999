@@ -6,6 +6,7 @@
 /backend.log
 /node_modules
 /keys
+/lib
 
 # macOS
 .DS_Store
