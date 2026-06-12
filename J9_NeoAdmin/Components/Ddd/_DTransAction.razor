@@ -620,8 +620,19 @@
             new CrudFilterInfo("代理名", "DAgentId", false, 12,
                 string.Join(",", agents.Select(AgentLabel)),
                 string.Join(",", agents.Select(a => a.Id))),
+            CreateDefaultTransactionTimeFilter(),
         ];
         await Task.Yield();
+    }
+
+    private static CrudFilterInfo CreateDefaultTransactionTimeFilter()
+    {
+        var end = TimeHelper.BeijingNow().Date;
+        var start = end.AddDays(-1);
+        var filter = new CrudFilterInfo("交易时间", "TransactionTime", CrudFilterType.DateRange, 4);
+        filter.Options[0].Value = start.ToString("yyyy-MM-dd");
+        filter.Options[1].Value = end.ToString("yyyy-MM-dd");
+        return filter;
     }
 
     private async Task HandleEdit(DTransAction item)
@@ -636,6 +647,14 @@
 
     private void HandleQuery(CrudQueryEventArgs<DTransAction> e)
     {
+        var filters = e.Filters;
+        DateTime? timeStart = null;
+        DateTime? timeEnd = null;
+        if (filters[3].HasValue)
+        {
+            filters[3].TryGetDateRange(out timeStart, out timeEnd);
+        }
+
         var select = e.Select!.Include(a => a.DMember).Include(a => a.DAgent);
 
         if (!showAllTransactions)
@@ -646,9 +665,11 @@
         }
 
         select.Include(a => a.DGame)
-            .WhereIf(e.Filters[0].HasValue, a => a.TransactionType == e.Filters[0].Value<TransactionType>())
-            .WhereIf(e.Filters[1].HasValue, a => a.Status == e.Filters[1].Value<TransactionStatus>())
-            .WhereIf(e.Filters[2].HasValue, a => e.Filters[2].Values<long>().Contains(a.DAgentId))
+            .WhereIf(filters[0].HasValue, a => a.TransactionType == filters[0].Value<TransactionType>())
+            .WhereIf(filters[1].HasValue, a => a.Status == filters[1].Value<TransactionStatus>())
+            .WhereIf(filters[2].HasValue, a => filters[2].Values<long>().Contains(a.DAgentId))
+            .WhereIf(timeStart.HasValue, a => a.TransactionTime >= TimeHelper.BeijingToUnix(timeStart!.Value))
+            .WhereIf(timeEnd.HasValue, a => a.TransactionTime < TimeHelper.BeijingToUnix(timeEnd!.Value.AddDays(1)))
             .WhereIf(!e.SearchText.IsNull(), a => a.CurrencyCode.Contains(e.SearchText!) ||
                 a.SerialNumber.Contains(e.SearchText!) ||
                 a.GameRound.Contains(e.SearchText!) ||
