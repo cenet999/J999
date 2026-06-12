@@ -402,10 +402,26 @@ public class PayPOPOApi
         if (string.IsNullOrWhiteSpace(_mchId)) missingKeys.Add("Payment:POPO:MchId");
         if (string.IsNullOrWhiteSpace(_secretKey)) missingKeys.Add("Payment:POPO:SecretKey");
 
-        if (missingKeys.Count == 0) return null;
+        if (missingKeys.Count > 0)
+        {
+            _logger.LogWarning("POPO支付配置缺失：{MissingKeys}", string.Join(", ", missingKeys));
+            return ApiResult.Error.SetMessage("POPO支付配置不完整");
+        }
 
-        _logger.LogWarning("POPO支付配置缺失：{MissingKeys}", string.Join(", ", missingKeys));
-        return ApiResult.Error.SetMessage("POPO支付配置不完整");
+        if (_mchId.Contains("YOUR_", StringComparison.OrdinalIgnoreCase)
+            || _secretKey.Contains("YOUR_", StringComparison.OrdinalIgnoreCase))
+        {
+            _logger.LogWarning("POPO支付配置仍为占位符，请填写 Payment:POPO:MchId 与 SecretKey");
+            return ApiResult.Error.SetMessage("POPO支付未配置，请联系管理员");
+        }
+
+        if (!long.TryParse(_mchId, NumberStyles.Integer, CultureInfo.InvariantCulture, out _))
+        {
+            _logger.LogWarning("POPO商户号格式无效：{MchId}", _mchId);
+            return ApiResult.Error.SetMessage("POPO商户号配置无效");
+        }
+
+        return null;
     }
 
     private string GeneratePayPOPOSignature(Dictionary<string, string> parameters)

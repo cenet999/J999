@@ -800,7 +800,21 @@ public class TransActionService : BaseService
             .Where(m => m.IsEnabled)
             .OrderBy(m => m.Sort)
             .OrderBy(m => m.PayMethod)
-            .ToListAsync();
+            .ToListAsync(a => new
+            {
+                a.Id,
+                IP = a.IP.ToString(),
+                a.PayMethodName,
+                a.ChannelCode,
+                PayMethod = a.PayMethod.ToString(),
+                a.IsUserInput,
+                a.DefaultValue,
+                a.MinAmount,
+                a.MaxAmount,
+                a.IsEnabled,
+                a.Sort,
+                a.SuccessRate,
+            });
 
         return ApiResult.Success.SetData(payApiList);
     }

@@ -84,6 +84,14 @@ function pickNumber(obj: Record<string, unknown>, camel: string, pascal: string,
   return Number.isFinite(value) ? value : fallback;
 }
 
+/** 后端 ServerIP 枚举可能序列化为 0/1 或 USDT/POPO 字符串 */
+function normalizePayIp(raw: unknown): string {
+  const value = String(raw ?? '').trim().toUpperCase();
+  if (value === '0' || value === 'USDT') return 'USDT';
+  if (value === '1' || value === 'POPO') return 'POPO';
+  return value;
+}
+
 function parseAmountOptions(
   defaultValue: string,
   minAmount: number,
@@ -117,7 +125,7 @@ function buildDepositChannels(items: PayApiChannel[] | undefined): DepositChanne
   return items
     .map((item, index) => {
       const obj = toRecord(item);
-      const ip = pickString(obj, 'ip', 'IP').toUpperCase();
+      const ip = normalizePayIp(obj.ip ?? obj.IP);
       const isEnabled = Boolean(obj.isEnabled ?? obj.IsEnabled ?? true);
       const isUserInput = Boolean(obj.isUserInput ?? obj.IsUserInput ?? true);
       const minAmount = pickNumber(obj, 'minAmount', 'MinAmount', 2);
