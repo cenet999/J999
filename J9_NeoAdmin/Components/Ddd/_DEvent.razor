@@ -61,7 +61,7 @@
                 <CellTemplate Context="row">
                     @if (!string.IsNullOrEmpty(row.Item.BannerUrl))
                     {
-                        <img src="@row.Item.BannerUrl" class="h-12 rounded" alt="" />
+                        <img src="@row.Item.BannerUrl" class="max-h-12 max-w-full w-auto h-auto rounded object-contain" alt="" />
                     }
                 </CellTemplate>
             </DataTableColumn>

@@ -20,15 +20,16 @@ COPY . .
 # 强制生产模式，确保 __DEV__=false（登录页不预填、API 走生产地址）
 ENV NODE_ENV=production
 RUN pnpm run build:web
+# APK 由 sync-web-download-assets 写入 dist/downloads；无 apk 时仍保证目录存在
+RUN mkdir -p dist/downloads
 
 # ============================================
 # Stage 2: Serve with nginx
 # ============================================
 FROM nginx:alpine
 
-# 复制构建产物（Expo 导出到 dist）
+# 复制构建产物（Expo 导出到 dist，含可选的 downloads/*.apk）
 COPY --from=builder /app/dist /usr/share/nginx/html
-COPY --from=builder /app/assets/application-49699ab3-25bb-4573-b684-98bc9eccbb4e.apk /usr/share/nginx/html/downloads/application-49699ab3-25bb-4573-b684-98bc9eccbb4e.apk
 
 # gzip + 静态资源缓存（见 nginx/default.conf）
 COPY nginx/default.conf /etc/nginx/conf.d/default.conf

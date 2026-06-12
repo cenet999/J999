@@ -38,7 +38,7 @@
     [Parameter] public string RootClass { get; set; } = "space-y-2";
     [Parameter] public string InputClass { get; set; } = "w-full";
     [Parameter] public string UploadClass { get; set; } = "";
-    [Parameter] public string PreviewClass { get; set; } = "mt-2 h-16 rounded";
+    [Parameter] public string PreviewClass { get; set; } = "mt-2 max-h-16 max-w-full w-auto h-auto rounded object-contain";
 
     private List<IBrowserFile> _uploadedFiles = [];
 

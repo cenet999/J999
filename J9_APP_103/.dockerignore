@@ -1,0 +1,14 @@
+node_modules
+.expo
+.tmp
+dist
+web-build
+output
+.git
+.env
+.env*.local
+*.md
+tests
+playwright.config.ts
+docker-auto.sh
+docker-compose.yml

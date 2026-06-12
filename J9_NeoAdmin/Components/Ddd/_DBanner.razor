@@ -26,7 +26,10 @@
                              Sortable="false"
                              Width="100px">
                 <CellTemplate Context="row">
-                    <img src="@row.Item.ImageUrl" class="h-12 rounded" alt="" />
+                    @if (!string.IsNullOrEmpty(row.Item.ImageUrl))
+                    {
+                        <img src="@row.Item.ImageUrl" class="max-h-12 max-w-full w-auto h-auto rounded object-contain" alt="" />
+                    }
                 </CellTemplate>
             </DataTableColumn>
             <DataTableColumn TData="CrudGridRow<DBanner>"
