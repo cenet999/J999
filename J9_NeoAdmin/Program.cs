@@ -156,12 +156,6 @@ try
 
     var app = builder.Build();
 
-    // PostgreSQL：FreeSql AutoSyncStructure 前修复不兼容的列类型（varchar -> 数值）
-    if (dbType == DataType.PostgreSQL)
-    {
-        await PostgreSqlSchemaCompatFix.ApplyAsync(dbConnStr);
-    }
-
     app.UseCors("CorsPolicy");
     // 兼容旧版 NoAdmin 大写 /Login?Redirect=（路由默认不区分大小写，须用中间件精确匹配）
     app.Use(async (ctx, next) =>
