@@ -13,10 +13,18 @@ public static class PostgreSqlSchemaCompatFix
 
     private static readonly ColumnFix[] Fixes =
     [
-        new("SysTask", "Interval", "INT4", BuildIntervalUsingExpression()),
-        new("SysTask", "Status", "INT4", BuildStatusUsingExpression()),
         // NeoAdmin.Blazor.dll 中 SysParam.Id 为 Int64，旧库可能为 varchar
         new("SysParam", "Id", "INT8", BuildNumericIdUsingExpression("Id")),
+    ];
+
+    /// <summary>
+    /// FreeScheduler 的 TaskInfo.Status / Interval 在 SQLite 中为 varchar（如 Running、SEC），
+    /// 查询时也使用字符串字面量；误转为 int4 会导致 PostgreSQL 报 22P02。
+    /// </summary>
+    private static readonly ColumnFix[] SchedulerStringColumnFixes =
+    [
+        new("SysTask", "Status", "VARCHAR(255)", BuildStatusRevertToStringExpression()),
+        new("SysTask", "Interval", "VARCHAR(255)", BuildIntervalRevertToStringExpression()),
     ];
 
     /// <summary>
@@ -40,7 +48,7 @@ public static class PostgreSqlSchemaCompatFix
         await using var connection = new NpgsqlConnection(connectionString);
         await connection.OpenAsync();
 
-        foreach (var fix in Fixes)
+        foreach (var fix in Fixes.Concat(SchedulerStringColumnFixes))
         {
             if (!await TableExistsAsync(connection, fix.Table))
             {
@@ -108,32 +116,40 @@ public static class PostgreSqlSchemaCompatFix
         {
             "INT4" => string.Equals(udtName, "int4", StringComparison.OrdinalIgnoreCase),
             "INT8" => string.Equals(udtName, "int8", StringComparison.OrdinalIgnoreCase),
+            "VARCHAR(255)" => string.Equals(udtName, "varchar", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(udtName, "text", StringComparison.OrdinalIgnoreCase),
             _ => false
         };
 
-    private static string BuildIntervalUsingExpression() =>
+    private static string BuildIntervalRevertToStringExpression() =>
         """
         CASE
-            WHEN "Interval" IS NULL THEN 1
-            WHEN trim("Interval") ~ '^\d+$' THEN trim("Interval")::integer
-            WHEN "Interval" = 'SEC' THEN 1
-            WHEN "Interval" = 'RunOnDay' THEN 11
-            WHEN "Interval" = 'RunOnWeek' THEN 12
-            WHEN "Interval" = 'RunOnMonth' THEN 13
-            WHEN "Interval" = 'Custom' THEN 21
-            ELSE 1
+            WHEN "Interval" IS NULL THEN 'SEC'
+            WHEN pg_typeof("Interval")::text = 'integer' THEN
+                CASE "Interval"
+                    WHEN 1 THEN 'SEC'
+                    WHEN 11 THEN 'RunOnDay'
+                    WHEN 12 THEN 'RunOnWeek'
+                    WHEN 13 THEN 'RunOnMonth'
+                    WHEN 21 THEN 'Custom'
+                    ELSE 'SEC'
+                END
+            ELSE "Interval"::text
         END
         """;
 
-    private static string BuildStatusUsingExpression() =>
+    private static string BuildStatusRevertToStringExpression() =>
         """
         CASE
-            WHEN "Status" IS NULL THEN 0
-            WHEN trim("Status") ~ '^\d+$' THEN trim("Status")::integer
-            WHEN "Status" = 'Running' THEN 0
-            WHEN "Status" = 'Paused' THEN 1
-            WHEN "Status" = 'Completed' THEN 2
-            ELSE 0
+            WHEN "Status" IS NULL THEN 'Running'
+            WHEN pg_typeof("Status")::text = 'integer' THEN
+                CASE "Status"
+                    WHEN 0 THEN 'Running'
+                    WHEN 1 THEN 'Paused'
+                    WHEN 2 THEN 'Completed'
+                    ELSE 'Running'
+                END
+            ELSE "Status"::text
         END
         """;
 
