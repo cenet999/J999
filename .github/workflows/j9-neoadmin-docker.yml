@@ -64,6 +64,8 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          # 直接打包仓库 tailwind.css；禁用 publish 阶段缓存，避免旧层覆盖样式文件
+          no-cache-filter: publish
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -72,3 +74,4 @@ jobs:
         run: |
           echo "镜像已推送至: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
           echo "标签: ${{ steps.meta.outputs.tags }}"
+          echo "部署: docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}"

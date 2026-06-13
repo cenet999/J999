@@ -1,4 +1,5 @@
 # 构建上下文为 J999 仓库根目录，见 docker-compose.yaml
+# 样式：仅使用仓库内 wwwroot/css/tailwind.css（本地 npm run build:css 后提交），镜像内不安装 Node、不重编译 CSS
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
@@ -10,7 +11,6 @@ COPY J9_NeoAdmin/ J9_NeoAdmin/
 WORKDIR /src/J9_NeoAdmin
 
 FROM build AS publish
-# 使用仓库内已生成的 wwwroot/css/tailwind.css，不在容器内重新 build（避免缺少 NeoAdmin.Blazor 源码导致样式缺失）
 RUN dotnet publish "J9_NeoAdmin.csproj" -c Release -o /app/publish -p:SkipTailwindBuild=true
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
