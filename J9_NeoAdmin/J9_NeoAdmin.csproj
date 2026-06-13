@@ -55,7 +55,7 @@
 		<Content Remove="tailwind.config.js" />
 	</ItemGroup>
 
-	<!-- Docker / CI 发布传 -p:SkipTailwindBuild=true，且构建上下文不含 package.json，仅使用已提交的 tailwind.css -->
+	<!-- Docker / CI 发布传 -p:SkipTailwindBuild=true，且构建上下文不含 package.json，仅使用已提交的 j9-admin.css -->
 	<Target Name="NpmInstall" BeforeTargets="BuildTailwindCss"
 	        Condition="Exists('$(ProjectDir)package.json') AND '$(SkipTailwindBuild)' != 'true'">
 		<Exec Command="npm install" WorkingDirectory="$(ProjectDir)" />

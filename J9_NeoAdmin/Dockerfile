@@ -1,5 +1,5 @@
 # 构建上下文为 J999 仓库根目录，见 docker-compose.yaml
-# 样式：仅使用仓库内 wwwroot/css/tailwind.css（本地 npm run build:css 后提交），镜像内不安装 Node、不重编译 CSS
+# 样式：仅使用仓库内 wwwroot/css/j9-admin.css（本地 npm run build:css 后提交），镜像内不安装 Node、不重编译 CSS
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 

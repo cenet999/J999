@@ -1,7 +1,7 @@
 {
   "scripts": {
-    "build:css": "tailwindcss -i ./wwwroot/css/app-input.css -o ./wwwroot/css/tailwind.css --minify",
-    "watch:css": "tailwindcss -i ./wwwroot/css/app-input.css -o ./wwwroot/css/tailwind.css --watch"
+    "build:css": "tailwindcss -i ./wwwroot/css/app-input.css -o ./wwwroot/css/j9-admin.css --minify",
+    "watch:css": "tailwindcss -i ./wwwroot/css/app-input.css -o ./wwwroot/css/j9-admin.css --watch"
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.2.0",

@@ -1,5 +1,5 @@
 # Docker 构建上下文为 J999 仓库根目录，仅打包 J9_NeoAdmin（NeoAdmin.Blazor 走 NuGet）
-# 样式：直接使用仓库内已提交的 wwwroot/css/tailwind.css，不在镜像内安装 npm / 重编译 CSS
+# 样式：直接使用仓库内已提交的 wwwroot/css/j9-admin.css，不在镜像内安装 npm / 重编译 CSS
 *
 
 !J9_NeoAdmin/
