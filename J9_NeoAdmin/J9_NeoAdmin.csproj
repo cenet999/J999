@@ -9,6 +9,8 @@
 		<NoWarn>1701;1702;CS1573;CS8600;CS8601;CS8602;CS8603;CS8604;CS8605;CS8618;CS8619;CS8620;CS8622;CS8625;CS8629;CS8714;CS1591</NoWarn>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 		<DefaultItemExcludes>$(DefaultItemExcludes);**/buyu.db;**/buyu.db-*;**/wwwroot/uploads/**</DefaultItemExcludes>
+		<!-- 默认本地编译 Tailwind；Docker/CI 通过 -p:SkipTailwindBuild=true 跳过 -->
+		<SkipTailwindBuild Condition="'$(SkipTailwindBuild)' == ''">false</SkipTailwindBuild>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -53,6 +55,9 @@
 		<Content Remove="package.json" />
 		<Content Remove="package-lock.json" />
 		<Content Remove="tailwind.config.js" />
+		<!-- 构建产物：发布时直接使用仓库内已编译好的 CSS -->
+		<Content Remove="wwwroot/css/j9-admin.css" />
+		<Content Include="wwwroot/css/j9-admin.css" CopyToPublishDirectory="PreserveNewest" />
 	</ItemGroup>
 
 	<!-- Docker / CI 发布传 -p:SkipTailwindBuild=true，且构建上下文不含 package.json，仅使用已提交的 j9-admin.css -->
