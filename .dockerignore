@@ -1,0 +1,13 @@
+# Docker 构建上下文为 J999 仓库根目录，仅打包 J9_NeoAdmin（NeoAdmin.Blazor 走 NuGet）
+*
+
+!J9_NeoAdmin/
+
+**/bin/
+**/obj/
+**/.git/
+**/node_modules/
+**/.vs/
+**/.idea/
+**/*.user
+**/*.suo
