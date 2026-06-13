@@ -3,8 +3,6 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 COPY ["J9_NeoAdmin/J9_NeoAdmin.csproj", "J9_NeoAdmin/"]
-COPY ["J9_NeoAdmin/package.json", "J9_NeoAdmin/"]
-COPY ["J9_NeoAdmin/tailwind.config.js", "J9_NeoAdmin/"]
 
 RUN dotnet restore "J9_NeoAdmin/J9_NeoAdmin.csproj"
 
@@ -12,13 +10,8 @@ COPY J9_NeoAdmin/ J9_NeoAdmin/
 WORKDIR /src/J9_NeoAdmin
 
 FROM build AS publish
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends curl ca-certificates && \
-    curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
-    apt-get install -y --no-install-recommends nodejs && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-RUN dotnet publish "J9_NeoAdmin.csproj" -c Release -o /app/publish
+# 使用仓库内已生成的 wwwroot/css/tailwind.css，不在容器内重新 build（避免缺少 NeoAdmin.Blazor 源码导致样式缺失）
+RUN dotnet publish "J9_NeoAdmin.csproj" -c Release -o /app/publish -p:SkipTailwindBuild=true
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app

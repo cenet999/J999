@@ -55,11 +55,14 @@
 		<Content Remove="tailwind.config.js" />
 	</ItemGroup>
 
-	<Target Name="NpmInstall" BeforeTargets="BuildTailwindCss" Condition="Exists('$(ProjectDir)package.json')">
+	<!-- Docker 发布时传 -p:SkipTailwindBuild=true，使用仓库内已提交的 wwwroot/css/tailwind.css -->
+	<Target Name="NpmInstall" BeforeTargets="BuildTailwindCss"
+	        Condition="Exists('$(ProjectDir)package.json') AND '$(SkipTailwindBuild)' != 'true'">
 		<Exec Command="npm install" WorkingDirectory="$(ProjectDir)" />
 	</Target>
 
-	<Target Name="BuildTailwindCss" BeforeTargets="Build" Condition="Exists('$(ProjectDir)package.json')">
+	<Target Name="BuildTailwindCss" BeforeTargets="Build"
+	        Condition="Exists('$(ProjectDir)package.json') AND '$(SkipTailwindBuild)' != 'true'">
 		<Exec Command="npm run build:css" WorkingDirectory="$(ProjectDir)" />
 	</Target>
 
