@@ -45,11 +45,13 @@ public partial class DTransAction : EntityModified
     /// <summary>
     /// 记录唯一编号
     /// </summary>
+    [Column(StringLength = -1)]
     public string SerialNumber { get; set; }
 
     /// <summary>
     /// 注单流水号
     /// </summary>
+    [Column(StringLength = -1)]
     public string BillNo { get; set; }
 
     /// <summary>
@@ -60,6 +62,7 @@ public partial class DTransAction : EntityModified
     /// <summary>
     /// 游戏局号
     /// </summary>
+    [Column(StringLength = -1)]
     public string GameRound { get; set; }
 
     /// <summary>

@@ -110,7 +110,6 @@ try
         options.SchedulerExecuting = OnSchedulerExecuting;
         options.EnableIpWhitelist = true;
         options.LogDirectory = "Logs";
-        options.LogFilePrefix = "log-";
     });
     builder.Services.AddNeoAdminApi(Assembly.GetExecutingAssembly());
 
