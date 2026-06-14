@@ -284,32 +284,44 @@ export function ToastProvider() {
     </Animated.View>
   );
 
-  return (
-    <Modal visible transparent statusBarTranslucent animationType="fade">
-      {isModal ? (
-        <View style={styles.modalBackdrop}>
-          <View style={{ width: '100%', maxWidth: 360 }}>{card}</View>
+  const toastContent = isModal ? (
+    <View style={styles.modalBackdrop}>
+      <View style={{ width: '100%', maxWidth: 360 }}>{card}</View>
+    </View>
+  ) : (
+    <View pointerEvents="box-none" style={styles.nonModalOverlay}>
+      <View
+        pointerEvents="box-none"
+        style={{
+          alignItems: 'center',
+          paddingHorizontal: 16,
+          paddingTop: insets.top + 14,
+        }}>
+        <View pointerEvents="auto" style={{ width: '100%', maxWidth: 400 }}>
+          {card}
         </View>
-      ) : (
-        <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
-          <View
-            pointerEvents="box-none"
-            style={{
-              alignItems: 'center',
-              paddingHorizontal: 16,
-              paddingTop: insets.top + 14,
-            }}>
-            <View pointerEvents="auto" style={{ width: '100%', maxWidth: 400 }}>
-              {card}
-            </View>
-          </View>
-        </View>
-      )}
-    </Modal>
+      </View>
+    </View>
   );
+
+  if (isModal) {
+    return (
+      <Modal visible transparent statusBarTranslucent animationType="fade">
+        {toastContent}
+      </Modal>
+    );
+  }
+
+  return toastContent;
 }
 
 const styles = StyleSheet.create({
+  nonModalOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 9999,
+    elevation: 9999,
+    ...(Platform.OS === 'web' ? { position: 'fixed' as const } : null),
+  },
   modalBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.35)',

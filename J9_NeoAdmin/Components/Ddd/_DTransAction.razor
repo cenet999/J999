@@ -25,7 +25,7 @@
                IsRefresh="true"
                IsAdd="false"
                IsEdit="true"
-               DialogContentSize="CrudDialogContentSize.Lg">
+               DialogContentSize="CrudDialogContentSize.Xl">
         <Columns>
             <DataTableColumn TData="CrudGridRow<DTransAction>"
                              TValue="long"
@@ -125,7 +125,8 @@
             </DataTableColumn>
         </Columns>
         <RowActionsContent Context="row">
-            @if (row.Item.Status == TransactionStatus.Processing)
+            @if (row.Item.Status == TransactionStatus.Processing
+                 && row.Item.TransactionType != TransactionType.AgentTransferIn)
             {
                 <Button Variant="ButtonVariant.Ghost"
                         Size="ButtonSize.Small"

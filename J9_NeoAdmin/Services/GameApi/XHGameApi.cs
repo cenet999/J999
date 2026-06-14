@@ -46,7 +46,6 @@ public class XHGameApi {
     private static int _xhTransferSequence;
     private const long DefaultXhGamePlatformId = 0;
     private const string DebugLaunchUrl = "https://www.baidu.com";
-    private const decimal DebugWalletBalance = 1000m;
 
     /// <summary>
     /// 统一 RestSharp 出站配置：部分环境下默认 HttpClient 对 XH 域名出现
@@ -353,10 +352,11 @@ public class XHGameApi {
     /// <returns>上分结果：(是否成功, 错误信息)</returns>
     public async Task<(bool success, string errorMessage)> PlayerDeposit(string player_name, decimal amount, string orderId, string apiCode) {
         if (IsDebugEnvironment()) {
+            var deposited = DebugGameWalletStore.TryDeposit(player_name, apiCode, amount);
             _logger.LogInformation(
-                "XH游戏上分走调试模拟 - 玩家名称: {PlayerName}, 金额: {Amount}, 订单号: {OrderId}, 接口标识: {ApiCode}",
-                player_name, amount, orderId, apiCode);
-            return (true, string.Empty);
+                "XH游戏上分走调试模拟 - 玩家名称: {PlayerName}, 金额: {Amount}, 订单号: {OrderId}, 接口标识: {ApiCode}, 模拟余额: {Balance}",
+                player_name, amount, orderId, apiCode, DebugGameWalletStore.GetBalance(player_name, apiCode));
+            return deposited ? (true, string.Empty) : (false, "调试模拟上分失败");
         }
 
         try {
@@ -473,10 +473,11 @@ public class XHGameApi {
     /// <returns>下分结果，true表示成功，false表示失败</returns>
     public async Task<bool> PlayerWithdraw(string player_name, decimal amount, string orderId, string apiCode) {
         if (IsDebugEnvironment()) {
+            var withdrawn = DebugGameWalletStore.TryWithdraw(player_name, apiCode, amount);
             _logger.LogInformation(
-                "XH游戏下分走调试模拟 - 玩家名称: {PlayerName}, 金额: {Amount}, 订单号: {OrderId}, 接口标识: {ApiCode}",
-                player_name, amount, orderId, apiCode);
-            return true;
+                "XH游戏下分走调试模拟 - 玩家名称: {PlayerName}, 金额: {Amount}, 订单号: {OrderId}, 接口标识: {ApiCode}, 成功: {Success}, 模拟余额: {Balance}",
+                player_name, amount, orderId, apiCode, withdrawn, DebugGameWalletStore.GetBalance(player_name, apiCode));
+            return withdrawn;
         }
 
         try {
@@ -595,10 +596,11 @@ public class XHGameApi {
     /// <returns>玩家余额，失败时返回-1</returns>
     public async Task<decimal> GetPlayerBalance(string player_name, string apiCode) {
         if (IsDebugEnvironment()) {
+            var balance = DebugGameWalletStore.GetBalance(player_name, apiCode);
             _logger.LogInformation(
                 "XH游戏查询余额走调试模拟 - 玩家名称: {PlayerName}, 接口标识: {ApiCode}, 返回余额: {Balance}",
-                player_name, apiCode, DebugWalletBalance);
-            return DebugWalletBalance;
+                player_name, apiCode, balance);
+            return balance;
         }
 
         try {

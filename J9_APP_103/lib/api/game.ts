@@ -208,6 +208,8 @@ export type RecycleRecentGamesResult = {
   message: string;
   /** 从 MS+XH 接口 data.details 汇总的本轮转回金额（CNY） */
   totalRecycledCny: number;
+  /** 是否实际转回了游戏余额 */
+  hasRecycledFunds: boolean;
   details: Array<{
     platform: 'MS' | 'XH';
     ok: boolean;
@@ -263,12 +265,12 @@ export async function recycleRecentGames(
   });
 
   const successCount = details.filter((item) => item.ok).length;
+  const totalRecycledCny = details.reduce((sum, item) => sum + item.recycledCny, 0);
   const ok = successCount > 0;
   const partial = ok && successCount < details.length;
   const message = details
     .map((item) => `${item.platform}：${item.message}`)
     .join('；');
-  const totalRecycledCny = details.reduce((sum, item) => sum + item.recycledCny, 0);
 
   return {
     ok,
@@ -276,5 +278,7 @@ export async function recycleRecentGames(
     message,
     totalRecycledCny,
     details,
+    /** 是否实际转回了游戏余额（用于区分「接口成功但无余额」） */
+    hasRecycledFunds: totalRecycledCny > 0,
   };
 }

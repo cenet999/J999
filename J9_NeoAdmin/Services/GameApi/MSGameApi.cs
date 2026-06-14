@@ -44,7 +44,6 @@ public class MSGameApi
 {
     private static int _msTransferSequence;
     private const string DebugLaunchUrl = "https://www.baidu.com";
-    private const decimal DebugWalletBalance = 1000m;
 
     /// <summary>与 <see cref="J9_NeoAdmin.API.GameService"/> 中 MS 平台一致，按名称在 <c>ddd_game_platform</c> 解析主键。</summary>
     private static readonly string[] MsGamePlatformNames = ["MS", "MS游戏", "美盛游戏"];
@@ -365,10 +364,11 @@ public class MSGameApi
     {
         if (IsDebugEnvironment())
         {
+            var deposited = DebugGameWalletStore.TryDeposit(player_name, apiCode, amount);
             _logger.LogInformation(
-                "MS游戏上分走调试模拟 - 玩家名称: {PlayerName}, 金额: {Amount}, 订单号: {OrderId}, 接口标识: {ApiCode}",
-                player_name, amount, orderId, apiCode);
-            return (true, string.Empty);
+                "MS游戏上分走调试模拟 - 玩家名称: {PlayerName}, 金额: {Amount}, 订单号: {OrderId}, 接口标识: {ApiCode}, 模拟余额: {Balance}",
+                player_name, amount, orderId, apiCode, DebugGameWalletStore.GetBalance(player_name, apiCode));
+            return deposited ? (true, string.Empty) : (false, "调试模拟上分失败");
         }
 
         try
@@ -504,10 +504,11 @@ public class MSGameApi
     {
         if (IsDebugEnvironment())
         {
+            var withdrawn = DebugGameWalletStore.TryWithdraw(player_name, apiCode, amount);
             _logger.LogInformation(
-                "MS游戏下分走调试模拟 - 玩家名称: {PlayerName}, 金额: {Amount}, 订单号: {OrderId}, 接口标识: {ApiCode}",
-                player_name, amount, orderId, apiCode);
-            return true;
+                "MS游戏下分走调试模拟 - 玩家名称: {PlayerName}, 金额: {Amount}, 订单号: {OrderId}, 接口标识: {ApiCode}, 成功: {Success}, 模拟余额: {Balance}",
+                player_name, amount, orderId, apiCode, withdrawn, DebugGameWalletStore.GetBalance(player_name, apiCode));
+            return withdrawn;
         }
 
         try
@@ -645,10 +646,11 @@ public class MSGameApi
     {
         if (IsDebugEnvironment())
         {
+            var balance = DebugGameWalletStore.GetBalance(player_name, apiCode);
             _logger.LogInformation(
                 "MS游戏查询余额走调试模拟 - 玩家名称: {PlayerName}, 接口标识: {ApiCode}, 返回余额: {Balance}",
-                player_name, apiCode, DebugWalletBalance);
-            return DebugWalletBalance;
+                player_name, apiCode, balance);
+            return balance;
         }
 
         try

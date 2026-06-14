@@ -146,7 +146,7 @@ const TYPE_FILTER_TABS = [
   { key: 'bet', label: '投注', type: 2 },
 ];
 
-const DEFAULT_TYPE_FILTER_KEYS = ['rebate', 'activity', 'recharge', 'bet'];
+const DEFAULT_TYPE_FILTER_KEYS = ['rebate', 'activity', 'recharge', 'bet', 'withdraw', 'check-in'];
 
 const STATUS_FILTER_TABS = [
   { key: 'all', label: '全部', status: undefined as number | undefined },
@@ -631,6 +631,16 @@ export default function TransactionsScreen() {
       }
 
       await loadFirstPage();
+
+      if (!result.hasRecycledFunds) {
+        Toast.show({
+          type: 'info',
+          text1: '暂无可回收余额',
+          text2: '游戏平台当前没有可转回主账户的资金。',
+        });
+        return;
+      }
+
       Toast.show({
         type: 'success',
         text1: result.partial ? '部分回收完成' : '回收成功',

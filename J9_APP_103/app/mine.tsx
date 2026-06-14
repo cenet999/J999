@@ -16,6 +16,7 @@ import { formatRecycleRecentGamesAmountLine, recycleRecentGames } from '@/lib/ap
 import { getMessages, MessageSenderRole, MessageStatus } from '@/lib/api/message';
 import { apiOk, clearToken, toAbsoluteUrl } from '@/lib/api/request';
 import { playerWithdraw } from '@/lib/api/transaction';
+import { useBalanceOptional } from '@/lib/contexts/balance-context';
 import * as Clipboard from 'expo-clipboard';
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { ChevronRight, Eye, EyeOff, LogOut, Star, Wallet } from 'lucide-react-native';
@@ -738,6 +739,7 @@ function MenuSection({
 
 export default function MineScreen() {
   const { isAuthenticated, refreshAuthState, openAuthModal } = useAuthModal();
+  const balanceContext = useBalanceOptional();
   const router = useRouter();
   const params = useLocalSearchParams<{ openWithdraw?: string }>();
   const [memberInfo, setMemberInfo] = useState<MineMemberInfo | null>(null);
@@ -864,23 +866,32 @@ export default function MineScreen() {
         return;
       }
 
-      Toast.show({
-        type: 'success',
-        text1: result.partial ? '部分回收完成' : '回收成功',
-        text2: formatRecycleRecentGamesAmountLine(result),
-      });
+      if (!result.hasRecycledFunds) {
+        Toast.show({
+          type: 'info',
+          text1: '暂无可回收余额',
+          text2: '游戏平台当前没有可转回主账户的资金。',
+        });
+      } else {
+        Toast.show({
+          type: 'success',
+          text1: result.partial ? '部分回收完成' : '回收成功',
+          text2: formatRecycleRecentGamesAmountLine(result),
+        });
+      }
 
       const refreshed = await getMemberInfo();
       if (apiOk(refreshed)) {
         setMemberInfo((refreshed.data as MineMemberInfo | undefined) ?? null);
       }
+      await balanceContext?.refreshBalance();
     } catch (error) {
       console.error('回收失败:', error);
       Toast.show({ type: 'error', text1: '网络异常', text2: '回收失败，请稍后重试。' });
     } finally {
       setRecycleLoading(false);
     }
-  }, [memberInfo, recycleLoading]);
+  }, [balanceContext, memberInfo, recycleLoading]);
 
   useEffect(() => {
     if (!isAuthenticated) {
