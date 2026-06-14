@@ -4,6 +4,7 @@ import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { Toast } from '@/components/ui/toast';
 import {
+  getDisplayContent,
   getMessages,
   markAsRead,
   MessageSenderRole,
@@ -336,7 +337,7 @@ function ChatBubble({ item }: { item: DMessage }) {
         <Text
           className="text-[13px] leading-[20px]"
           style={{ color: isCustomer ? '#ffffff' : '#d7def0' }}>
-          {item.content}
+          {getDisplayContent(item)}
         </Text>
       </View>
 

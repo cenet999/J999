@@ -6,6 +6,7 @@ import { Text } from '@/components/ui/text';
 import { Toast } from '@/components/ui/toast';
 import {
   deleteMessage,
+  getDisplayContent,
   getMessages,
   markAllAsRead,
   markAsRead,
@@ -287,7 +288,9 @@ function MessageRow({
             </Pressable>
           ) : null}
         </View>
-        <Text className="mt-2 text-[12px] leading-[19px] text-[#b7c0d6]">{item.content}</Text>
+        <Text className="mt-2 text-[12px] leading-[19px] text-[#b7c0d6]">
+          {getDisplayContent(item)}
+        </Text>
       </View>
     </Pressable>
   );

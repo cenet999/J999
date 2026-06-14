@@ -13,6 +13,14 @@ export function extractImageSourceUri(source: ImageSourcePropType): string | und
   return uri || undefined;
 }
 
+/** 去除 HTML 标签，保留纯文本（用于公告、客服回复等富文本内容） */
+export function stripHtml(content: string): string {
+  return content
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 /** 过长文本中间省略，保留首尾便于识别（如 URL、地址） */
 export function truncateMiddle(text: string, maxLength: number, ellipsis = '...'): string {
   if (!text || maxLength <= ellipsis.length || text.length <= maxLength) {

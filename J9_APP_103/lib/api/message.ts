@@ -1,3 +1,4 @@
+import { stripHtml } from '@/lib/utils';
 import { api, type ApiResult } from './request';
 
 export enum MessageSenderRole {
@@ -21,6 +22,15 @@ export interface DMessage {
   sentAt: string;
   status: MessageStatus;
   senderIp: string;
+}
+
+/** 客服回复可能带 HTML，展示前过滤为纯文本 */
+export function getDisplayContent(message: DMessage): string {
+  const content = message.content ?? '';
+  if (message.senderRole === MessageSenderRole.Agent) {
+    return stripHtml(content);
+  }
+  return content;
 }
 
 export async function getMessages(): Promise<ApiResult<DMessage[]>> {
