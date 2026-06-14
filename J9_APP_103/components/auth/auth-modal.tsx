@@ -9,7 +9,6 @@ import {
   Image,
   KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   TextInput,
@@ -250,7 +249,7 @@ export function AuthModal({ visible, mode, onClose, onAuthSuccess }: AuthModalPr
       statusBarTranslucent
       onRequestClose={handleClose}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior="padding"
         className="flex-1">
         <Pressable
           className="flex-1 items-center justify-center bg-black/75 px-4 py-4"

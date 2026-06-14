@@ -176,7 +176,8 @@ export default function ChatScreen() {
       <Pg51PageShell withBottomNav={false}>
         <KeyboardAvoidingView
           className="flex-1"
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          behavior="padding"
+          keyboardVerticalOffset={0}>
           <View className="flex-1 px-2 pb-5 pt-5">
             <View className="flex-row items-center justify-between gap-3">
               <Pressable
