@@ -165,15 +165,15 @@
                 <Button Variant="ButtonVariant.Ghost"
                         Size="ButtonSize.Small"
                         Title="处理完成，标为成功"
-                        OnClick="@(() => MarkProcessingSuccess(row.Item))">
-                    <LucideIcon Name="circle-check" Size="16" Class="text-green-600" />
+                        OnClick="@(() => ShowMarkSuccessDialog(row.Item))">
+                    <LucideIcon Name="check" Size="16" />
                     <span class="sr-only">标为成功</span>
                 </Button>
                 <Button Variant="ButtonVariant.Ghost"
                         Size="ButtonSize.Small"
                         Title="拒绝"
-                        OnClick="@(() => RejectProcessing(row.Item))">
-                    <LucideIcon Name="circle-x" Size="16" Class="text-red-600" />
+                        OnClick="@(() => ShowRejectDialog(row.Item))">
+                    <LucideIcon Name="x" Size="16" />
                     <span class="sr-only">拒绝</span>
                 </Button>
             }
@@ -279,6 +279,188 @@
     </CrudTable>
 </div>
 
+<Dialog @bind-Open="markSuccessOpen">
+    <DialogContent Variant="DialogContentVariant.Form" Class="sm:max-w-2xl">
+        <DialogHeader>
+            <DialogTitle>确认标为成功</DialogTitle>
+            <DialogDescription>请核对订单与会员收款信息后再确认处理完成。</DialogDescription>
+        </DialogHeader>
+        <div class="space-y-5">
+            <div class="rounded-md border bg-muted/30 p-4 space-y-3">
+                <h3 class="text-sm font-medium">订单信息</h3>
+                <div class="grid gap-3 sm:grid-cols-2">
+                    <div class="space-y-1">
+                        <Label>订单号</Label>
+                        <Input Value="@markSuccessItem.Id.ToString()" Disabled="true" />
+                    </div>
+                    <div class="space-y-1">
+                        <Label>交易类型</Label>
+                        <Input Value="@GetTransactionTypeText(markSuccessItem.TransactionType)" Disabled="true" />
+                    </div>
+                    <div class="space-y-1">
+                        <Label>交易金额</Label>
+                        <Input Value="@markSuccessItem.ActualAmount.ToString("N2")" Disabled="true" />
+                    </div>
+                    <div class="space-y-1">
+                        <Label>交易状态</Label>
+                        <Input Value="@markSuccessItem.Status.ToString()" Disabled="true" />
+                    </div>
+                    <div class="space-y-1 sm:col-span-2">
+                        <Label>交易描述</Label>
+                        <Textarea Rows="2" Class="min-h-16 w-full resize-none" Value="@markSuccessItem.Description" Disabled="true" />
+                    </div>
+                </div>
+            </div>
+
+            @if (markSuccessMember == null)
+            {
+                <div class="rounded-md border border-yellow-200 bg-yellow-50 px-3 py-2 text-sm text-yellow-900">
+                    未找到关联会员（ID：@markSuccessItem.DMemberId）
+                </div>
+            }
+            else
+            {
+                <div class="rounded-md border bg-muted/30 p-4 space-y-3">
+                    <h3 class="text-sm font-medium">会员收款信息</h3>
+                    <div class="grid gap-3 sm:grid-cols-3">
+                        <div class="space-y-1">
+                            <Label>会员账号</Label>
+                            <div class="flex gap-2">
+                                <Input Class="flex-1" Value="@markSuccessMember.Username" Disabled="true" />
+                                @if (!string.IsNullOrWhiteSpace(markSuccessMember.Username))
+                                {
+                                    <Button Variant="ButtonVariant.Ghost" Size="ButtonSize.Small"
+                                            Class="shrink-0"
+                                            AriaLabel="复制会员账号"
+                                            OnClick="@(() => CopyFieldAsync(markSuccessMember.Username, "会员账号"))">
+                                        <LucideIcon Name="copy" Size="16" />
+                                    </Button>
+                                }
+                            </div>
+                        </div>
+                        <div class="space-y-1">
+                            <Label>真实姓名</Label>
+                            <div class="flex gap-2">
+                                <Input Class="flex-1" Value="@DisplayField(markSuccessMember.RealName)" Disabled="true" />
+                                @if (!string.IsNullOrWhiteSpace(markSuccessMember.RealName))
+                                {
+                                    <Button Variant="ButtonVariant.Ghost" Size="ButtonSize.Small"
+                                            Class="shrink-0"
+                                            AriaLabel="复制真实姓名"
+                                            OnClick="@(() => CopyFieldAsync(markSuccessMember.RealName, "真实姓名"))">
+                                        <LucideIcon Name="copy" Size="16" />
+                                    </Button>
+                                }
+                            </div>
+                        </div>
+                        <div class="space-y-1">
+                            <Label>当前余额</Label>
+                            <Input Value="@markSuccessMember.CreditAmount.ToString("N2")" Disabled="true" />
+                        </div>
+                    </div>
+                    <div class="grid gap-3 sm:grid-cols-2">
+                        <div class="space-y-1 sm:col-span-2">
+                            <Label>USDT 地址</Label>
+                            <div class="flex gap-2">
+                                <Input Class="flex-1" Value="@DisplayField(markSuccessMember.USDTAddress)" Disabled="true" />
+                                @if (!string.IsNullOrWhiteSpace(markSuccessMember.USDTAddress))
+                                {
+                                    <Button Variant="ButtonVariant.Ghost" Size="ButtonSize.Small"
+                                            Class="shrink-0"
+                                            AriaLabel="复制 USDT 地址"
+                                            OnClick="@(() => CopyFieldAsync(markSuccessMember.USDTAddress, "USDT 地址"))">
+                                        <LucideIcon Name="copy" Size="16" />
+                                    </Button>
+                                }
+                            </div>
+                        </div>
+                        <div class="space-y-1">
+                            <Label>银行名称</Label>
+                            <div class="flex gap-2">
+                                <Input Class="flex-1" Value="@DisplayField(markSuccessMember.BankName)" Disabled="true" />
+                                @if (!string.IsNullOrWhiteSpace(markSuccessMember.BankName))
+                                {
+                                    <Button Variant="ButtonVariant.Ghost" Size="ButtonSize.Small"
+                                            Class="shrink-0"
+                                            AriaLabel="复制银行名称"
+                                            OnClick="@(() => CopyFieldAsync(markSuccessMember.BankName, "银行名称"))">
+                                        <LucideIcon Name="copy" Size="16" />
+                                    </Button>
+                                }
+                            </div>
+                        </div>
+                        <div class="space-y-1">
+                            <Label>银行账号</Label>
+                            <div class="flex gap-2">
+                                <Input Class="flex-1" Value="@DisplayField(markSuccessMember.BankAccount)" Disabled="true" />
+                                @if (!string.IsNullOrWhiteSpace(markSuccessMember.BankAccount))
+                                {
+                                    <Button Variant="ButtonVariant.Ghost" Size="ButtonSize.Small"
+                                            Class="shrink-0"
+                                            AriaLabel="复制银行账号"
+                                            OnClick="@(() => CopyFieldAsync(markSuccessMember.BankAccount, "银行账号"))">
+                                        <LucideIcon Name="copy" Size="16" />
+                                    </Button>
+                                }
+                            </div>
+                        </div>
+                        <div class="space-y-1 sm:col-span-2">
+                            <Label>支付宝账号</Label>
+                            <div class="flex gap-2">
+                                <Input Class="flex-1" Value="@DisplayField(markSuccessMember.AlipayAccount)" Disabled="true" />
+                                @if (!string.IsNullOrWhiteSpace(markSuccessMember.AlipayAccount))
+                                {
+                                    <Button Variant="ButtonVariant.Ghost" Size="ButtonSize.Small"
+                                            Class="shrink-0"
+                                            AriaLabel="复制支付宝账号"
+                                            OnClick="@(() => CopyFieldAsync(markSuccessMember.AlipayAccount, "支付宝账号"))">
+                                        <LucideIcon Name="copy" Size="16" />
+                                    </Button>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+        <DialogFooter Class="mt-4">
+            <Button Variant="ButtonVariant.Outline" OnClick="CloseMarkSuccessDialog">取消</Button>
+            <Button OnClick="ConfirmMarkProcessingSuccess">确认标为成功</Button>
+        </DialogFooter>
+    </DialogContent>
+</Dialog>
+
+<Dialog @bind-Open="rejectOpen">
+    <DialogContent Class="sm:max-w-md">
+        <DialogHeader>
+            <DialogTitle>确认拒绝订单</DialogTitle>
+            <DialogDescription>
+                确定拒绝该订单吗？若为提现申请，将退回会员余额并扣回代理对应游戏分。
+            </DialogDescription>
+        </DialogHeader>
+        <div class="rounded-md border bg-muted/30 p-4 space-y-3">
+            <div class="grid gap-3 sm:grid-cols-2">
+                <div class="space-y-1">
+                    <Label>订单号</Label>
+                    <Input Value="@rejectItem.Id.ToString()" Disabled="true" />
+                </div>
+                <div class="space-y-1">
+                    <Label>交易类型</Label>
+                    <Input Value="@GetTransactionTypeText(rejectItem.TransactionType)" Disabled="true" />
+                </div>
+                <div class="space-y-1 sm:col-span-2">
+                    <Label>交易金额</Label>
+                    <Input Value="@rejectItem.ActualAmount.ToString("N2")" Disabled="true" />
+                </div>
+            </div>
+        </div>
+        <DialogFooter Class="mt-4">
+            <Button Variant="ButtonVariant.Outline" Disabled="@rejecting" OnClick="CloseRejectDialog">取消</Button>
+            <Button Disabled="@rejecting" OnClick="ConfirmRejectProcessing">确认拒绝</Button>
+        </DialogFooter>
+    </DialogContent>
+</Dialog>
+
 @code {
     private CrudTable<DTransAction> adminTable = default!;
     private string? syncBetUsername;
@@ -288,6 +470,12 @@
     private bool showAllTransactions;
     private Dictionary<long, DAgent> agentMapForDisplay = [];
     private string? currentUsername;
+    private bool markSuccessOpen;
+    private DTransAction markSuccessItem = new();
+    private DMember? markSuccessMember;
+    private bool rejectOpen;
+    private bool rejecting;
+    private DTransAction rejectItem = new();
 
     private async Task SyncBetHistoryAsync()
     {
@@ -323,11 +511,80 @@
         }
     }
 
-    private async Task MarkProcessingSuccess(DTransAction item)
+    private async Task ShowMarkSuccessDialog(DTransAction item)
     {
-        var ok = await JS.InvokeAsync<bool>("confirm", $"确定将订单 {item.Id} 从「处理中」改为「成功」吗？");
-        if (!ok) return;
+        markSuccessItem = item;
+        markSuccessMember = item.DMember;
+        if (markSuccessMember == null && item.DMemberId > 0)
+        {
+            markSuccessMember = await FreeSql.Select<DMember>()
+                .Where(m => m.Id == item.DMemberId)
+                .ToOneAsync();
+        }
 
+        markSuccessOpen = true;
+    }
+
+    private void CloseMarkSuccessDialog()
+    {
+        markSuccessOpen = false;
+        markSuccessMember = null;
+    }
+
+    private void ShowRejectDialog(DTransAction item)
+    {
+        rejectItem = item;
+        rejectOpen = true;
+    }
+
+    private void CloseRejectDialog()
+    {
+        rejectOpen = false;
+        rejecting = false;
+    }
+
+    private async Task ConfirmRejectProcessing()
+    {
+        if (rejecting) return;
+
+        rejecting = true;
+        try
+        {
+            var ok = await RejectProcessing(rejectItem);
+            if (ok) CloseRejectDialog();
+        }
+        finally
+        {
+            rejecting = false;
+        }
+    }
+
+    private static string DisplayField(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? "（未填写）" : value.Trim();
+
+    private async Task CopyFieldAsync(string? value, string fieldName)
+    {
+        var text = value?.Trim();
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            ToastService.Error("复制失败", $"{fieldName}为空");
+            return;
+        }
+
+        try
+        {
+            await JS.InvokeVoidAsync("j9CopyToClipboard", text);
+            ToastService.Success("复制成功", $"{fieldName}已复制");
+        }
+        catch (Exception ex)
+        {
+            ToastService.Error("复制失败", ex.Message);
+        }
+    }
+
+    private async Task ConfirmMarkProcessingSuccess()
+    {
+        var item = markSuccessItem;
         using var uow = FreeSql.CreateUnitOfWork();
         try
         {
@@ -375,6 +632,7 @@
 
             uow.Commit();
             ToastService.Success("操作成功", $"订单 {item.Id} 已标为成功");
+            CloseMarkSuccessDialog();
             await adminTable.ReloadAsync();
         }
         catch (Exception ex)
@@ -385,11 +643,8 @@
         }
     }
 
-    private async Task RejectProcessing(DTransAction item)
+    private async Task<bool> RejectProcessing(DTransAction item)
     {
-        var ok = await JS.InvokeAsync<bool>("confirm", $"确定拒绝订单 {item.Id} 吗？若为提现申请，将退回会员余额并扣回代理对应游戏分。");
-        if (!ok) return;
-
         using var uow = FreeSql.CreateUnitOfWork();
         try
         {
@@ -399,7 +654,7 @@
             if (current == null)
             {
                 ToastService.Error("操作失败", "记录不存在或状态已变化，请刷新后重试");
-                return;
+                return false;
             }
 
             var rows = new List<DTransAction> { current };
@@ -450,12 +705,14 @@
             uow.Commit();
             ToastService.Success("操作成功", $"订单 {item.Id} 已拒绝");
             await adminTable.ReloadAsync();
+            return true;
         }
         catch (Exception ex)
         {
             uow.Rollback();
             Logger.LogError(ex, "拒绝订单失败，交易ID：{TransactionId}", item.Id);
             ToastService.Error("操作失败", ex.Message);
+            return false;
         }
     }
 
