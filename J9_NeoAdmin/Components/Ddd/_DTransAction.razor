@@ -1,7 +1,6 @@
 @page "/Ddd/DTransAction"
 @layout LayoutAdmin
 @using System
-@using J9_NeoAdmin.Services
 @using J9_NeoAdmin.Utils
 @using Microsoft.AspNetCore.Http
 @using NeoUI.Blazor
@@ -10,7 +9,6 @@
 @inject IHttpContextAccessor HttpContextAccessor
 @inject IJSRuntime JS
 @inject ILogger<DTransAction> Logger
-@inject GameBetHistorySyncService GameBetHistorySyncService
 @inject J9_NeoAdmin.Utils.SessionAgent sessionAgent
 @inject IToastService ToastService
 
@@ -28,39 +26,6 @@
                IsAdd="false"
                IsEdit="true"
                DialogContentSize="CrudDialogContentSize.Lg">
-        <HeaderContent>
-            <div class="flex flex-wrap items-center gap-2 py-2">
-                <div class="flex items-center gap-2">
-                    <Label class="text-sm whitespace-nowrap">会员登录名</Label>
-                    <Input Class="w-40" @bind-Value="syncBetUsername" Placeholder="可选，空=全部" MaxLength="64" />
-                </div>
-                <Button Size="ButtonSize.Small" Disabled="@syncingBetHistory" OnClick="SyncBetHistoryAsync">
-                    @if (syncingBetHistory)
-                    {
-                        <span class="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent mr-1" />
-                    }
-                    一键同步
-                </Button>
-            </div>
-            @if (lastBetOutcome != null)
-            {
-                var ms = lastBetOutcome.Ms;
-                var xh = lastBetOutcome.Xh;
-                @if (lastBetOutcome.BothSuccess)
-                {
-                    <div class="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-900 mb-2">
-                        <div><strong>MS</strong>：拉取 <strong>@ms.RemoteFetched</strong> · 新 <strong class="text-green-700">@ms.Inserted</strong> · 更 <strong>@ms.Updated</strong> · 无单号跳过 <strong>@ms.SkippedNoSerial</strong> · <strong>@ms.PagesDone</strong> 页</div>
-                        <div><strong>XH</strong>：拉取 <strong>@xh.RemoteFetched</strong> · 新 <strong class="text-green-700">@xh.Inserted</strong> · 更 <strong>@xh.Updated</strong> · 无单号跳过 <strong>@xh.SkippedNoSerial</strong> · <strong>@xh.PagesDone</strong> 页</div>
-                    </div>
-                }
-                else
-                {
-                    <div class="rounded-md border border-yellow-200 bg-yellow-50 px-3 py-2 text-sm text-yellow-900 mb-2">
-                        @lastBetOutcome.BuildSummaryLine()
-                    </div>
-                }
-            }
-        </HeaderContent>
         <Columns>
             <DataTableColumn TData="CrudGridRow<DTransAction>"
                              TValue="long"
@@ -182,7 +147,7 @@
                 <Button Variant="ButtonVariant.Ghost"
                         Size="ButtonSize.Small"
                         Title="手动入账"
-                        OnClick="@(() => ManualCallback(row.Item))">
+                        OnClick="@(() => ShowManualCallbackDialog(row.Item))">
                     <LucideIcon Name="banknote" Size="16" />
                     <span class="sr-only">手动入账</span>
                 </Button>
@@ -485,11 +450,39 @@
     </DialogContent>
 </Dialog>
 
+<Dialog @bind-Open="manualCallbackOpen">
+    <DialogContent Class="sm:max-w-md">
+        <DialogHeader>
+            <DialogTitle>确认手动入账</DialogTitle>
+            <DialogDescription>
+                确定对该充值订单手动入账吗？确认后将增加会员余额并标为成功。
+            </DialogDescription>
+        </DialogHeader>
+        <div class="rounded-md border bg-muted/30 p-4 space-y-3">
+            <div class="grid gap-3 sm:grid-cols-2">
+                <div class="space-y-1">
+                    <Label>订单号</Label>
+                    <Input Value="@manualCallbackItem.Id.ToString()" Disabled="true" />
+                </div>
+                <div class="space-y-1">
+                    <Label>交易类型</Label>
+                    <Input Value="@GetTransactionTypeText(manualCallbackItem.TransactionType)" Disabled="true" />
+                </div>
+                <div class="space-y-1 sm:col-span-2">
+                    <Label>交易金额</Label>
+                    <Input Value="@manualCallbackItem.ActualAmount.ToString("N2")" Disabled="true" />
+                </div>
+            </div>
+        </div>
+        <DialogFooter Class="mt-4">
+            <Button Variant="ButtonVariant.Outline" Disabled="@manualCallbacking" OnClick="CloseManualCallbackDialog">取消</Button>
+            <Button Disabled="@manualCallbacking" OnClick="ConfirmManualCallback">确认入账</Button>
+        </DialogFooter>
+    </DialogContent>
+</Dialog>
+
 @code {
     private CrudTable<DTransAction> adminTable = default!;
-    private string? syncBetUsername;
-    private bool syncingBetHistory;
-    private GameBetHistorySyncOutcome? lastBetOutcome;
     private HashSet<long> visibleAgentIds = [];
     private bool showAllTransactions;
     private Dictionary<long, DAgent> agentMapForDisplay = [];
@@ -502,40 +495,9 @@
     private bool rejectOpen;
     private bool rejecting;
     private DTransAction rejectItem = new();
-
-    private async Task SyncBetHistoryAsync()
-    {
-        syncingBetHistory = true;
-        lastBetOutcome = null;
-        try
-        {
-            var name = string.IsNullOrWhiteSpace(syncBetUsername) ? null : syncBetUsername.Trim();
-            lastBetOutcome = await GameBetHistorySyncService.SyncMsAndXhForUsernameAsync(name ?? "");
-            if (lastBetOutcome.BothSuccess)
-            {
-                ToastService.Success("同步完成", lastBetOutcome.BuildSummaryLine());
-                await adminTable.ReloadAsync();
-            }
-            else if (lastBetOutcome.Ms.Success || lastBetOutcome.Xh.Success)
-            {
-                ToastService.Warning("部分同步", lastBetOutcome.BuildSummaryLine());
-                await adminTable.ReloadAsync();
-            }
-            else
-            {
-                ToastService.Error("同步失败", lastBetOutcome.BuildSummaryLine());
-            }
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "一键同步注单失败");
-            ToastService.Error("同步失败", ex.Message);
-        }
-        finally
-        {
-            syncingBetHistory = false;
-        }
-    }
+    private bool manualCallbackOpen;
+    private bool manualCallbacking;
+    private DTransAction manualCallbackItem = new();
 
     private async Task ShowMarkSuccessDialog(DTransAction item)
     {
@@ -591,6 +553,34 @@
         finally
         {
             rejecting = false;
+        }
+    }
+
+    private void ShowManualCallbackDialog(DTransAction item)
+    {
+        manualCallbackItem = item;
+        manualCallbackOpen = true;
+    }
+
+    private void CloseManualCallbackDialog()
+    {
+        manualCallbackOpen = false;
+        manualCallbacking = false;
+    }
+
+    private async Task ConfirmManualCallback()
+    {
+        if (manualCallbacking) return;
+
+        manualCallbacking = true;
+        try
+        {
+            var ok = await ManualCallback(manualCallbackItem);
+            if (ok) CloseManualCallbackDialog();
+        }
+        finally
+        {
+            manualCallbacking = false;
         }
     }
 
@@ -759,15 +749,8 @@
         }
     }
 
-    private async Task ManualCallback(DTransAction item)
+    private async Task<bool> ManualCallback(DTransAction item)
     {
-        var result = await JS.InvokeAsync<bool>("confirm", "确定要手动回调吗？");
-        if (!result)
-        {
-            Logger.LogInformation("用户取消了手动回调，交易ID：{TransactionId}", item.Id);
-            return;
-        }
-
         try
         {
             Logger.LogInformation("开始手动回调处理，交易ID：{TransactionId}，交易类型：{TransactionType}，状态：{Status}",
@@ -779,7 +762,7 @@
                 Logger.LogWarning("{ErrorMsg}，交易ID：{TransactionId}，交易类型：{TransactionType}",
                     errorMsg, item.Id, item.TransactionType);
                 ToastService.Error("手动回调", errorMsg);
-                return;
+                return false;
             }
 
             if (item.Status != TransactionStatus.Pending)
@@ -787,7 +770,7 @@
                 var errorMsg = $"只能对待处理状态的订单进行手动回调，当前状态：{item.Status}";
                 Logger.LogWarning("{ErrorMsg}，交易ID：{TransactionId}", errorMsg, item.Id);
                 ToastService.Error("手动回调", errorMsg);
-                return;
+                return false;
             }
 
             using var uow = FreeSql.CreateUnitOfWork();
@@ -803,7 +786,7 @@
                     var errorMsg = "交易记录不存在或状态已发生变化，请刷新页面后重试";
                     Logger.LogWarning("{ErrorMsg}，交易ID：{TransactionId}", errorMsg, item.Id);
                     ToastService.Error("手动回调", errorMsg);
-                    return;
+                    return false;
                 }
 
                 var username = await GetCurrentUsernameAsync();
@@ -822,7 +805,7 @@
                     var errorMsg = $"查询用户信息失败，用户ID：{currentTransAction.DMemberId}";
                     Logger.LogError("{ErrorMsg}，交易ID：{TransactionId}", errorMsg, item.Id);
                     ToastService.Error("手动回调", errorMsg);
-                    return;
+                    return false;
                 }
 
                 var oldBalance = member.CreditAmount;
@@ -835,7 +818,7 @@
                     Logger.LogError("{ErrorMsg}，交易ID：{TransactionId}，用户ID：{UserId}",
                         errorMsg, item.Id, member.Id);
                     ToastService.Error("手动回调", errorMsg);
-                    return;
+                    return false;
                 }
 
                 currentTransAction.AfterAmount = member.CreditAmount;
@@ -845,7 +828,7 @@
                     var errorMsg = "更新订单状态失败";
                     Logger.LogError("{ErrorMsg}，交易ID：{TransactionId}", errorMsg, item.Id);
                     ToastService.Error("手动回调", errorMsg);
-                    return;
+                    return false;
                 }
 
                 if (currentTransAction.RelatedTransActionId.HasValue && currentTransAction.RelatedTransActionId > 0)
@@ -870,7 +853,8 @@
                 Logger.LogInformation("手动回调处理成功，交易ID：{TransactionId}，用户ID：{UserId}，充值金额：{Amount}，用户余额从 {OldBalance} 更新为 {NewBalance}",
                     item.Id, member.Id, currentTransAction.ActualAmount, oldBalance, member.CreditAmount);
                 ToastService.Success("手动回调", successMsg);
-                StateHasChanged();
+                await adminTable.ReloadAsync();
+                return true;
             }
             catch (Exception ex)
             {
@@ -879,6 +863,7 @@
                 Logger.LogError(ex, "{ErrorMsg}，交易ID：{TransactionId}，异常信息：{ExceptionMessage}",
                     errorMsg, item.Id, ex.Message);
                 ToastService.Error("手动回调", $"{errorMsg}：{ex.Message}");
+                return false;
             }
         }
         catch (Exception ex)
@@ -887,6 +872,7 @@
             Logger.LogError(ex, "{ErrorMsg}，交易ID：{TransactionId}，异常信息：{ExceptionMessage}",
                 errorMsg, item.Id, ex.Message);
             ToastService.Error("手动回调", $"{errorMsg}：{ex.Message}");
+            return false;
         }
     }
 
@@ -928,7 +914,7 @@
     private static CrudFilterInfo CreateDefaultTransactionTimeFilter()
     {
         var end = TimeHelper.BeijingNow().Date;
-        var start = end.AddDays(-1);
+        var start = end.AddDays(-6);
         var filter = new CrudFilterInfo("交易时间", "TransactionTime", CrudFilterType.DateRange, 4);
         filter.Options[0].Value = start.ToString("yyyy-MM-dd");
         filter.Options[1].Value = end.ToString("yyyy-MM-dd");
