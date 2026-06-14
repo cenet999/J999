@@ -17,7 +17,7 @@
 		<ProjectReference Condition="Exists('../../NeoAdminProject/NeoAdmin.Blazor/NeoAdmin.Blazor.csproj')"
 		                  Include="../../NeoAdminProject/NeoAdmin.Blazor/NeoAdmin.Blazor.csproj" />
 		<PackageReference Condition="!Exists('../../NeoAdminProject/NeoAdmin.Blazor/NeoAdmin.Blazor.csproj')"
-		                  Include="NeoAdmin.Blazor" Version="1.0.27" />
+		                  Include="NeoAdmin.Blazor" Version="1.0.28" />
 		<PackageReference Include="NeoUI.Blazor" Version="4.1.7" />
 
 		<PackageReference Include="FreeScheduler" Version="2.1.4" />
