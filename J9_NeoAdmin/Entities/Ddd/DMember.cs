@@ -40,6 +40,11 @@ public partial class DMember : SysUser
     public DateTime UpdatedTime { get; set; }
 
     /// <summary>
+    /// 数据同步时间（PostgreSQL 历史字段；未同步时为 default）
+    /// </summary>
+    public DateTime SyncTime { get; set; }
+
+    /// <summary>
     /// 会员Telegram
     /// </summary>
     public string Telegram { get; set; }

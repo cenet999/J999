@@ -80,6 +80,7 @@ public static class SysUserDemoSeedData
                 CreditAmount = 0,
                 IsRebateSwitch = true,
                 UpdatedTime = createdTime,
+                SyncTime = default,
                 ContinuousCheckInDays = 0,
                 ActivityPoint = 0,
                 DAgentId = 0

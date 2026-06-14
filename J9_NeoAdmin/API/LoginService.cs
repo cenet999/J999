@@ -126,6 +126,7 @@ public class LoginService : BaseService
                 RealName = "",
                 LoginTime = DateTime.Now,
                 UpdatedTime = DateTime.Now,
+                SyncTime = default,
                 WithdrawPassword = "123456",
                 // 注册时默认使用系统配置的 USDT 收款地址
                 USDTAddress = string.IsNullOrWhiteSpace(_configuration["Payment:UsdtAddress"])
