@@ -92,6 +92,12 @@ public partial class DTransAction : EntityModified
     /// </summary>
     public bool IsRebate { get; set; } = false;
 
+    /// <summary>
+    /// 支付截图证明（后台标为成功时上传）
+    /// </summary>
+    [Column(StringLength = 500)]
+    public string ProofScreenshotUrl { get; set; } = "";
+
 }
 
 public partial class DTransAction
