@@ -172,6 +172,7 @@ try
         await next();
     });
     app.UseNeoAdminSerilogRequestLogging();
+    app.UseNeoAdminImeInputPatch();
     app.UseDefaultFiles();
     app.UseStaticFiles();
     app.MapStaticAssets();
