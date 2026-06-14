@@ -83,7 +83,11 @@
             </div>
             <div class="space-y-2">
                 <Label For="notice-content">内容</Label>
-                <Textarea id="notice-content" Class="min-h-40 w-full" @bind-Value="item.Content" />
+                <RichTextEditor @bind-Value="item.Content"
+                                Toolbar="ToolbarPreset.None"
+                                Placeholder="请输入公告内容"
+                                MinHeight="200px"
+                                Class="w-full" />
             </div>
         </EditTemplate>
     </CrudTable>

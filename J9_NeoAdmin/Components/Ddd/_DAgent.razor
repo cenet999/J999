@@ -136,7 +136,11 @@
             </div>
             <div class="space-y-2 mt-3">
                 <Label For="agent-remark">代理备注</Label>
-                <Textarea id="agent-remark" Class="min-h-24 w-full" MaxLength="65535" @bind-Value="item.Remark" />
+                <RichTextEditor @bind-Value="item.Remark"
+                                Toolbar="ToolbarPreset.None"
+                                Placeholder="请输入备注"
+                                MinHeight="120px"
+                                Class="w-full" />
             </div>
             <div class="space-y-2 mt-3">
                 <Label For="agent-register-link">邀请注册链接</Label>

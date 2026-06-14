@@ -81,7 +81,11 @@
             </div>
             <div class="space-y-2">
                 <Label For="task-desc">任务描述</Label>
-                <Textarea id="task-desc" Class="min-h-24 w-full" MaxLength="65535" @bind-Value="item.Description" />
+                <RichTextEditor @bind-Value="item.Description"
+                                Toolbar="ToolbarPreset.None"
+                                Placeholder="请输入任务描述"
+                                MinHeight="120px"
+                                Class="w-full" />
             </div>
             <div class="grid gap-3 sm:grid-cols-3">
                 <div class="space-y-2">

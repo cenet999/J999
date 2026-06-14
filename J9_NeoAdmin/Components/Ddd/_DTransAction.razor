@@ -238,7 +238,11 @@
                 </div>
                 <div class="space-y-2 sm:col-span-2">
                     <Label For="tx-desc">交易描述</Label>
-                    <Textarea id="tx-desc" Rows="3" Class="min-h-20 w-full resize-y" MaxLength="65535" @bind-Value="item.Description" />
+                    <RichTextEditor @bind-Value="item.Description"
+                                    Toolbar="ToolbarPreset.None"
+                                    Placeholder="请输入交易描述"
+                                    MinHeight="100px"
+                                    Class="w-full" />
                 </div>
             </div>
         </EditTemplate>

@@ -73,7 +73,11 @@
             </div>
             <div class="space-y-2">
                 <Label For="event-summary">公告描述</Label>
-                <Textarea id="event-summary" Class="min-h-24 w-full" MaxLength="65535" @bind-Value="item.Summary" />
+                <RichTextEditor @bind-Value="item.Summary"
+                                Toolbar="ToolbarPreset.None"
+                                Placeholder="请输入活动摘要"
+                                MinHeight="120px"
+                                Class="w-full" />
             </div>
             <div class="grid gap-3 sm:grid-cols-2">
                 <div class="space-y-2">

@@ -30,6 +30,8 @@
 
     <script src='@Assets["_content/NeoAdmin.Blazor/js/auth.js"]'></script>
     <script src='@Assets["_content/NeoUI.Blazor/js/theme.js"]'></script>
+    @* RichTextEditor 依赖全局 Quill（NeoUI 仅提供 quill-interop.js） *@
+    <script src="lib/quill/quill.js"></script>
     <script>
         window.j9CopyToClipboard = (text) => navigator.clipboard.writeText(text);
     </script>

@@ -143,7 +143,11 @@
             </div>
             <div class="space-y-2 mt-3">
                 <Label For="game-desc">游戏描述</Label>
-                <Textarea id="game-desc" Class="min-h-24 w-full" @bind-Value="item.Description" />
+                <RichTextEditor @bind-Value="item.Description"
+                                Toolbar="ToolbarPreset.None"
+                                Placeholder="请输入游戏描述"
+                                MinHeight="120px"
+                                Class="w-full" />
             </div>
         </EditTemplate>
     </CrudTable>

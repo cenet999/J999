@@ -79,7 +79,11 @@
                 </div>
                 <div class="space-y-2 sm:col-span-2">
                     <Label For="msg-content">文本内容</Label>
-                    <Textarea id="msg-content" Class="min-h-24 w-full" MaxLength="65535" @bind-Value="item.Content" />
+                    <RichTextEditor @bind-Value="item.Content"
+                                    Toolbar="ToolbarPreset.None"
+                                    Placeholder="请输入文本内容"
+                                    MinHeight="120px"
+                                    Class="w-full" />
                 </div>
                 <div class="space-y-2">
                     <Label For="msg-sent-at">发送时间</Label>
@@ -123,12 +127,15 @@
             </div>
             <div class="space-y-2">
                 <Label For="reply-text">客服回复</Label>
-                <Textarea id="reply-text"
-                          Rows="6"
-                          Class="min-h-36 w-full resize-y"
-                          Placeholder="请输入回复内容，支持多行"
-                          MaxLength="65535"
-                          @bind-Value="replyMessage" />
+                @if (replyOpen)
+                {
+                    <RichTextEditor @key="replyItem.Id"
+                                    @bind-Value="replyMessage"
+                                    Toolbar="ToolbarPreset.None"
+                                    Placeholder="请输入回复内容，支持富文本"
+                                    MinHeight="200px"
+                                    Class="w-full" />
+                }
             </div>
         </div>
         <DialogFooter Class="mt-4">
@@ -153,7 +160,7 @@
 
     private async Task HandleSendMessage()
     {
-        if (string.IsNullOrWhiteSpace(replyMessage))
+        if (IsRichTextEmpty(replyMessage))
         {
             ToastService.Error("发送失败", "请输入回复内容");
             return;
@@ -212,4 +219,17 @@
     }
 
     private Task HandleEdit(DMessage item) => Task.CompletedTask;
+
+    private static bool IsRichTextEmpty(string? html)
+    {
+        if (string.IsNullOrWhiteSpace(html))
+        {
+            return true;
+        }
+
+        var text = System.Text.RegularExpressions.Regex.Replace(html, "<[^>]+>", string.Empty)
+            .Replace("&nbsp;", " ", StringComparison.OrdinalIgnoreCase)
+            .Trim();
+        return string.IsNullOrWhiteSpace(text);
+    }
 }
